@@ -31,9 +31,16 @@ export default function Orientadores() {
     const [docentes, setDocentes] = useState([]);
     const [openMessage, setOpenMessage] = React.useState(false);
     const [openDialog, setOpenDialog] = React.useState(false);
+    const [openDocenteModal, setOpenDocenteModal] = React.useState(false);
     const [messageText, setMessageText] = React.useState("");
     const [messageSeverity, setMessageSeverity] = React.useState("success");
     const [orientacaoDelete, setOrientacaoDelete] = React.useState(null);
+    const [novoDocenteData, setNovoDocenteData] = useState({
+        codigo: "",
+        nome: "",
+        email: "",
+        sala: "",
+    });
 
     useEffect(() => {
         getCursos();
@@ -94,14 +101,80 @@ export default function Orientadores() {
         setCursoSelecionado(e.target.value);
     }
 
-    async function handleAddOrientacao() {
+    function handleNovoDocenteChange(e) {
+        setNovoDocenteData({ ...novoDocenteData, [e.target.name]: e.target.value });
+    }
+
+    function handleOpenDocenteModal() {
+        setOpenDocenteModal(true);
+    }
+
+    function handleCloseDocenteModal() {
+        setOpenDocenteModal(false);
+        setNovoDocenteData({
+            codigo: "",
+            nome: "",
+            email: "",
+            sala: "",
+        });
+    }
+
+    async function handleCreateDocente() {
         try {
-            if (!formData.id_curso || !formData.codigo_docente) {
-                setMessageText("Por favor, selecione o curso e o docente!");
+            if (!novoDocenteData.codigo || !novoDocenteData.nome || !novoDocenteData.email) {
+                setMessageText("Por favor, preencha os campos obrigatórios (código, nome e email)!");
                 setMessageSeverity("error");
                 setOpenMessage(true);
                 return;
             }
+
+            // Converter sala para número se não estiver vazio
+            const docenteParaEnviar = {
+                ...novoDocenteData,
+                sala: novoDocenteData.sala ? parseInt(novoDocenteData.sala) : null
+            };
+
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/docentes`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    formData: docenteParaEnviar,
+                }),
+            });
+
+            if (response.ok) {
+                setMessageText("Docente criado com sucesso!");
+                setMessageSeverity("success");
+                handleCloseDocenteModal();
+                // Atualiza a lista de docentes
+                await getDocentes();
+            } else {
+                throw new Error("Erro ao criar docente");
+            }
+        } catch (error) {
+            console.log("Não foi possível criar o docente no banco de dados", error);
+            setMessageText("Falha ao criar docente!");
+            setMessageSeverity("error");
+        } finally {
+            setOpenMessage(true);
+        }
+    }
+
+    async function handleAddOrientacao() {
+        try {
+            if (!cursoSelecionado || !formData.codigo_docente) {
+                setMessageText("Por favor, selecione o docente!");
+                setMessageSeverity("error");
+                setOpenMessage(true);
+                return;
+            }
+
+            const orientacaoData = {
+                id_curso: cursoSelecionado,
+                codigo_docente: formData.codigo_docente
+            };
 
             await fetch(`${process.env.REACT_APP_API_URL}/orientadores`, {
                 method: "POST",
@@ -109,7 +182,7 @@ export default function Orientadores() {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    formData: formData,
+                    formData: orientacaoData,
                 }),
             });
 
@@ -117,10 +190,8 @@ export default function Orientadores() {
             setMessageSeverity("success");
             setFormData({ id_curso: "", codigo_docente: "" });
 
-            // Atualiza a lista se o curso selecionado for o mesmo que foi adicionado
-            if (cursoSelecionado && formData.id_curso === cursoSelecionado) {
-                await getOrientadoresPorCurso(cursoSelecionado);
-            }
+            // Atualiza a lista
+            await getOrientadoresPorCurso(cursoSelecionado);
         } catch (error) {
             console.log("Não foi possível inserir a orientação no banco de dados");
             setMessageText("Falha ao gravar orientação!");
@@ -243,22 +314,7 @@ export default function Orientadores() {
                         </Typography>
 
                         <Stack spacing={2}>
-                            <FormControl fullWidth size="small">
-                                <InputLabel>Curso</InputLabel>
-                                <Select
-                                    name="id_curso"
-                                    value={formData.id_curso}
-                                    label="Curso"
-                                    onChange={handleInputChange}
-                                >
-                                    {cursos.map((curso) => (
-                                        <MenuItem key={curso.id} value={curso.id}>
-                                            {curso.nome} - {curso.codigo} ({curso.turno})
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-
+                            <Stack direction="row" spacing={2} alignItems="center">
                             <FormControl fullWidth size="small">
                                 <InputLabel>Docente</InputLabel>
                                 <Select
@@ -274,6 +330,15 @@ export default function Orientadores() {
                                     ))}
                                 </Select>
                             </FormControl>
+                                <Button
+                                    variant="outlined"
+                                    color="primary"
+                                    onClick={handleOpenDocenteModal}
+                                    sx={{ minWidth: 'auto', whiteSpace: 'nowrap' }}
+                                >
+                                    Novo Docente
+                                </Button>
+                            </Stack>
 
                             <Stack spacing={2} direction="row">
                                 <Button
@@ -294,6 +359,71 @@ export default function Orientadores() {
                         </Stack>
                     </>
                 )}
+
+                {/* Modal para criar novo docente */}
+                <Dialog
+                    open={openDocenteModal}
+                    onClose={handleCloseDocenteModal}
+                    aria-labelledby="criar-docente-title"
+                    maxWidth="sm"
+                    fullWidth
+                >
+                    <DialogTitle id="criar-docente-title">
+                        Criar Novo Docente
+                    </DialogTitle>
+                    <DialogContent>
+                        <Stack spacing={2} sx={{ mt: 1 }}>
+                            <TextField
+                                name="codigo"
+                                label="Código"
+                                value={novoDocenteData.codigo}
+                                onChange={handleNovoDocenteChange}
+                                fullWidth
+                                size="small"
+                                required
+                            />
+                            <TextField
+                                name="nome"
+                                label="Nome"
+                                value={novoDocenteData.nome}
+                                onChange={handleNovoDocenteChange}
+                                fullWidth
+                                size="small"
+                                required
+                            />
+                            <TextField
+                                name="email"
+                                label="Email"
+                                type="email"
+                                value={novoDocenteData.email}
+                                onChange={handleNovoDocenteChange}
+                                fullWidth
+                                size="small"
+                                required
+                            />
+                            <TextField
+                                name="sala"
+                                label="Sala"
+                                value={novoDocenteData.sala}
+                                onChange={handleNovoDocenteChange}
+                                fullWidth
+                                size="small"
+                            />
+                        </Stack>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleCloseDocenteModal}>
+                            Cancelar
+                        </Button>
+                        <Button
+                            onClick={handleCreateDocente}
+                            variant="contained"
+                            color="primary"
+                        >
+                            Criar Docente
+                        </Button>
+                    </DialogActions>
+                </Dialog>
 
                 <Snackbar
                     open={openMessage}
