@@ -16,7 +16,7 @@ import {
     Divider,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { DrawerContext } from "./App";
 
 const drawerWidth = 240;
