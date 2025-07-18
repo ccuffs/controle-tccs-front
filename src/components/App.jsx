@@ -8,6 +8,7 @@ import Navbar from "./Navbar";
 
 import Cursos from "./Cursos";
 import Orientadores from "./Orientadores";
+import Dicentes from "./Dicentes";
 import CustomThemeProvider from "./CustomThemeProvider";
 import ThemeSwitch from "./ThemeSwitch";
 
@@ -43,7 +44,10 @@ function App() {
                                     path="orientadores"
                                     element={<Orientadores />}
                                 />
-
+                                <Route
+                                    path="dicentes"
+                                    element={<Dicentes />}
+                                />
                             </Routes>
                         </Container>
                     </Box>
