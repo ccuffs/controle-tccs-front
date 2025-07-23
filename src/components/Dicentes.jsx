@@ -20,6 +20,8 @@ import {
     Chip,
     Paper,
     LinearProgress,
+    Grid,
+    CircularProgress,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
@@ -28,7 +30,13 @@ import PersonAddIcon from '@mui/icons-material/PersonAdd';
 export default function Dicentes() {
     const [dicentes, setDicentes] = useState([]);
     const [cursos, setCursos] = useState([]);
-    const [cursoSelecionado, setCursoSelecionado] = useState('');
+    const [ofertasTcc, setOfertasTcc] = useState([]);
+    const [selectedCurso, setSelectedCurso] = useState(null);
+    const [selectedAnoSemestre, setSelectedAnoSemestre] = useState(null);
+    const [faseSelecionada, setFaseSelecionada] = useState('');
+    const [loadingCursos, setLoadingCursos] = useState(false);
+    const [loadingOfertasTcc, setLoadingOfertasTcc] = useState(false);
+    const [loadingDicentes, setLoadingDicentes] = useState(false);
     const [formData, setFormData] = useState({
         matricula: "",
         nome: "",
@@ -49,21 +57,23 @@ export default function Dicentes() {
     const [uploadFile, setUploadFile] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [uploadResults, setUploadResults] = useState(null);
+    const [modalAnoSemestre, setModalAnoSemestre] = useState(null);
+    const [modalFase, setModalFase] = useState('');
+    const [modalCurso, setModalCurso] = useState(null);
 
     useEffect(() => {
         getCursos();
+        getOfertasTcc();
         getDicentes();
-    }, []);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
-        if (cursoSelecionado) {
-            // Para dicentes, vamos mostrar todos independente do curso
-            // mas mantemos a seleção para futuras funcionalidades
-            getDicentes();
-        }
-    }, [cursoSelecionado]);
+        // Atualiza a lista quando qualquer filtro muda
+        getDicentes();
+    }, [selectedCurso, selectedAnoSemestre, faseSelecionada]); // eslint-disable-line react-hooks/exhaustive-deps
 
     async function getCursos() {
+        setLoadingCursos(true);
         try {
             const response = await fetch(`${process.env.REACT_APP_API_URL}/cursos`);
             const data = await response.json();
@@ -71,17 +81,54 @@ export default function Dicentes() {
         } catch (error) {
             console.log("Não foi possível retornar a lista de cursos: ", error);
             setCursos([]);
+        } finally {
+            setLoadingCursos(false);
         }
     }
 
-    async function getDicentes() {
+    async function getOfertasTcc() {
+        setLoadingOfertasTcc(true);
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/dicentes`);
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/ofertas-tcc`);
             const data = await response.json();
+            setOfertasTcc(data.ofertas || []);
+        } catch (error) {
+            console.log("Não foi possível retornar a lista de ofertas TCC: ", error);
+            setOfertasTcc([]);
+        } finally {
+            setLoadingOfertasTcc(false);
+        }
+    }
+
+        async function getDicentes() {
+        setLoadingDicentes(true);
+        try {
+            // Construir parâmetros de filtro apenas para ano/semestre e fase
+            // O filtro de curso é apenas visual (não filtra dicentes)
+            const params = new URLSearchParams();
+
+            // Aplicar filtros de backend apenas se ano/semestre OU fase estiver selecionado
+            // Isso busca dicentes que têm orientação nos critérios especificados
+            if (selectedAnoSemestre) {
+                const [ano, semestre] = selectedAnoSemestre.split('/');
+                params.append('ano', ano);
+                params.append('semestre', semestre);
+            }
+
+            if (faseSelecionada) {
+                params.append('fase', faseSelecionada);
+            }
+
+            const url = `${process.env.REACT_APP_API_URL}/dicentes${params.toString() ? `?${params.toString()}` : ''}`;
+            const response = await fetch(url);
+            const data = await response.json();
+
             setDicentes(data.dicentes || []);
         } catch (error) {
             console.log("Não foi possível retornar a lista de dicentes: ", error);
             setDicentes([]);
+        } finally {
+            setLoadingDicentes(false);
         }
     }
 
@@ -90,12 +137,33 @@ export default function Dicentes() {
         setOpenDialog(true);
     }
 
-    function handleInputChange(e) {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    }
+
 
     function handleCursoChange(e) {
-        setCursoSelecionado(e.target.value);
+        const curso = cursos.find(c => c.id === e.target.value);
+        setSelectedCurso(curso || null);
+    }
+
+    function handleAnoSemestreChange(e) {
+        setSelectedAnoSemestre(e.target.value || null);
+    }
+
+    function handleFaseChange(e) {
+        setFaseSelecionada(e.target.value || '');
+    }
+
+    function handleModalAnoSemestreChange(e) {
+        setModalAnoSemestre(e.target.value || null);
+    }
+
+    function handleModalFaseChange(e) {
+        setModalFase(e.target.value || '');
+    }
+
+    function handleModalCursoChange(e) {
+        const cursoId = e.target.value;
+        const curso = cursos.find(c => c.id === cursoId);
+        setModalCurso(curso || null);
     }
 
     function handleNovoDicenteChange(e) {
@@ -116,6 +184,10 @@ export default function Dicentes() {
     }
 
     function handleOpenUploadModal() {
+        // Pré-popular com os valores da tela principal
+        setModalCurso(selectedCurso);
+        setModalAnoSemestre(selectedAnoSemestre);
+        setModalFase(faseSelecionada);
         setOpenUploadModal(true);
     }
 
@@ -123,6 +195,10 @@ export default function Dicentes() {
         setOpenUploadModal(false);
         setUploadFile(null);
         setUploadResults(null);
+        // Resetar os valores do modal
+        setModalCurso(null);
+        setModalAnoSemestre(null);
+        setModalFase('');
     }
 
     function handleFileChange(e) {
@@ -144,9 +220,23 @@ export default function Dicentes() {
             return;
         }
 
+        if (!modalAnoSemestre || !modalFase || !modalCurso) {
+            setMessageText("Por favor, selecione o curso, ano/semestre e a fase!");
+            setMessageSeverity("error");
+            setOpenMessage(true);
+            return;
+        }
+
         setUploading(true);
         const formData = new FormData();
         formData.append('pdf', uploadFile);
+
+        // Adicionar ano, semestre, fase e curso aos dados
+        const [ano, semestre] = modalAnoSemestre.split('/');
+        formData.append('ano', ano);
+        formData.append('semestre', semestre);
+        formData.append('fase', modalFase);
+        formData.append('id_curso', modalCurso.id);
 
         try {
             const response = await fetch(`${process.env.REACT_APP_API_URL}/dicentes/processar-pdf`, {
@@ -218,9 +308,7 @@ export default function Dicentes() {
         }
     }
 
-    function handleCancelClick() {
-        setFormData({ matricula: "", nome: "", email: "" });
-    }
+
 
     function handleCloseMessage(_, reason) {
         if (reason === "clickaway") {
@@ -265,6 +353,10 @@ export default function Dicentes() {
         setDicenteDelete(null);
     }
 
+    // Gerar listas únicas a partir das ofertas TCC
+    const anosSemsestresUnicos = [...new Set(ofertasTcc.map(oferta => `${oferta.ano}/${oferta.semestre}`))].sort();
+    const fasesUnicas = [...new Set(ofertasTcc.map(oferta => oferta.fase.toString()))].sort();
+
     const columns = [
         { field: "matricula", headerName: "Matrícula", width: 150 },
         { field: "nome", headerName: "Nome", width: 350 },
@@ -286,29 +378,155 @@ export default function Dicentes() {
     ];
 
     return (
-        <Box>
+         <Box
+                        sx={{
+                            display: "flex",
+                            flexDirection: { xs: "column", sm: "row" },
+                            alignItems: "center",
+                            gap: 2,
+                            width: { xs: "100%", sm: "auto" },
+                        }}
+                    >
             <Stack spacing={2}>
                 <Typography variant="h5" component="h2">
                     Gerenciamento de Dicentes
                 </Typography>
 
-                <FormControl fullWidth size="small">
-                    <InputLabel>Selecione um Curso</InputLabel>
-                    <Select
-                        value={cursoSelecionado}
-                        label="Selecione um Curso"
-                        onChange={handleCursoChange}
+                <Stack direction="row" spacing={2} flexWrap="wrap">
+                    <FormControl
+                        sx={{
+                            minWidth: { xs: "100%", sm: 300 },
+                            width: { xs: "100%", sm: "auto" },
+                        }}
                     >
-                        <MenuItem value="">
-                            <em>Todos os cursos</em>
-                        </MenuItem>
-                        {cursos.map((curso) => (
-                            <MenuItem key={curso.id} value={curso.id}>
-                                {curso.nome} - {curso.codigo} ({curso.turno})
+                        <InputLabel>Curso</InputLabel>
+                        <Select
+                            value={selectedCurso ? selectedCurso.id : ""}
+                            onChange={handleCursoChange}
+                            label="Curso"
+                            disabled={loadingCursos || cursos.length === 0}
+                            startAdornment={
+                                loadingCursos && (
+                                    <CircularProgress
+                                        size={16}
+                                        sx={{ mr: 1 }}
+                                    />
+                                )
+                            }
+                        >
+                            <MenuItem value="">
+                                <em>Todos os cursos</em>
                             </MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
+                            {cursos.map((curso) => (
+                                <MenuItem key={curso.id} value={curso.id}>
+                                    {curso.nome} ({curso.codigo})
+                                </MenuItem>
+                            ))}
+                            {cursos.length === 0 && !loadingCursos && (
+                                <MenuItem disabled>
+                                    Nenhum curso encontrado
+                                </MenuItem>
+                            )}
+                        </Select>
+                    </FormControl>
+
+                    <FormControl
+                        sx={{
+                            minWidth: { xs: "100%", sm: 200 },
+                            width: { xs: "100%", sm: "auto" },
+                        }}
+                    >
+                        <InputLabel>Ano/Semestre</InputLabel>
+                        <Select
+                            value={selectedAnoSemestre || ""}
+                            onChange={handleAnoSemestreChange}
+                            label="Ano/Semestre"
+                            disabled={
+                                loadingOfertasTcc ||
+                                anosSemsestresUnicos.length === 0 ||
+                                loadingDicentes
+                            }
+                            startAdornment={
+                                (loadingOfertasTcc || loadingDicentes) && (
+                                    <CircularProgress
+                                        size={16}
+                                        sx={{ mr: 1 }}
+                                    />
+                                )
+                            }
+                        >
+                            <MenuItem value="">
+                                <em>Exibir todos</em>
+                            </MenuItem>
+                            {anosSemsestresUnicos.map((anoSemestre) => (
+                                <MenuItem key={anoSemestre} value={anoSemestre}>
+                                    {anoSemestre}º Semestre
+                                </MenuItem>
+                            ))}
+                            {anosSemsestresUnicos.length === 0 && !loadingOfertasTcc && (
+                                <MenuItem disabled>
+                                    Nenhum ano/semestre cadastrado
+                                </MenuItem>
+                            )}
+                        </Select>
+                    </FormControl>
+
+                    <FormControl
+                        sx={{
+                            minWidth: { xs: "100%", sm: 120 },
+                            width: { xs: "100%", sm: "auto" },
+                        }}
+                    >
+                        <InputLabel>Fase TCC</InputLabel>
+                        <Select
+                            value={faseSelecionada || ""}
+                            label="Fase TCC"
+                            onChange={handleFaseChange}
+                            disabled={
+                                loadingOfertasTcc ||
+                                fasesUnicas.length === 0 ||
+                                loadingDicentes
+                            }
+                            startAdornment={
+                                (loadingOfertasTcc || loadingDicentes) && (
+                                    <CircularProgress
+                                        size={16}
+                                        sx={{ mr: 1 }}
+                                    />
+                                )
+                            }
+                        >
+                            <MenuItem value="">
+                                <em>Exibir todos</em>
+                            </MenuItem>
+                            {fasesUnicas.map((fase) => (
+                                <MenuItem key={fase} value={fase}>
+                                    Fase {fase}
+                                </MenuItem>
+                            ))}
+                            {fasesUnicas.length === 0 && !loadingOfertasTcc && (
+                                <MenuItem disabled>
+                                    Nenhuma fase cadastrada
+                                </MenuItem>
+                            )}
+                        </Select>
+                    </FormControl>
+
+                    <Box display="flex" alignItems="center" sx={{ minWidth: 150 }}>
+                        {loadingDicentes ? (
+                            <Box display="flex" alignItems="center">
+                                <CircularProgress size={16} sx={{ mr: 1 }} />
+                                <Typography variant="body2" color="text.secondary">
+                                    Carregando...
+                                </Typography>
+                            </Box>
+                        ) : (
+                            <Typography variant="body2" color="text.secondary">
+                                {`${dicentes.length} dicente${dicentes.length !== 1 ? 's' : ''} encontrado${dicentes.length !== 1 ? 's' : ''}`}
+                            </Typography>
+                        )}
+                    </Box>
+                </Stack>
 
                 <Stack direction="row" spacing={2}>
                     <Button
@@ -328,6 +546,26 @@ export default function Dicentes() {
                         Upload PDF Lista
                     </Button>
                 </Stack>
+
+                {/* Exibição de filtros ativos */}
+                {(selectedCurso || selectedAnoSemestre || faseSelecionada) && (
+                    <Paper sx={{ p: 2, bgcolor: 'primary.light', color: 'primary.contrastText' }}>
+                        <Typography variant="body2">
+                            <strong>Filtros ativos:</strong>
+                            {selectedCurso && ` Curso: ${selectedCurso.nome}`}
+                            {selectedAnoSemestre && ` Ano/Semestre: ${selectedAnoSemestre}`}
+                            {faseSelecionada && ` Fase: ${faseSelecionada}`}
+                        </Typography>
+                        <Typography variant="body2" sx={{ mt: 0.5 }}>
+                            {selectedAnoSemestre || faseSelecionada
+                                ? 'Exibindo apenas dicentes com orientação nos critérios selecionados.'
+                                : selectedCurso
+                                    ? 'Curso selecionado para referência. Exibindo todos os dicentes.'
+                                    : 'Exibindo todos os dicentes cadastrados.'
+                            }
+                        </Typography>
+                    </Paper>
+                )}
 
                 {/* Modal para criar novo dicente */}
                 <Dialog
@@ -402,7 +640,84 @@ export default function Dicentes() {
                             <Typography variant="body2" color="text.secondary">
                                 Selecione um arquivo PDF de lista de presença para importar dicentes automaticamente.
                                 O arquivo deve conter dados no formato: NOME seguido da MATRÍCULA.
+                                Os dicentes serão vinculados ao curso, ano/semestre e fase selecionados abaixo.
                             </Typography>
+
+                            {/* Selects para Curso, Ano/Semestre e Fase */}
+                            <Grid container spacing={3}>
+                                <Grid item xs={12} md={4}>
+                                    <FormControl fullWidth required sx={{ minWidth: 200 }}>
+                                        <InputLabel>Curso</InputLabel>
+                                        <Select
+                                            value={modalCurso ? modalCurso.id : ""}
+                                            onChange={handleModalCursoChange}
+                                            label="Curso"
+                                            disabled={loadingCursos || cursos.length === 0}
+                                        >
+                                            {cursos.map((curso) => (
+                                                <MenuItem key={curso.id} value={curso.id}>
+                                                    {curso.nome}
+                                                </MenuItem>
+                                            ))}
+                                            {cursos.length === 0 && !loadingCursos && (
+                                                <MenuItem disabled>
+                                                    Nenhum curso cadastrado
+                                                </MenuItem>
+                                            )}
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
+                                <Grid item xs={12} md={4}>
+                                    <FormControl fullWidth required sx={{ minWidth: 200 }}>
+                                        <InputLabel>Ano/Semestre</InputLabel>
+                                        <Select
+                                            value={modalAnoSemestre || ""}
+                                            onChange={handleModalAnoSemestreChange}
+                                            label="Ano/Semestre"
+                                            disabled={
+                                                loadingOfertasTcc ||
+                                                anosSemsestresUnicos.length === 0
+                                            }
+                                        >
+                                            {anosSemsestresUnicos.map((anoSemestre) => (
+                                                <MenuItem key={anoSemestre} value={anoSemestre}>
+                                                    {anoSemestre}º Semestre
+                                                </MenuItem>
+                                            ))}
+                                            {anosSemsestresUnicos.length === 0 && !loadingOfertasTcc && (
+                                                <MenuItem disabled>
+                                                    Nenhum ano/semestre cadastrado
+                                                </MenuItem>
+                                            )}
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
+                                <Grid item xs={12} md={4}>
+                                    <FormControl fullWidth required sx={{ minWidth: 200 }}>
+                                        <InputLabel>Fase TCC</InputLabel>
+                                        <Select
+                                            value={modalFase || ""}
+                                            label="Fase TCC"
+                                            onChange={handleModalFaseChange}
+                                            disabled={
+                                                loadingOfertasTcc ||
+                                                fasesUnicas.length === 0
+                                            }
+                                        >
+                                            {fasesUnicas.map((fase) => (
+                                                <MenuItem key={fase} value={fase}>
+                                                    Fase {fase}
+                                                </MenuItem>
+                                            ))}
+                                            {fasesUnicas.length === 0 && !loadingOfertasTcc && (
+                                                <MenuItem disabled>
+                                                    Nenhuma fase cadastrada
+                                                </MenuItem>
+                                            )}
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
+                            </Grid>
 
                             <Box>
                                 <input
@@ -473,9 +788,23 @@ export default function Dicentes() {
                                                 <Typography key={index} variant="body2" sx={{ mb: 0.5 }}>
                                                     <strong>{detalhe.matricula}</strong> - {detalhe.nome}:
                                                     <Chip
-                                                        label={detalhe.status}
+                                                        label={
+                                                            detalhe.status === 'dicente_e_orientacao_inseridos' ? 'Novo dicente + orientação' :
+                                                            detalhe.status === 'orientacao_inserida' ? 'Orientação criada' :
+                                                            detalhe.status === 'dicente_inserido_orientacao_ja_existe' ? 'Novo dicente (orientação já existe)' :
+                                                            detalhe.status === 'orientacao_ja_existe' ? 'Orientação já existe' :
+                                                            detalhe.status === 'dicente_ja_existe' ? 'Dicente já existe' :
+                                                            detalhe.status === 'inserido' ? 'Inserido' :
+                                                            detalhe.status === 'já_existe' ? 'Já existe' :
+                                                            detalhe.status
+                                                        }
                                                         size="small"
                                                         color={
+                                                            detalhe.status === 'dicente_e_orientacao_inseridos' ? 'success' :
+                                                            detalhe.status === 'orientacao_inserida' ? 'success' :
+                                                            detalhe.status === 'dicente_inserido_orientacao_ja_existe' ? 'info' :
+                                                            detalhe.status === 'orientacao_ja_existe' ? 'warning' :
+                                                            detalhe.status === 'dicente_ja_existe' ? 'warning' :
                                                             detalhe.status === 'inserido' ? 'success' :
                                                             detalhe.status === 'já_existe' ? 'warning' : 'error'
                                                         }
@@ -504,6 +833,7 @@ export default function Dicentes() {
                                 variant="contained"
                                 color="primary"
                                 startIcon={<CloudUploadIcon />}
+                                disabled={!modalCurso || !modalAnoSemestre || !modalFase}
                             >
                                 Processar PDF
                             </Button>
