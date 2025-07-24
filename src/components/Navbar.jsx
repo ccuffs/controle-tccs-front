@@ -56,6 +56,11 @@ function Navbar() {
         if (isMobile) setMobileOpen(false);
     }
 
+    function handleClickOrientacoes() {
+        navigate("/orientacoes");
+        if (isMobile) setMobileOpen(false);
+    }
+
     function handleClickOfertas() {
         navigate("/ofertas");
         if (isMobile) setMobileOpen(false);
@@ -83,6 +88,11 @@ function Navbar() {
                 <ListItem disablePadding>
                     <ListItemButton onClick={handleClickDicentes}>
                         <ListItemText primary="Dicentes" />
+                    </ListItemButton>
+                </ListItem>
+                <ListItem disablePadding>
+                    <ListItemButton onClick={handleClickOrientacoes}>
+                        <ListItemText primary="Orientações" />
                     </ListItemButton>
                 </ListItem>
                 <ListItem disablePadding>

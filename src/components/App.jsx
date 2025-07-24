@@ -9,6 +9,7 @@ import Navbar from "./Navbar";
 import Cursos from "./Cursos";
 import Orientadores from "./Orientadores";
 import Dicentes from "./Dicentes";
+import Orientacao from "./Orientacao";
 import CustomThemeProvider from "./CustomThemeProvider";
 import ThemeSwitch from "./ThemeSwitch";
 
@@ -47,6 +48,10 @@ function App() {
                                 <Route
                                     path="dicentes"
                                     element={<Dicentes />}
+                                />
+                                <Route
+                                    path="orientacoes"
+                                    element={<Orientacao />}
                                 />
                             </Routes>
                         </Container>
