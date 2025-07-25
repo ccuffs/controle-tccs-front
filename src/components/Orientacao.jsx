@@ -20,7 +20,6 @@ import SaveIcon from '@mui/icons-material/Save';
 export default function Orientacao() {
     const [dicentes, setDicentes] = useState([]);
     const [cursos, setCursos] = useState([]);
-    const [docentes, setDocentes] = useState([]);
     const [orientadoresCurso, setOrientadoresCurso] = useState([]);
     const [ofertasTcc, setOfertasTcc] = useState([]);
     const [orientacoes, setOrientacoes] = useState([]);
@@ -28,10 +27,8 @@ export default function Orientacao() {
     const [selectedAnoSemestre, setSelectedAnoSemestre] = useState(null);
     const [faseSelecionada, setFaseSelecionada] = useState('');
     const [loadingCursos, setLoadingCursos] = useState(false);
-    const [loadingDocentes, setLoadingDocentes] = useState(false);
     const [loadingOfertasTcc, setLoadingOfertasTcc] = useState(false);
     const [loadingDicentes, setLoadingDicentes] = useState(false);
-    const [loadingOrientacoes, setLoadingOrientacoes] = useState(false);
     const [openMessage, setOpenMessage] = React.useState(false);
     const [messageText, setMessageText] = React.useState("");
     const [messageSeverity, setMessageSeverity] = React.useState("success");
@@ -39,7 +36,6 @@ export default function Orientacao() {
 
     useEffect(() => {
         getCursos();
-        getDocentes();
         getOfertasTcc();
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -74,20 +70,6 @@ export default function Orientacao() {
             setCursos([]);
         } finally {
             setLoadingCursos(false);
-        }
-    }
-
-    async function getDocentes() {
-        setLoadingDocentes(true);
-        try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/docentes`);
-            const data = await response.json();
-            setDocentes(data.docentes || []);
-        } catch (error) {
-            console.log("Não foi possível retornar a lista de docentes: ", error);
-            setDocentes([]);
-        } finally {
-            setLoadingDocentes(false);
         }
     }
 
@@ -147,7 +129,6 @@ export default function Orientacao() {
     }
 
     async function getOrientacoes() {
-        setLoadingOrientacoes(true);
         try {
             const url = `${process.env.REACT_APP_API_URL}/orientacoes`;
             console.log("Buscando orientações em:", url);
@@ -158,8 +139,6 @@ export default function Orientacao() {
         } catch (error) {
             console.log("Não foi possível retornar a lista de orientações: ", error);
             setOrientacoes([]);
-        } finally {
-            setLoadingOrientacoes(false);
         }
     }
 
