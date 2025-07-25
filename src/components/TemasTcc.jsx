@@ -17,19 +17,16 @@ import {
     FormControl,
     InputLabel,
     Typography,
-    Switch,
-    FormControlLabel,
     Chip,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 
-export default function ProjetosTcc() {
-    const [projetos, setProjetos] = useState([]);
+export default function TemasTcc() {
+    const [temas, setTemas] = useState([]);
     const [cursos, setCursos] = useState([]);
     const [cursoSelecionado, setCursoSelecionado] = useState('');
     const [docentesOrientadores, setDocentesOrientadores] = useState([]);
     const [areasTcc, setAreasTcc] = useState([]);
-    const [mostrarApenasAtivos, setMostrarApenasAtivos] = useState(true);
     const [formData, setFormData] = useState({
         descricao: "",
         id_area_tcc: "",
@@ -38,9 +35,11 @@ export default function ProjetosTcc() {
     const [openMessage, setOpenMessage] = React.useState(false);
     const [openDialog, setOpenDialog] = React.useState(false);
     const [openAreaModal, setOpenAreaModal] = React.useState(false);
+    const [openVagasModal, setOpenVagasModal] = React.useState(false);
     const [messageText, setMessageText] = React.useState("");
     const [messageSeverity, setMessageSeverity] = React.useState("success");
-    const [projetoDelete, setProjetoDelete] = React.useState(null);
+    const [temaDelete, setTemaDelete] = React.useState(null);
+    const [temaVagas, setTemaVagas] = React.useState({ id: null, vagas: 0, codigoDocente: null, docenteNome: null });
     const [novaAreaData, setNovaAreaData] = useState({
         descicao: "",
         codigo_docente: "",
@@ -53,10 +52,10 @@ export default function ProjetosTcc() {
     useEffect(() => {
         if (cursoSelecionado) {
             getDocentesOrientadoresPorCurso(cursoSelecionado);
-            getProjetosPorCurso(cursoSelecionado);
+            getTemasPorCurso(cursoSelecionado);
         } else {
             setDocentesOrientadores([]);
-            setProjetos([]);
+            setTemas([]);
         }
     }, [cursoSelecionado]);
 
@@ -101,45 +100,62 @@ export default function ProjetosTcc() {
         }
     }
 
-    async function getProjetosPorCurso(idCurso) {
+    async function getTemasPorCurso(idCurso) {
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/projetos-tcc/curso/${idCurso}`);
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/temas-tcc/curso/${idCurso}`);
             const data = await response.json();
-            setProjetos(data.projetos || []);
+            setTemas(data || []);
         } catch (error) {
-            console.log("Não foi possível retornar a lista de projetos TCC: ", error);
-            setProjetos([]);
+            console.log("Não foi possível retornar a lista de temas TCC: ", error);
+            setTemas([]);
         }
     }
 
     function handleDelete(row) {
-        setProjetoDelete(row.id);
+        setTemaDelete(row.id);
         setOpenDialog(true);
     }
 
-    async function handleToggleStatus(projeto) {
-        try {
-            const novoStatus = !projeto.ativo;
+    function handleOpenVagasModal(tema) {
+        setTemaVagas({
+            id: tema.id,
+            vagas: tema.vagasOferta || tema.vagas || 0,
+            codigoDocente: tema.codigo_docente,
+            docenteNome: tema.docenteNome
+        });
+        setOpenVagasModal(true);
+    }
 
-            await fetch(`${process.env.REACT_APP_API_URL}/projetos-tcc/${projeto.id}/status`, {
+    function handleCloseVagasModal() {
+        setOpenVagasModal(false);
+        setTemaVagas({ id: null, vagas: 0, codigoDocente: null, docenteNome: null });
+    }
+
+    async function handleUpdateVagas() {
+        try {
+            // TODO: Atualizar para usar endpoint de oferta do docente quando disponível
+            // Atualmente usa endpoint de tema como fallback
+            await fetch(`${process.env.REACT_APP_API_URL}/temas-tcc/${temaVagas.id}/vagas`, {
                 method: "PATCH",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ ativo: novoStatus }),
+                body: JSON.stringify({ vagas: temaVagas.vagas }),
             });
 
-            setMessageText(`Projeto ${novoStatus ? 'ativado' : 'desativado'} com sucesso!`);
+            setMessageText(`Vagas da oferta do ${temaVagas.docenteNome} atualizadas com sucesso!`);
             setMessageSeverity("success");
             setOpenMessage(true);
 
             // Atualiza a lista
             if (cursoSelecionado) {
-                await getProjetosPorCurso(cursoSelecionado);
+                await getTemasPorCurso(cursoSelecionado);
             }
+
+            handleCloseVagasModal();
         } catch (error) {
-            console.log("Não foi possível alterar o status do projeto TCC");
-            setMessageText("Falha ao alterar status do projeto!");
+            console.log("Não foi possível atualizar as vagas da oferta");
+            setMessageText("Falha ao atualizar vagas da oferta!");
             setMessageSeverity("error");
             setOpenMessage(true);
         }
@@ -222,7 +238,7 @@ export default function ProjetosTcc() {
         }
     }
 
-    async function handleAddProjeto() {
+    async function handleAddTema() {
         try {
             if (!formData.descricao || !formData.id_area_tcc || !formData.codigo_docente) {
                 setMessageText("Por favor, preencha todos os campos obrigatórios!");
@@ -231,17 +247,15 @@ export default function ProjetosTcc() {
                 return;
             }
 
-            await fetch(`${process.env.REACT_APP_API_URL}/projetos-tcc`, {
+            await fetch(`${process.env.REACT_APP_API_URL}/temas-tcc`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({
-                    formData: formData,
-                }),
+                body: JSON.stringify(formData),
             });
 
-            setMessageText("Projeto TCC adicionado com sucesso!");
+            setMessageText("Tema TCC adicionado com sucesso!");
             setMessageSeverity("success");
             setFormData({
                 descricao: "",
@@ -250,10 +264,10 @@ export default function ProjetosTcc() {
             });
 
             // Atualiza a lista
-            await getProjetosPorCurso(cursoSelecionado);
+            await getTemasPorCurso(cursoSelecionado);
         } catch (error) {
-            console.log("Não foi possível inserir o projeto TCC no banco de dados");
-            setMessageText("Falha ao gravar projeto TCC!");
+            console.log("Não foi possível inserir o tema TCC no banco de dados");
+            setMessageText("Falha ao gravar tema TCC!");
             setMessageSeverity("error");
         } finally {
             setOpenMessage(true);
@@ -281,24 +295,24 @@ export default function ProjetosTcc() {
 
     async function handleDeleteClick() {
         try {
-            if (!projetoDelete) return;
+            if (!temaDelete) return;
 
-            await fetch(`${process.env.REACT_APP_API_URL}/projetos-tcc/${projetoDelete}`, {
+            await fetch(`${process.env.REACT_APP_API_URL}/temas-tcc/${temaDelete}`, {
                 method: "DELETE",
             });
-            setMessageText("Projeto TCC removido com sucesso!");
+            setMessageText("Tema TCC removido com sucesso!");
             setMessageSeverity("success");
 
             // Atualiza a lista
             if (cursoSelecionado) {
-                await getProjetosPorCurso(cursoSelecionado);
+                await getTemasPorCurso(cursoSelecionado);
             }
         } catch (error) {
-            console.log("Não foi possível remover o projeto TCC no banco de dados");
-            setMessageText("Falha ao remover projeto TCC!");
+            console.log("Não foi possível remover o tema TCC no banco de dados");
+            setMessageText("Falha ao remover tema TCC!");
             setMessageSeverity("error");
         } finally {
-            setProjetoDelete(null);
+            setTemaDelete(null);
             setOpenDialog(false);
             setOpenMessage(true);
         }
@@ -306,46 +320,136 @@ export default function ProjetosTcc() {
 
     function handleNoDeleteClick() {
         setOpenDialog(false);
-        setProjetoDelete(null);
+        setTemaDelete(null);
     }
 
-    // Filtrar projetos baseado no status
-    const projetosFiltrados = mostrarApenasAtivos
-        ? projetos.filter(projeto => projeto.ativo)
-        : projetos;
+        // Função para agrupar temas por docente e área TCC
+    const agruparTemasPorDocente = (temas) => {
+        const grupos = {};
+
+        temas.forEach(tema => {
+            const codigoDocente = tema.Docente?.codigo || 'sem-docente';
+            const nomeDocente = tema.Docente?.nome || 'N/A';
+            const idAreaTcc = tema.AreaTcc?.id || 'sem-area';
+            const nomeAreaTcc = tema.AreaTcc?.descicao || 'N/A';
+
+            if (!grupos[codigoDocente]) {
+                grupos[codigoDocente] = {
+                    docente: nomeDocente,
+                    areas: {}
+                };
+            }
+
+            if (!grupos[codigoDocente].areas[idAreaTcc]) {
+                grupos[codigoDocente].areas[idAreaTcc] = {
+                    area: nomeAreaTcc,
+                    temas: []
+                };
+            }
+
+            grupos[codigoDocente].areas[idAreaTcc].temas.push(tema);
+        });
+
+        // Converte para array e prepara dados para o DataGrid
+        const dadosGrid = [];
+        Object.keys(grupos).forEach(codigoDocente => {
+            const grupoDocente = grupos[codigoDocente];
+            let isFirstDocenteGroup = true;
+
+            Object.keys(grupoDocente.areas).forEach(idArea => {
+                const grupoArea = grupoDocente.areas[idArea];
+                let isFirstAreaGroup = true;
+
+                                 grupoArea.temas.forEach((tema) => {
+                     dadosGrid.push({
+                         ...tema,
+                         isFirstDocenteGroup: isFirstDocenteGroup,
+                         isFirstAreaGroup: isFirstAreaGroup,
+                         docenteNome: grupoDocente.docente,
+                         areaNome: grupoArea.area,
+                         vagasOferta: tema.vagasOferta || tema.vagas || 0 // Usa vagas da oferta ou fallback para vagas do tema
+                     });
+                     isFirstDocenteGroup = false;
+                     isFirstAreaGroup = false;
+                 });
+            });
+        });
+
+        return dadosGrid;
+    };
+
+    const temasAgrupados = agruparTemasPorDocente(temas);
 
     const columns = [
         { field: "id", headerName: "ID", width: 70 },
-        { field: "descricao", headerName: "Descrição", width: 350 },
+                {
+            field: "docente_nome",
+            headerName: "Docente Responsável",
+            width: 250,
+            renderCell: (params) => {
+                // Só mostra o nome na primeira linha do grupo do docente
+                if (params.row.isFirstDocenteGroup) {
+                    return (
+                        <Box sx={{
+                            fontWeight: 'bold',
+                            color: 'primary.main',
+                            borderLeft: '3px solid',
+                            borderColor: 'primary.main',
+                            paddingLeft: 1
+                        }}>
+                            {params.row.docenteNome}
+                        </Box>
+                    );
+                }
+                return '';
+            }
+        },
         {
             field: "area_nome",
             headerName: "Área TCC",
             width: 200,
             renderCell: (params) => {
-                const area = params?.row?.AreaTcc;
-                return area?.descicao || 'N/A';
+                // Só mostra o nome na primeira linha do grupo da área
+                if (params.row.isFirstAreaGroup) {
+                    return (
+                        <Box sx={{
+                            fontWeight: 'bold',
+                            color: 'secondary.main',
+                            borderLeft: '3px solid',
+                            borderColor: 'secondary.main',
+                            paddingLeft: 1
+                        }}>
+                            {params.row.areaNome}
+                        </Box>
+                    );
+                }
+                return '';
             }
         },
+        { field: "descricao", headerName: "Descrição", width: 350 },
         {
-            field: "docente_nome",
-            headerName: "Docente Responsável",
-            width: 250,
+            field: "vagas",
+            headerName: "Vagas",
+            width: 100,
             renderCell: (params) => {
-                const docente = params?.row?.Docente;
-                return docente?.nome || 'N/A';
-            }
-        },
-        {
-            field: "ativo",
-            headerName: "Status",
-            width: 120,
-            renderCell: (params) => (
-                <Chip
-                    label={params.row.ativo ? "Ativo" : "Inativo"}
-                    color={params.row.ativo ? "success" : "default"}
-                    size="small"
-                />
-            ),
+                // Só mostra as vagas na primeira linha do grupo do docente (pois vagas são por oferta do docente, não por tema)
+                if (params.row.isFirstDocenteGroup) {
+                    return (
+                        <Chip
+                            label={params.row.vagasOferta || 0}
+                            color={params.row.vagasOferta > 0 ? "success" : "default"}
+                            size="small"
+                            sx={{
+                                fontWeight: 'bold',
+                                '& .MuiChip-label': {
+                                    fontSize: '0.875rem'
+                                }
+                            }}
+                        />
+                    );
+                }
+                return '';
+            },
         },
         {
             field: "actions",
@@ -357,10 +461,10 @@ export default function ProjetosTcc() {
                     <Button
                         size="small"
                         variant="outlined"
-                        color={params.row.ativo ? "warning" : "success"}
-                        onClick={() => handleToggleStatus(params.row)}
+                        color="primary"
+                        onClick={() => handleOpenVagasModal(params.row)}
                     >
-                        {params.row.ativo ? "Desativar" : "Ativar"}
+                        Vagas
                     </Button>
                     <Button
                         size="small"
@@ -378,7 +482,7 @@ export default function ProjetosTcc() {
         <Box>
             <Stack spacing={2}>
                 <Typography variant="h5" component="h2">
-                    Projetos TCC por Curso
+                    Temas TCC por Curso
                 </Typography>
 
                 <FormControl fullWidth size="small">
@@ -402,7 +506,7 @@ export default function ProjetosTcc() {
                 {cursoSelecionado && (
                     <>
                         <Typography variant="h6" component="h3">
-                            Adicionar Novo Projeto TCC
+                            Adicionar Novo Tema TCC
                         </Typography>
 
                         <Stack spacing={2}>
@@ -452,23 +556,23 @@ export default function ProjetosTcc() {
 
                             <TextField
                                 name="descricao"
-                                label="Descrição do Projeto"
+                                label="Descrição do Tema"
                                 value={formData.descricao}
                                 onChange={handleInputChange}
                                 fullWidth
                                 size="small"
                                 multiline
                                 rows={3}
-                                placeholder="Descreva o projeto TCC..."
+                                placeholder="Descreva o tema TCC..."
                             />
 
                             <Stack spacing={2} direction="row">
                                 <Button
                                     color="primary"
                                     variant="contained"
-                                    onClick={handleAddProjeto}
+                                    onClick={handleAddTema}
                                 >
-                                    Adicionar Projeto
+                                    Adicionar Tema
                                 </Button>
                                 <Button
                                     variant="outlined"
@@ -523,6 +627,51 @@ export default function ProjetosTcc() {
                     </DialogActions>
                 </Dialog>
 
+                {/* Modal para atualizar vagas */}
+                <Dialog
+                    open={openVagasModal}
+                    onClose={handleCloseVagasModal}
+                    aria-labelledby="atualizar-vagas-title"
+                    maxWidth="sm"
+                    fullWidth
+                >
+                    <DialogTitle id="atualizar-vagas-title">
+                        Atualizar Vagas da Oferta
+                    </DialogTitle>
+                    <DialogContent>
+                        <Stack spacing={2} sx={{ mt: 1 }}>
+                            <Typography variant="body2" color="text.secondary">
+                                Editando vagas da oferta do docente: <strong>{temaVagas.docenteNome}</strong>
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                                Nota: As vagas são por oferta do docente, não por tema individual.
+                                Alterar aqui afetará todos os temas deste docente.
+                            </Typography>
+                            <TextField
+                                label="Número de Vagas da Oferta"
+                                type="number"
+                                value={temaVagas.vagas}
+                                onChange={(e) => setTemaVagas({...temaVagas, vagas: parseInt(e.target.value) || 0})}
+                                fullWidth
+                                size="small"
+                                inputProps={{ min: 0 }}
+                            />
+                        </Stack>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleCloseVagasModal}>
+                            Cancelar
+                        </Button>
+                        <Button
+                            onClick={handleUpdateVagas}
+                            variant="contained"
+                            color="primary"
+                        >
+                            Atualizar Vagas
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
                 <Snackbar
                     open={openMessage}
                     autoHideDuration={6000}
@@ -547,7 +696,7 @@ export default function ProjetosTcc() {
                     </DialogTitle>
                     <DialogContent>
                         <DialogContentText id="alert-dialog-description">
-                            Deseja realmente remover este projeto TCC?
+                            Deseja realmente remover este tema TCC?
                         </DialogContentText>
                     </DialogContent>
                     <DialogActions>
@@ -562,29 +711,37 @@ export default function ProjetosTcc() {
 
                 {cursoSelecionado && (
                     <>
-                        <Stack direction="row" spacing={2} alignItems="center">
-                            <FormControlLabel
-                                control={
-                                    <Switch
-                                        checked={mostrarApenasAtivos}
-                                        onChange={(e) => setMostrarApenasAtivos(e.target.checked)}
-                                    />
-                                }
-                                label="Mostrar apenas projetos ativos"
-                            />
-                            <Typography variant="body2" color="text.secondary">
-                                Total: {projetosFiltrados.length} projeto(s)
-                            </Typography>
-                        </Stack>
+                        <Typography variant="body2" color="text.secondary">
+                            Total: {temas.length} tema(s) • {Object.keys(temas.reduce((acc, tema) => {
+                                const codigo = tema.Docente?.codigo || 'sem-docente';
+                                acc[codigo] = true;
+                                return acc;
+                            }, {})).length} docente(s) • {Object.keys(temas.reduce((acc, tema) => {
+                                const idArea = tema.AreaTcc?.id || 'sem-area';
+                                acc[idArea] = true;
+                                return acc;
+                            }, {})).length} área(s)
+                        </Typography>
 
                         <Box style={{ height: "500px" }}>
                             <DataGrid
-                                rows={projetosFiltrados}
+                                rows={temasAgrupados}
                                 columns={columns}
-                                pageSize={5}
+                                pageSize={10}
                                 checkboxSelection={false}
                                 disableSelectionOnClick
                                 getRowId={(row) => row.id}
+                                sx={{
+                                    '& .MuiDataGrid-row': {
+                                        '&:not(:first-of-type)': {
+                                            '& .MuiDataGrid-cell:first-of-type': {
+                                                borderTop: 'none',
+                                            }
+                                        }
+                                    },
+
+                                }}
+                                // getRowClassName removido para manter aparência padrão
                             />
                         </Box>
                     </>

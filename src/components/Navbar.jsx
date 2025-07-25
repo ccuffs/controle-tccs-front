@@ -66,8 +66,8 @@ function Navbar() {
         if (isMobile) setMobileOpen(false);
     }
 
-    function handleClickProjetosTcc() {
-        navigate("/projetos-tcc");
+    function handleClickTemasTcc() {
+        navigate("/temas-tcc");
         if (isMobile) setMobileOpen(false);
     }
 
@@ -101,8 +101,8 @@ function Navbar() {
                     </ListItemButton>
                 </ListItem>
                 <ListItem disablePadding>
-                    <ListItemButton onClick={handleClickProjetosTcc}>
-                        <ListItemText primary="Projetos TCC" />
+                    <ListItemButton onClick={handleClickTemasTcc}>
+                        <ListItemText primary="Temas TCC" />
                     </ListItemButton>
                 </ListItem>
                 <ListItem disablePadding>

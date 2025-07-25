@@ -8,7 +8,7 @@ import Cursos from "./Cursos";
 import Orientadores from "./Orientadores";
 import Dicentes from "./Dicentes";
 import Orientacao from "./Orientacao";
-import ProjetosTcc from "./ProjetosTcc";
+import TemasTcc from "./TemasTcc";
 import CustomThemeProvider from "./CustomThemeProvider";
 import ThemeSwitch from "./ThemeSwitch";
 
@@ -53,8 +53,8 @@ function App() {
                                     element={<Orientacao />}
                                 />
                                 <Route
-                                    path="projetos-tcc"
-                                    element={<ProjetosTcc />}
+                                    path="temas-tcc"
+                                    element={<TemasTcc />}
                                 />
                             </Routes>
                         </Container>
