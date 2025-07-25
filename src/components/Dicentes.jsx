@@ -20,8 +20,8 @@ import {
     Chip,
     Paper,
     LinearProgress,
-    Grid,
     CircularProgress,
+    Grid,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
@@ -547,25 +547,6 @@ export default function Dicentes() {
                     </Button>
                 </Stack>
 
-                {/* Exibição de filtros ativos */}
-                {(selectedCurso || selectedAnoSemestre || faseSelecionada) && (
-                    <Paper sx={{ p: 2, bgcolor: 'primary.light', color: 'primary.contrastText' }}>
-                        <Typography variant="body2">
-                            <strong>Filtros ativos:</strong>
-                            {selectedCurso && ` Curso: ${selectedCurso.nome}`}
-                            {selectedAnoSemestre && ` Ano/Semestre: ${selectedAnoSemestre}`}
-                            {faseSelecionada && ` Fase: ${faseSelecionada}`}
-                        </Typography>
-                        <Typography variant="body2" sx={{ mt: 0.5 }}>
-                            {selectedAnoSemestre || faseSelecionada
-                                ? 'Exibindo apenas dicentes com orientação nos critérios selecionados.'
-                                : selectedCurso
-                                    ? 'Curso selecionado para referência. Exibindo todos os dicentes.'
-                                    : 'Exibindo todos os dicentes cadastrados.'
-                            }
-                        </Typography>
-                    </Paper>
-                )}
 
                 {/* Modal para criar novo dicente */}
                 <Dialog
@@ -785,8 +766,10 @@ export default function Dicentes() {
                                     {uploadResults.detalhes && uploadResults.detalhes.length > 0 && (
                                         <Box sx={{ maxHeight: 200, overflow: 'auto' }}>
                                             {uploadResults.detalhes.slice(0, 10).map((detalhe, index) => (
-                                                <Typography key={index} variant="body2" sx={{ mb: 0.5 }}>
-                                                    <strong>{detalhe.matricula}</strong> - {detalhe.nome}:
+                                                <Box key={index} sx={{ mb: 0.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                    <Typography variant="body2" component="span">
+                                                        <strong>{detalhe.matricula}</strong> - {detalhe.nome}:
+                                                    </Typography>
                                                     <Chip
                                                         label={
                                                             detalhe.status === 'dicente_e_orientacao_inseridos' ? 'Novo dicente + orientação' :
@@ -808,9 +791,8 @@ export default function Dicentes() {
                                                             detalhe.status === 'inserido' ? 'success' :
                                                             detalhe.status === 'já_existe' ? 'warning' : 'error'
                                                         }
-                                                        sx={{ ml: 1 }}
                                                     />
-                                                </Typography>
+                                                </Box>
                                             ))}
                                             {uploadResults.detalhes.length > 10 && (
                                                 <Typography variant="body2" color="text.secondary">
