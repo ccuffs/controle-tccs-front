@@ -17,6 +17,9 @@ import {
     FormControl,
     InputLabel,
     Typography,
+    Switch,
+    FormControlLabel,
+    Chip,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 
@@ -26,6 +29,7 @@ export default function ProjetosTcc() {
     const [cursoSelecionado, setCursoSelecionado] = useState('');
     const [docentesOrientadores, setDocentesOrientadores] = useState([]);
     const [areasTcc, setAreasTcc] = useState([]);
+    const [mostrarApenasAtivos, setMostrarApenasAtivos] = useState(true);
     const [formData, setFormData] = useState({
         descricao: "",
         id_area_tcc: "",
@@ -111,6 +115,34 @@ export default function ProjetosTcc() {
     function handleDelete(row) {
         setProjetoDelete(row.id);
         setOpenDialog(true);
+    }
+
+    async function handleToggleStatus(projeto) {
+        try {
+            const novoStatus = !projeto.ativo;
+
+            await fetch(`${process.env.REACT_APP_API_URL}/projetos-tcc/${projeto.id}/status`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ ativo: novoStatus }),
+            });
+
+            setMessageText(`Projeto ${novoStatus ? 'ativado' : 'desativado'} com sucesso!`);
+            setMessageSeverity("success");
+            setOpenMessage(true);
+
+            // Atualiza a lista
+            if (cursoSelecionado) {
+                await getProjetosPorCurso(cursoSelecionado);
+            }
+        } catch (error) {
+            console.log("Não foi possível alterar o status do projeto TCC");
+            setMessageText("Falha ao alterar status do projeto!");
+            setMessageSeverity("error");
+            setOpenMessage(true);
+        }
     }
 
     function handleInputChange(e) {
@@ -277,39 +309,67 @@ export default function ProjetosTcc() {
         setProjetoDelete(null);
     }
 
+    // Filtrar projetos baseado no status
+    const projetosFiltrados = mostrarApenasAtivos
+        ? projetos.filter(projeto => projeto.ativo)
+        : projetos;
+
     const columns = [
         { field: "id", headerName: "ID", width: 70 },
+        { field: "descricao", headerName: "Descrição", width: 350 },
+        {
+            field: "area_nome",
+            headerName: "Área TCC",
+            width: 200,
+            renderCell: (params) => {
+                const area = params?.row?.AreaTcc;
+                return area?.descicao || 'N/A';
+            }
+        },
         {
             field: "docente_nome",
             headerName: "Docente Responsável",
-            width: 300,
+            width: 250,
             renderCell: (params) => {
                 const docente = params?.row?.Docente;
                 return docente?.nome || 'N/A';
             }
         },
         {
-            field: "area_nome",
-            headerName: "Área TCC",
-            width: 250,
-            renderCell: (params) => {
-                const area = params?.row?.AreaTcc;
-                return area?.descicao || 'N/A';
-            }
+            field: "ativo",
+            headerName: "Status",
+            width: 120,
+            renderCell: (params) => (
+                <Chip
+                    label={params.row.ativo ? "Ativo" : "Inativo"}
+                    color={params.row.ativo ? "success" : "default"}
+                    size="small"
+                />
+            ),
         },
-        { field: "descricao", headerName: "Descrição", width: 400 },
         {
             field: "actions",
             headerName: "Ações",
             sortable: false,
-            width: 150,
+            width: 200,
             renderCell: (params) => (
-                <Button
-                    color="secondary"
-                    onClick={() => handleDelete(params.row)}
-                >
-                    Remover
-                </Button>
+                <Stack direction="row" spacing={1}>
+                    <Button
+                        size="small"
+                        variant="outlined"
+                        color={params.row.ativo ? "warning" : "success"}
+                        onClick={() => handleToggleStatus(params.row)}
+                    >
+                        {params.row.ativo ? "Desativar" : "Ativar"}
+                    </Button>
+                    <Button
+                        size="small"
+                        color="secondary"
+                        onClick={() => handleDelete(params.row)}
+                    >
+                        Remover
+                    </Button>
+                </Stack>
             ),
         },
     ];
@@ -501,16 +561,33 @@ export default function ProjetosTcc() {
                 </Dialog>
 
                 {cursoSelecionado && (
-                    <Box style={{ height: "500px" }}>
-                        <DataGrid
-                            rows={projetos}
-                            columns={columns}
-                            pageSize={5}
-                            checkboxSelection={false}
-                            disableSelectionOnClick
-                            getRowId={(row) => row.id}
-                        />
-                    </Box>
+                    <>
+                        <Stack direction="row" spacing={2} alignItems="center">
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={mostrarApenasAtivos}
+                                        onChange={(e) => setMostrarApenasAtivos(e.target.checked)}
+                                    />
+                                }
+                                label="Mostrar apenas projetos ativos"
+                            />
+                            <Typography variant="body2" color="text.secondary">
+                                Total: {projetosFiltrados.length} projeto(s)
+                            </Typography>
+                        </Stack>
+
+                        <Box style={{ height: "500px" }}>
+                            <DataGrid
+                                rows={projetosFiltrados}
+                                columns={columns}
+                                pageSize={5}
+                                checkboxSelection={false}
+                                disableSelectionOnClick
+                                getRowId={(row) => row.id}
+                            />
+                        </Box>
+                    </>
                 )}
             </Stack>
         </Box>
