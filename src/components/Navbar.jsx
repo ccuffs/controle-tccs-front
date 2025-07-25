@@ -66,6 +66,11 @@ function Navbar() {
         if (isMobile) setMobileOpen(false);
     }
 
+    function handleClickProjetosTcc() {
+        navigate("/projetos-tcc");
+        if (isMobile) setMobileOpen(false);
+    }
+
     const drawerContent = (
         <Box sx={{ overflow: 'auto' }}>
             <Toolbar>
@@ -93,6 +98,11 @@ function Navbar() {
                 <ListItem disablePadding>
                     <ListItemButton onClick={handleClickOrientacoes}>
                         <ListItemText primary="Orientações" />
+                    </ListItemButton>
+                </ListItem>
+                <ListItem disablePadding>
+                    <ListItemButton onClick={handleClickProjetosTcc}>
+                        <ListItemText primary="Projetos TCC" />
                     </ListItemButton>
                 </ListItem>
                 <ListItem disablePadding>
