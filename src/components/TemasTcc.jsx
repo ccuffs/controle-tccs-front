@@ -133,9 +133,8 @@ export default function TemasTcc() {
 
     async function handleUpdateVagas() {
         try {
-            // TODO: Atualizar para usar endpoint de oferta do docente quando disponível
-            // Atualmente usa endpoint de tema como fallback
-            await fetch(`${process.env.REACT_APP_API_URL}/temas-tcc/${temaVagas.id}/vagas`, {
+            // Usar o novo endpoint específico para vagas da oferta do docente
+            await fetch(`${process.env.REACT_APP_API_URL}/temas-tcc/docente/${temaVagas.codigoDocente}/curso/${cursoSelecionado}/vagas`, {
                 method: "PATCH",
                 headers: {
                     "Content-Type": "application/json",
@@ -361,13 +360,14 @@ export default function TemasTcc() {
                 let isFirstAreaGroup = true;
 
                                  grupoArea.temas.forEach((tema) => {
+                     const vagasOferta = tema.vagasOferta || tema.vagas || 0;
                      dadosGrid.push({
                          ...tema,
                          isFirstDocenteGroup: isFirstDocenteGroup,
                          isFirstAreaGroup: isFirstAreaGroup,
                          docenteNome: grupoDocente.docente,
                          areaNome: grupoArea.area,
-                         vagasOferta: tema.vagasOferta || tema.vagas || 0 // Usa vagas da oferta ou fallback para vagas do tema
+                         vagasOferta: vagasOferta // Usa vagas da oferta ou fallback para vagas do tema
                      });
                      isFirstDocenteGroup = false;
                      isFirstAreaGroup = false;
@@ -430,14 +430,33 @@ export default function TemasTcc() {
         {
             field: "vagas",
             headerName: "Vagas",
-            width: 100,
+            width: 200,
             renderCell: (params) => {
                 // Só mostra as vagas na primeira linha do grupo do docente (pois vagas são por oferta do docente, não por tema)
                 if (params.row.isFirstDocenteGroup) {
+                    const vagas = params.row.vagasOferta || 0;
+
+                    if (vagas === 0) {
+                        return (
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{
+                                    fontSize: '0.75rem',
+                                    fontStyle: 'italic',
+                                    textAlign: 'center',
+                                    maxWidth: '180px'
+                                }}
+                            >
+                                Converse com o orientador sobre disponibilidade
+                            </Typography>
+                        );
+                    }
+
                     return (
                         <Chip
-                            label={params.row.vagasOferta || 0}
-                            color={params.row.vagasOferta > 0 ? "success" : "default"}
+                            label={vagas}
+                            color="success"
                             size="small"
                             sx={{
                                 fontWeight: 'bold',
