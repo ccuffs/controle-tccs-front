@@ -326,7 +326,27 @@ export default function TemasTcc() {
     const agruparTemasPorDocente = (temas) => {
         const grupos = {};
 
-        temas.forEach(tema => {
+        // Ordenar temas por docente, área e descrição
+        const temasOrdenados = [...temas].sort((a, b) => {
+            // Primeiro por nome do docente
+            const nomeA = a.Docente?.nome || '';
+            const nomeB = b.Docente?.nome || '';
+            if (nomeA !== nomeB) {
+                return nomeA.localeCompare(nomeB);
+            }
+
+            // Se mesmo docente, ordenar por área
+            const areaA = a.AreaTcc?.descicao || '';
+            const areaB = b.AreaTcc?.descicao || '';
+            if (areaA !== areaB) {
+                return areaA.localeCompare(areaB);
+            }
+
+            // Se mesma área, ordenar por descrição
+            return (a.descricao || '').localeCompare(b.descricao || '');
+        });
+
+        temasOrdenados.forEach(tema => {
             const codigoDocente = tema.Docente?.codigo || 'sem-docente';
             const nomeDocente = tema.Docente?.nome || 'N/A';
             const idAreaTcc = tema.AreaTcc?.id || 'sem-area';
@@ -351,27 +371,43 @@ export default function TemasTcc() {
 
         // Converte para array e prepara dados para o DataGrid
         const dadosGrid = [];
-        Object.keys(grupos).forEach(codigoDocente => {
+
+        // Ordenar docentes por nome
+        const docentesOrdenados = Object.keys(grupos).sort((a, b) => {
+            return grupos[a].docente.localeCompare(grupos[b].docente);
+        });
+
+        docentesOrdenados.forEach(codigoDocente => {
             const grupoDocente = grupos[codigoDocente];
             let isFirstDocenteGroup = true;
 
-            Object.keys(grupoDocente.areas).forEach(idArea => {
+            // Ordenar áreas por nome
+            const areasOrdenadas = Object.keys(grupoDocente.areas).sort((a, b) => {
+                return grupoDocente.areas[a].area.localeCompare(grupoDocente.areas[b].area);
+            });
+
+            areasOrdenadas.forEach(idArea => {
                 const grupoArea = grupoDocente.areas[idArea];
                 let isFirstAreaGroup = true;
 
-                                 grupoArea.temas.forEach((tema) => {
-                     const vagasOferta = tema.vagasOferta || tema.vagas || 0;
-                     dadosGrid.push({
-                         ...tema,
-                         isFirstDocenteGroup: isFirstDocenteGroup,
-                         isFirstAreaGroup: isFirstAreaGroup,
-                         docenteNome: grupoDocente.docente,
-                         areaNome: grupoArea.area,
-                         vagasOferta: vagasOferta // Usa vagas da oferta ou fallback para vagas do tema
-                     });
-                     isFirstDocenteGroup = false;
-                     isFirstAreaGroup = false;
-                 });
+                // Ordenar temas por descrição
+                const temasOrdenados = [...grupoArea.temas].sort((a, b) => {
+                    return (a.descricao || '').localeCompare(b.descricao || '');
+                });
+
+                temasOrdenados.forEach((tema) => {
+                    const vagasOferta = tema.vagasOferta || tema.vagas || 0;
+                    dadosGrid.push({
+                        ...tema,
+                        isFirstDocenteGroup: isFirstDocenteGroup,
+                        isFirstAreaGroup: isFirstAreaGroup,
+                        docenteNome: grupoDocente.docente,
+                        areaNome: grupoArea.area,
+                        vagasOferta: vagasOferta // Usa vagas da oferta ou fallback para vagas do tema
+                    });
+                    isFirstDocenteGroup = false;
+                    isFirstAreaGroup = false;
+                });
             });
         });
 
@@ -426,7 +462,20 @@ export default function TemasTcc() {
                 return '';
             }
         },
-        { field: "descricao", headerName: "Descrição", width: 350 },
+        { field: "descricao", headerName: "Descrição", width: 250 },
+        {
+            field: "status",
+            headerName: "Status",
+            width: 120,
+            renderCell: (params) => (
+                <Chip
+                    label={params.row.ativo ? "Ativo" : "Inativo"}
+                    color={params.row.ativo ? "success" : "default"}
+                    size="small"
+                    variant="outlined"
+                />
+            ),
+        },
         {
             field: "vagas",
             headerName: "Vagas",
@@ -474,7 +523,7 @@ export default function TemasTcc() {
             field: "actions",
             headerName: "Ações",
             sortable: false,
-            width: 200,
+            width: 280,
             renderCell: (params) => (
                 <Stack direction="row" spacing={1}>
                     <Button
@@ -487,6 +536,14 @@ export default function TemasTcc() {
                     </Button>
                     <Button
                         size="small"
+                        variant={params.row.ativo ? "outlined" : "contained"}
+                        color={params.row.ativo ? "success" : "warning"}
+                        onClick={() => handleToggleAtivo(params.row)}
+                    >
+                        {params.row.ativo ? "Ativo" : "Inativo"}
+                    </Button>
+                    <Button
+                        size="small"
                         color="secondary"
                         onClick={() => handleDelete(params.row)}
                     >
@@ -496,6 +553,37 @@ export default function TemasTcc() {
             ),
         },
     ];
+
+    async function handleToggleAtivo(tema) {
+        try {
+            const novoStatus = !tema.ativo;
+
+            await fetch(`${process.env.REACT_APP_API_URL}/temas-tcc`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    id: tema.id,
+                    ativo: novoStatus
+                }),
+            });
+
+            setMessageText(`Tema ${novoStatus ? 'ativado' : 'desativado'} com sucesso!`);
+            setMessageSeverity("success");
+
+            // Atualiza a lista
+            if (cursoSelecionado) {
+                await getTemasPorCurso(cursoSelecionado);
+            }
+        } catch (error) {
+            console.log("Não foi possível alterar o status do tema");
+            setMessageText("Falha ao alterar status do tema!");
+            setMessageSeverity("error");
+        } finally {
+            setOpenMessage(true);
+        }
+    }
 
     return (
         <Box>
