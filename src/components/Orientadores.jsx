@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axiosInstance from "../auth/axios";
+import PermissionContext from "../contexts/PermissionContext";
+import { Permissoes } from "../enums/permissoes";
 
 import {
     Alert,
@@ -20,8 +22,7 @@ import {
     Typography,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
-import PermissionContext from "../contexts/PermissionContext";
-import { Permissoes } from "../enums/permissoes";
+
 
 export default function Orientadores() {
     const [orientadores, setOrientadores] = useState([]);
@@ -285,12 +286,17 @@ export default function Orientadores() {
             sortable: false,
             width: 150,
             renderCell: (params) => (
-                <Button
-                    color="secondary"
-                    onClick={() => handleDelete(params.row)}
+                <PermissionContext
+                    permissoes={[Permissoes.ORIENTADOR.DELETAR]}
+                    showError={false}
                 >
-                    Remover
-                </Button>
+                    <Button
+                        color="secondary"
+                        onClick={() => handleDelete(params.row)}
+                    >
+                        Remover
+                    </Button>
+                </PermissionContext>
             ),
         },
     ];
@@ -320,134 +326,154 @@ export default function Orientadores() {
                     </Select>
                 </FormControl>
 
-                {cursoSelecionado && (
-                    <>
-                        <Typography variant="h6" component="h3">
-                            Adicionar Novo Orientador
-                        </Typography>
+                <PermissionContext
+                    permissoes={[
+                        Permissoes.ORIENTADOR.CRIAR,
+                    ]}
+                >
+                    {cursoSelecionado && (
+                        <>
+                            <Typography variant="h6" component="h3">
+                                Adicionar Novo Orientador
+                            </Typography>
 
-                        <Stack spacing={2}>
-                            <Stack
-                                direction="row"
-                                spacing={2}
-                                alignItems="center"
-                            >
-                                <FormControl fullWidth size="small">
-                                    <InputLabel>Docente</InputLabel>
-                                    <Select
-                                        name="codigo_docente"
-                                        value={formData.codigo_docente}
-                                        label="Docente"
-                                        onChange={handleInputChange}
+                            <Stack spacing={2}>
+                                <Stack
+                                    direction="row"
+                                    spacing={2}
+                                    alignItems="center"
+                                >
+                                    <FormControl fullWidth size="small">
+                                        <InputLabel>Docente</InputLabel>
+                                        <Select
+                                            name="codigo_docente"
+                                            value={formData.codigo_docente}
+                                            label="Docente"
+                                            onChange={handleInputChange}
+                                        >
+                                            {docentes.map((docente) => (
+                                                <MenuItem
+                                                    key={docente.codigo}
+                                                    value={docente.codigo}
+                                                >
+                                                    {docente.nome} ({docente.codigo}
+                                                    )
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                    <PermissionContext
+                                        permissoes={[Permissoes.DOCENTE.CRIAR]}
+                                        showError={false}
                                     >
-                                        {docentes.map((docente) => (
-                                            <MenuItem
-                                                key={docente.codigo}
-                                                value={docente.codigo}
-                                            >
-                                                {docente.nome} ({docente.codigo}
-                                                )
-                                            </MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
-                                <Button
-                                    variant="outlined"
-                                    color="primary"
-                                    onClick={handleOpenDocenteModal}
-                                    sx={{
-                                        minWidth: "auto",
-                                        whiteSpace: "nowrap",
-                                    }}
-                                >
-                                    Novo Docente
-                                </Button>
-                            </Stack>
+                                        <Button
+                                            variant="outlined"
+                                            color="primary"
+                                            onClick={handleOpenDocenteModal}
+                                            sx={{
+                                                minWidth: "auto",
+                                                whiteSpace: "nowrap",
+                                            }}
+                                        >
+                                            Novo Docente
+                                        </Button>
+                                    </PermissionContext>
+                                </Stack>
 
-                            <Stack spacing={2} direction="row">
-                                <Button
-                                    color="primary"
-                                    variant="contained"
-                                    onClick={handleAddOrientacao}
-                                >
-                                    Adicionar Orientação
-                                </Button>
-                                <Button
-                                    variant="outlined"
-                                    onClick={handleCancelClick}
-                                    color="error"
-                                >
-                                    Cancelar
-                                </Button>
+                                <Stack spacing={2} direction="row">
+                                    <PermissionContext
+                                        permissoes={[Permissoes.ORIENTADOR.CRIAR]}
+                                        showError={false}
+                                    >
+                                        <Button
+                                            color="primary"
+                                            variant="contained"
+                                            onClick={handleAddOrientacao}
+                                        >
+                                            Adicionar Orientação
+                                        </Button>
+                                    </PermissionContext>
+                                    <Button
+                                        variant="outlined"
+                                        onClick={handleCancelClick}
+                                        color="error"
+                                    >
+                                        Cancelar
+                                    </Button>
+                                </Stack>
                             </Stack>
-                        </Stack>
-                    </>
-                )}
+                        </>
+                    )}
+                </PermissionContext>
 
                 {/* Modal para criar novo docente */}
-                <Dialog
-                    open={openDocenteModal}
-                    onClose={handleCloseDocenteModal}
-                    aria-labelledby="criar-docente-title"
-                    maxWidth="sm"
-                    fullWidth
+                <PermissionContext
+                    permissoes={[Permissoes.DOCENTE.CRIAR]}
                 >
-                    <DialogTitle id="criar-docente-title">
-                        Criar Novo Docente
-                    </DialogTitle>
-                    <DialogContent>
-                        <Stack spacing={2} sx={{ mt: 1 }}>
-                            <TextField
-                                name="codigo"
-                                label="Código"
-                                value={novoDocenteData.codigo}
-                                onChange={handleNovoDocenteChange}
-                                fullWidth
-                                size="small"
-                                required
-                            />
-                            <TextField
-                                name="nome"
-                                label="Nome"
-                                value={novoDocenteData.nome}
-                                onChange={handleNovoDocenteChange}
-                                fullWidth
-                                size="small"
-                                required
-                            />
-                            <TextField
-                                name="email"
-                                label="Email"
-                                type="email"
-                                value={novoDocenteData.email}
-                                onChange={handleNovoDocenteChange}
-                                fullWidth
-                                size="small"
-                                required
-                            />
-                            <TextField
-                                name="sala"
-                                label="Sala"
-                                value={novoDocenteData.sala}
-                                onChange={handleNovoDocenteChange}
-                                fullWidth
-                                size="small"
-                            />
-                        </Stack>
-                    </DialogContent>
-                    <DialogActions>
-                        <Button onClick={handleCloseDocenteModal}>
-                            Cancelar
-                        </Button>
-                        <Button
-                            onClick={handleCreateDocente}
-                            variant="contained"
-                            color="primary"
-                        >
-                            Criar Docente
-                        </Button>
-                    </DialogActions>
-                </Dialog>
+                    <Dialog
+                        open={openDocenteModal}
+                        onClose={handleCloseDocenteModal}
+                        aria-labelledby="criar-docente-title"
+                        maxWidth="sm"
+                        fullWidth
+                    >
+                        <DialogTitle id="criar-docente-title">
+                            Criar Novo Docente
+                        </DialogTitle>
+                        <DialogContent>
+                            <Stack spacing={2} sx={{ mt: 1 }}>
+                                <TextField
+                                    name="codigo"
+                                    label="Código"
+                                    value={novoDocenteData.codigo}
+                                    onChange={handleNovoDocenteChange}
+                                    fullWidth
+                                    size="small"
+                                    required
+                                />
+                                <TextField
+                                    name="nome"
+                                    label="Nome"
+                                    value={novoDocenteData.nome}
+                                    onChange={handleNovoDocenteChange}
+                                    fullWidth
+                                    size="small"
+                                    required
+                                />
+                                <TextField
+                                    name="email"
+                                    label="Email"
+                                    type="email"
+                                    value={novoDocenteData.email}
+                                    onChange={handleNovoDocenteChange}
+                                    fullWidth
+                                    size="small"
+                                    required
+                                />
+                                <TextField
+                                    name="sala"
+                                    label="Sala"
+                                    value={novoDocenteData.sala}
+                                    onChange={handleNovoDocenteChange}
+                                    fullWidth
+                                    size="small"
+                                />
+                            </Stack>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={handleCloseDocenteModal}>
+                                Cancelar
+                            </Button>
+                            <Button
+                                onClick={handleCreateDocente}
+                                variant="contained"
+                                color="primary"
+                            >
+                                Criar Docente
+                            </Button>
+                        </DialogActions>
+                    </Dialog>
+                </PermissionContext>
 
                 <Snackbar
                     open={openMessage}
@@ -484,20 +510,27 @@ export default function Orientadores() {
                     </DialogActions>
                 </Dialog>
 
-                {cursoSelecionado && (
-                    <Box style={{ height: "500px" }}>
-                        <DataGrid
-                            rows={orientadores}
-                            columns={columns}
-                            pageSize={5}
-                            checkboxSelection={false}
-                            disableSelectionOnClick
-                            getRowId={(row) =>
-                                `${row.id_curso}_${row.codigo_docente}`
-                            }
-                        />
-                    </Box>
-                )}
+                <PermissionContext
+                    permissoes={[
+                        Permissoes.ORIENTADOR.VISUALIZAR,
+                        Permissoes.ORIENTADOR.VISUALIZAR_TODOS,
+                    ]}
+                >
+                    {cursoSelecionado && (
+                        <Box style={{ height: "500px" }}>
+                            <DataGrid
+                                rows={orientadores}
+                                columns={columns}
+                                pageSize={5}
+                                checkboxSelection={false}
+                                disableSelectionOnClick
+                                getRowId={(row) =>
+                                    `${row.id_curso}_${row.codigo_docente}`
+                                }
+                            />
+                        </Box>
+                    )}
+                </PermissionContext>
             </Stack>
         </Box>
     );

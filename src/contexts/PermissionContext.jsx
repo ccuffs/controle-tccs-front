@@ -7,7 +7,7 @@ export default function PermissionContext({
     children,
     permissoes,
     fallback = null,
-    showError = true,
+    showError = true, // Controla se deve exibir a mensagem de alerta quando não há permissão
 }) {
     const { permissoesUsuario } = useAuth();
 
@@ -16,10 +16,12 @@ export default function PermissionContext({
     hasPermission = verificarPermissaoPorIds(permissoesUsuario, permissoes);
 
     if (!hasPermission) {
+        // Se um fallback foi fornecido, sempre retorna ele
         if (fallback) {
             return fallback;
         }
 
+        // Se showError é true, exibe a mensagem de alerta
         if (showError) {
             return (
                 <Box sx={{ p: 2 }}>
@@ -30,6 +32,7 @@ export default function PermissionContext({
             );
         }
 
+        // Se showError é false, retorna null (não exibe nada)
         return null;
     }
 

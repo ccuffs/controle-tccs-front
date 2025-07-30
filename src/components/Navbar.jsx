@@ -19,6 +19,8 @@ import MenuIcon from "@mui/icons-material/Menu";
 import { useNavigate } from "react-router";
 import { DrawerContext } from "./App";
 import { useAuth } from "../contexts/AuthContext";
+import PermissionContext from "../contexts/PermissionContext";
+import { Permissoes } from "../enums/permissoes";
 import UserMenu from "./UserMenu";
 
 const drawerWidth = 240;
@@ -83,16 +85,26 @@ function Navbar() {
             </Toolbar>
             <Divider />
             <List>
-                <ListItem disablePadding>
-                    <ListItemButton onClick={handleClickCursos}>
-                        <ListItemText primary="Cursos" />
-                    </ListItemButton>
-                </ListItem>
-                <ListItem disablePadding>
-                    <ListItemButton onClick={handleClickOrientadores}>
-                        <ListItemText primary="Orientadores" />
-                    </ListItemButton>
-                </ListItem>
+                <PermissionContext
+                    permissoes={[Permissoes.CURSO.VISUALIZAR_TODOS]}
+                    showError={false}
+                >
+                    <ListItem disablePadding>
+                        <ListItemButton onClick={handleClickCursos}>
+                            <ListItemText primary="Cursos" />
+                        </ListItemButton>
+                    </ListItem>
+                </PermissionContext>
+                <PermissionContext
+                    permissoes={[Permissoes.ORIENTADOR.VISUALIZAR_TODOS]}
+                    showError={false}
+                >
+                    <ListItem disablePadding>
+                        <ListItemButton onClick={handleClickOrientadores}>
+                            <ListItemText primary="Orientadores" />
+                        </ListItemButton>
+                    </ListItem>
+                </PermissionContext>
                 <ListItem disablePadding>
                     <ListItemButton onClick={handleClickDicentes}>
                         <ListItemText primary="Dicentes" />

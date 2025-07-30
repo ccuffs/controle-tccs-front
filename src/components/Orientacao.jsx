@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axiosInstance from "../auth/axios";
+import PermissionContext from "../contexts/PermissionContext";
+import { Permissoes } from "../enums/permissoes";
 
 import {
     Alert,
@@ -140,10 +142,6 @@ export default function Orientacao() {
     async function getOrientacoes() {
         try {
             const response = await axiosInstance.get("/orientacoes");
-            console.log(
-                "Orientações carregadas do servidor:",
-                response.orientacoes
-            );
             setOrientacoes(response.orientacoes || []);
         } catch (error) {
             console.log(
@@ -514,22 +512,29 @@ export default function Orientacao() {
                     </Box>
                 </Stack>
 
-                {Object.keys(orientacoesAlteradas).length > 0 &&
-                    selectedCurso &&
-                    selectedAnoSemestre &&
-                    faseSelecionada && (
-                        <Box>
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                startIcon={<SaveIcon />}
-                                onClick={salvarOrientacoes}
-                            >
-                                Salvar Alterações (
-                                {Object.keys(orientacoesAlteradas).length})
-                            </Button>
-                        </Box>
-                    )}
+                <PermissionContext
+                    permissoes={[
+                        Permissoes.ORIENTACAO.CRIAR,
+                        Permissoes.ORIENTACAO.EDITAR,
+                    ]}
+                >
+                    {Object.keys(orientacoesAlteradas).length > 0 &&
+                        selectedCurso &&
+                        selectedAnoSemestre &&
+                        faseSelecionada && (
+                            <Box>
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    startIcon={<SaveIcon />}
+                                    onClick={salvarOrientacoes}
+                                >
+                                    Salvar Alterações (
+                                    {Object.keys(orientacoesAlteradas).length})
+                                </Button>
+                            </Box>
+                        )}
+                </PermissionContext>
 
                 {/* Mensagem informativa sobre filtros */}
                 {(!selectedCurso ||
@@ -574,41 +579,55 @@ export default function Orientacao() {
                 )}
 
                 {/* DataGrid de dicentes e orientações */}
-                {selectedCurso &&
-                    selectedAnoSemestre &&
-                    faseSelecionada &&
-                    dicentes.length > 0 && (
-                        <Box style={{ height: "500px" }}>
-                            <DataGrid
-                                rows={dicentes}
-                                columns={columns}
-                                pageSize={10}
-                                checkboxSelection={false}
-                                disableSelectionOnClick
-                                getRowId={(row) => row.matricula}
-                                initialState={{
-                                    sorting: {
-                                        sortModel: [
-                                            { field: "nome", sort: "asc" },
-                                        ],
-                                    },
-                                }}
-                            />
-                        </Box>
-                    )}
+                <PermissionContext
+                    permissoes={[
+                        Permissoes.ORIENTACAO.VISUALIZAR,
+                        Permissoes.ORIENTACAO.VISUALIZAR_TODAS,
+                    ]}
+                >
+                    {selectedCurso &&
+                        selectedAnoSemestre &&
+                        faseSelecionada &&
+                        dicentes.length > 0 && (
+                            <Box style={{ height: "500px" }}>
+                                <DataGrid
+                                    rows={dicentes}
+                                    columns={columns}
+                                    pageSize={10}
+                                    checkboxSelection={false}
+                                    disableSelectionOnClick
+                                    getRowId={(row) => row.matricula}
+                                    initialState={{
+                                        sorting: {
+                                            sortModel: [
+                                                { field: "nome", sort: "asc" },
+                                            ],
+                                        },
+                                    }}
+                                />
+                            </Box>
+                        )}
+                </PermissionContext>
 
-                {selectedCurso &&
-                    selectedAnoSemestre &&
-                    faseSelecionada &&
-                    dicentes.length === 0 &&
-                    !loadingDicentes && (
-                        <Paper sx={{ p: 3, textAlign: "center" }}>
-                            <Typography variant="body2" color="text.secondary">
-                                Nenhum dicente encontrado com os filtros
-                                aplicados.
-                            </Typography>
-                        </Paper>
-                    )}
+                <PermissionContext
+                    permissoes={[
+                        Permissoes.ORIENTACAO.VISUALIZAR,
+                        Permissoes.ORIENTACAO.VISUALIZAR_TODAS,
+                    ]}
+                >
+                    {selectedCurso &&
+                        selectedAnoSemestre &&
+                        faseSelecionada &&
+                        dicentes.length === 0 &&
+                        !loadingDicentes && (
+                            <Paper sx={{ p: 3, textAlign: "center" }}>
+                                <Typography variant="body2" color="text.secondary">
+                                    Nenhum dicente encontrado com os filtros
+                                    aplicados.
+                                </Typography>
+                            </Paper>
+                        )}
+                </PermissionContext>
 
                 <Snackbar
                     open={openMessage}
