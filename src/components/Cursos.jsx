@@ -18,6 +18,9 @@ import {
     TextField,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
+import PermissionContext from "../contexts/PermissionContext";
+import { Permissoes } from "../enums/permissoes";
+import axiosInstance from "../auth/axios";
 
 export default function Cursos() {
     const [cursos, setCursos] = useState([]);
@@ -41,10 +44,8 @@ export default function Cursos() {
 
     async function getData() {
         try {
-            console.log(`${process.env.REACT_APP_API_URL}/cursos`);
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/cursos`);
-            const data = await response.json();
-            setCursos(data.cursos);
+            const response = await axiosInstance.get("/cursos");
+            setCursos(response.cursos);
         } catch (error) {
             console.log("Não foi possível retornar a lista de cursos: ", error);
             setCursos([]);
@@ -75,29 +76,17 @@ export default function Cursos() {
         console.log(formData);
         try {
             if (edit) {
-                await fetch(`${process.env.REACT_APP_API_URL}/cursos/`, {
-                    method: "PUT",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        formData: formData,
-                    }),
+                await axiosInstance.put("/cursos/", {
+                    formData: formData,
                 });
                 setMessageText("Curso atualizado com sucesso!");
             } else {
-                await fetch(`${process.env.REACT_APP_API_URL}/cursos/`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
+                await axiosInstance.post("/cursos/", {
+                    formData: {
+                        codigo: formData.codigo,
+                        nome: formData.nome,
+                        turno: formData.turno,
                     },
-                    body: JSON.stringify({
-                        formData: {
-                            codigo: formData.codigo,
-                            nome: formData.nome,
-                            turno: formData.turno,
-                        }
-                    }),
                 });
 
                 setMessageText("Curso inserido com sucesso!");
@@ -136,9 +125,7 @@ export default function Cursos() {
     async function handleDeleteClick() {
         try {
             console.log(idDelete);
-            await fetch(`${process.env.REACT_APP_API_URL}/cursos/${idDelete}`, {
-                method: "DELETE",
-            });
+            await axiosInstance.delete(`/cursos/${idDelete}`);
             setMessageText("Curso removido com sucesso!");
             setMessageSeverity("success");
         } catch (error) {
@@ -167,20 +154,38 @@ export default function Cursos() {
             sortable: false,
             width: 250,
             renderCell: (params) => (
-                <>
-                    <Button
-                        color="primary"
-                        onClick={() => handleEdit(params.row)}
-                    >
-                        Editar
-                    </Button>
-                    <Button
-                        color="secondary"
-                        onClick={() => handleDelete(params.row)}
-                    >
-                        Deletar
-                    </Button>
-                </>
+                <PermissionContext
+                    permissoes={[
+                        Permissoes.CURSO.EDITAR,
+                        Permissoes.CURSO.DELETAR,
+                    ]}
+                    showError={false}
+                >
+                    <>
+                        <PermissionContext
+                            permissoes={[Permissoes.CURSO.EDITAR]}
+                            showError={false}
+                        >
+                            <Button
+                                color="primary"
+                                onClick={() => handleEdit(params.row)}
+                            >
+                                Editar
+                            </Button>
+                        </PermissionContext>
+                        <PermissionContext
+                            permissoes={[Permissoes.CURSO.DELETAR]}
+                            showError={false}
+                        >
+                            <Button
+                                color="secondary"
+                                onClick={() => handleDelete(params.row)}
+                            >
+                                Deletar
+                            </Button>
+                        </PermissionContext>
+                    </>
+                </PermissionContext>
             ),
         },
     ];
@@ -188,108 +193,124 @@ export default function Cursos() {
     return (
         <Box>
             <Stack spacing={2}>
-                <Stack spacing={2}>
-                    <Stack spacing={2} direction="row">
+                <PermissionContext
+                    permissoes={[
+                        Permissoes.CURSO.CRIAR,
+                        Permissoes.CURSO.EDITAR,
+                    ]}
+                >
+                    <Stack spacing={2}>
+                        <Stack spacing={2} direction="row">
+                            <TextField
+                                name="codigo"
+                                label="Código"
+                                type="text"
+                                size="small"
+                                value={formData.codigo}
+                                onChange={handleInputChange}
+                            />
+
+                            <FormControl fullWidth>
+                                <InputLabel id="demo-simple-select-label">
+                                    Turno
+                                </InputLabel>
+                                <Select
+                                    labelId="demo-simple-select-label"
+                                    id="demo-simple-select"
+                                    value={selectTurno}
+                                    label="Turno"
+                                    onChange={handleSelectChange}
+                                    size="small"
+                                >
+                                    <MenuItem value="Matutino">
+                                        Matutino
+                                    </MenuItem>
+                                    <MenuItem value="Vespertino">
+                                        Vespertino
+                                    </MenuItem>
+                                    <MenuItem value="Integral">
+                                        Integral
+                                    </MenuItem>
+                                    <MenuItem value="Noturno">Noturno</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Stack>
                         <TextField
-                            name="codigo"
-                            label="Código"
+                            name="nome"
+                            label="Nome"
                             type="text"
+                            fullWidth
                             size="small"
-                            value={formData.codigo}
+                            value={formData.nome}
                             onChange={handleInputChange}
                         />
-
-                        <FormControl fullWidth>
-                            <InputLabel id="demo-simple-select-label">
-                                Turno
-                            </InputLabel>
-                            <Select
-                                labelId="demo-simple-select-label"
-                                id="demo-simple-select"
-                                value={selectTurno}
-                                label="Turno"
-                                onChange={handleSelectChange}
-                                size="small"
+                        <Stack spacing={2} direction="row">
+                            <Button
+                                color="primary"
+                                variant="contained"
+                                onClick={handleAddOrUpdate}
                             >
-                                <MenuItem value="Matutino">Matutino</MenuItem>
-                                <MenuItem value="Vespertino">
-                                    Vespertino
-                                </MenuItem>
-                                <MenuItem value="Integral">Integral</MenuItem>
-                                <MenuItem value="Noturno">Noturno</MenuItem>
-                            </Select>
-                        </FormControl>
+                                {edit ? "Atualizar" : "Adicionar"}
+                            </Button>
+                            <Button
+                                variant="outlined"
+                                onClick={handleCancelClick}
+                                color="error"
+                            >
+                                Cancelar
+                            </Button>
+                        </Stack>
                     </Stack>
-                    <TextField
-                        name="nome"
-                        label="Nome"
-                        type="text"
-                        fullWidth
-                        size="small"
-                        value={formData.nome}
-                        onChange={handleInputChange}
-                    />
-                    <Stack spacing={2} direction="row">
-                        <Button
-                            color="primary"
-                            variant="contained"
-                            onClick={handleAddOrUpdate}
-                        >
-                            {edit ? "Atualizar" : "Adicionar"}
-                        </Button>
-                        <Button
-                            variant="outlined"
-                            onClick={handleCancelClick}
-                            color="error"
-                        >
-                            Cancelar
-                        </Button>
-                    </Stack>
-                    <Snackbar
-                        open={openMessage}
-                        autoHideDuration={6000}
+                </PermissionContext>
+                <Snackbar
+                    open={openMessage}
+                    autoHideDuration={6000}
+                    onClose={handleCloseMessage}
+                >
+                    <Alert
+                        severity={messageSeverity}
                         onClose={handleCloseMessage}
                     >
-                        <Alert
-                            severity={messageSeverity}
-                            onClose={handleCloseMessage}
-                        >
-                            {messageText}
-                        </Alert>
-                    </Snackbar>
-                    <Dialog
-                        open={openDialog}
-                        onClose={handleClose}
-                        aria-labelledby="alert-dialog-title"
-                        aria-describedby="alert-dialog-description"
-                    >
-                        <DialogTitle id="alert-dialog-title">
-                            {"Atenção!"}
-                        </DialogTitle>
-                        <DialogContent>
-                            <DialogContentText id="alert-dialog-description">
-                                Deseja realmente remover este Curso?
-                            </DialogContentText>
-                        </DialogContent>
-                        <DialogActions>
-                            <Button onClick={handleNoDeleteClick}>
-                                Disagree
-                            </Button>
-                            <Button onClick={handleDeleteClick} autoFocus>
-                                Agree
-                            </Button>
-                        </DialogActions>
-                    </Dialog>
-                </Stack>
-                <Box style={{ height: "500px" }}>
-                    <DataGrid
-                        rows={cursos}
-                        columns={columns}
-                        pageSize={5}
-                        checkboxSelection={false}
-                        disableSelectionOnClick
-                    />
-                </Box>
+                        {messageText}
+                    </Alert>
+                </Snackbar>
+                <Dialog
+                    open={openDialog}
+                    onClose={handleClose}
+                    aria-labelledby="alert-dialog-title"
+                    aria-describedby="alert-dialog-description"
+                >
+                    <DialogTitle id="alert-dialog-title">
+                        {"Atenção!"}
+                    </DialogTitle>
+                    <DialogContent>
+                        <DialogContentText id="alert-dialog-description">
+                            Deseja realmente remover este Curso?
+                        </DialogContentText>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleNoDeleteClick}>Disagree</Button>
+                        <Button onClick={handleDeleteClick} autoFocus>
+                            Agree
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+                <PermissionContext
+                    permissoes={[
+                        Permissoes.CURSO.VISUALIZAR,
+                        Permissoes.CURSO.VISUALIZAR_TODOS,
+                    ]}
+                >
+                    <Box style={{ height: "500px" }}>
+                        <DataGrid
+                            rows={cursos}
+                            columns={columns}
+                            pageSize={5}
+                            checkboxSelection={false}
+                            disableSelectionOnClick
+                        />
+                    </Box>
+                </PermissionContext>
             </Stack>
         </Box>
     );

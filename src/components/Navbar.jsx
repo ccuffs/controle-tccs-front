@@ -18,15 +18,18 @@ import {
 import MenuIcon from "@mui/icons-material/Menu";
 import { useNavigate } from "react-router";
 import { DrawerContext } from "./App";
+import { useAuth } from "../contexts/AuthContext";
+import UserMenu from "./UserMenu";
 
 const drawerWidth = 240;
 
 function Navbar() {
     const [mobileOpen, setMobileOpen] = React.useState(false);
     const { desktopOpen, setDesktopOpen } = React.useContext(DrawerContext);
+    const { isAuthenticated } = useAuth();
     const navigate = useNavigate();
     const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+    const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
     function handleDrawerToggle() {
         setMobileOpen(!mobileOpen);
@@ -72,7 +75,7 @@ function Navbar() {
     }
 
     const drawerContent = (
-        <Box sx={{ overflow: 'auto' }}>
+        <Box sx={{ overflow: "auto" }}>
             <Toolbar>
                 <Typography variant="h6" noWrap component="div">
                     Menu
@@ -105,87 +108,115 @@ function Navbar() {
                         <ListItemText primary="Temas TCC" />
                     </ListItemButton>
                 </ListItem>
-                <ListItem disablePadding>
-                    <ListItemButton onClick={handleClickOfertas}>
-                        <ListItemText primary="Ofertas" />
-                    </ListItemButton>
-                </ListItem>
             </List>
         </Box>
     );
 
     return (
-        <Box sx={{ display: 'flex' }}>
+        <Box sx={{ display: "flex" }}>
             <AppBar
                 position="fixed"
                 sx={{
-                    width: { md: desktopOpen ? `calc(100% - ${drawerWidth}px)` : '100%' },
-                    ml: { md: desktopOpen ? `${drawerWidth}px` : 0 },
+                    width: {
+                        md:
+                            isAuthenticated && desktopOpen
+                                ? `calc(100% - ${drawerWidth}px)`
+                                : "100%",
+                    },
+                    ml: {
+                        md:
+                            isAuthenticated && desktopOpen
+                                ? `${drawerWidth}px`
+                                : 0,
+                    },
                     zIndex: (theme) => theme.zIndex.drawer + 1,
-                    transition: theme.transitions.create(['width', 'margin'], {
+                    transition: theme.transitions.create(["width", "margin"], {
                         easing: theme.transitions.easing.sharp,
                         duration: theme.transitions.duration.leavingScreen,
                     }),
                 }}
             >
                 <Toolbar>
-                    <IconButton
-                        color="inherit"
-                        aria-label="open drawer"
-                        edge="start"
-                        onClick={isMobile ? handleDrawerToggle : handleDesktopDrawerToggle}
-                        sx={{ mr: 2 }}
-                    >
-                        <MenuIcon />
-                    </IconButton>
+                    {isAuthenticated && (
+                        <IconButton
+                            color="inherit"
+                            aria-label="open drawer"
+                            edge="start"
+                            onClick={
+                                isMobile
+                                    ? handleDrawerToggle
+                                    : handleDesktopDrawerToggle
+                            }
+                            sx={{ mr: 2 }}
+                        >
+                            <MenuIcon />
+                        </IconButton>
+                    )}
                     <Typography
                         variant="h6"
                         component="div"
-                        sx={{ flexGrow: 1, cursor: 'pointer' }}
+                        sx={{ flexGrow: 1, cursor: "pointer" }}
                         onClick={handleClickHome}
                     >
                         Sistema de Gestão de TCCs
                     </Typography>
-                    <Button color="inherit">Login</Button>
+                    {isAuthenticated ? (
+                        <UserMenu />
+                    ) : (
+                        <Button
+                            color="inherit"
+                            onClick={() => navigate("/login")}
+                        >
+                            Login
+                        </Button>
+                    )}
                 </Toolbar>
             </AppBar>
 
             {/* Mobile drawer */}
-            <Drawer
-                variant="temporary"
-                open={mobileOpen}
-                onClose={handleDrawerToggle}
-                ModalProps={{
-                    keepMounted: true, // Better open performance on mobile.
-                }}
-                sx={{
-                    display: { xs: 'block', md: 'none' },
-                    '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-                }}
-            >
-                {drawerContent}
-            </Drawer>
+            {isAuthenticated && (
+                <Drawer
+                    variant="temporary"
+                    open={mobileOpen}
+                    onClose={handleDrawerToggle}
+                    ModalProps={{
+                        keepMounted: true, // Better open performance on mobile.
+                    }}
+                    sx={{
+                        display: { xs: "block", md: "none" },
+                        "& .MuiDrawer-paper": {
+                            boxSizing: "border-box",
+                            width: drawerWidth,
+                        },
+                    }}
+                >
+                    {drawerContent}
+                </Drawer>
+            )}
 
             {/* Desktop drawer */}
-            <Drawer
-                variant="persistent"
-                open={desktopOpen}
-                sx={{
-                    display: { xs: 'none', md: 'block' },
-                    width: desktopOpen ? drawerWidth : 0,
-                    flexShrink: 0,
-                    '& .MuiDrawer-paper': {
-                        width: drawerWidth,
-                        boxSizing: 'border-box',
-                        transition: theme.transitions.create('width', {
-                            easing: theme.transitions.easing.sharp,
-                            duration: theme.transitions.duration.enteringScreen,
-                        }),
-                    },
-                }}
-            >
-                {drawerContent}
-            </Drawer>
+            {isAuthenticated && (
+                <Drawer
+                    variant="persistent"
+                    open={desktopOpen}
+                    sx={{
+                        display: { xs: "none", md: "block" },
+                        width: desktopOpen ? drawerWidth : 0,
+                        flexShrink: 0,
+                        "& .MuiDrawer-paper": {
+                            width: drawerWidth,
+                            boxSizing: "border-box",
+                            transition: theme.transitions.create("width", {
+                                easing: theme.transitions.easing.sharp,
+                                duration:
+                                    theme.transitions.duration.enteringScreen,
+                            }),
+                        },
+                    }}
+                >
+                    {drawerContent}
+                </Drawer>
+            )}
         </Box>
     );
 }

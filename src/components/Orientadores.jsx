@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import axiosInstance from "../auth/axios";
 
 import {
     Alert,
@@ -19,11 +20,13 @@ import {
     Typography,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
+import PermissionContext from "../contexts/PermissionContext";
+import { Permissoes } from "../enums/permissoes";
 
 export default function Orientadores() {
     const [orientadores, setOrientadores] = useState([]);
     const [cursos, setCursos] = useState([]);
-    const [cursoSelecionado, setCursoSelecionado] = useState('');
+    const [cursoSelecionado, setCursoSelecionado] = useState("");
     const [formData, setFormData] = useState({
         id_curso: "",
         codigo_docente: "",
@@ -57,9 +60,8 @@ export default function Orientadores() {
 
     async function getCursos() {
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/cursos`);
-            const data = await response.json();
-            setCursos(data.cursos || []);
+            const response = await axiosInstance.get("/cursos");
+            setCursos(response.cursos || []);
         } catch (error) {
             console.log("Não foi possível retornar a lista de cursos: ", error);
             setCursos([]);
@@ -68,28 +70,37 @@ export default function Orientadores() {
 
     async function getDocentes() {
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/docentes`);
-            const data = await response.json();
-            setDocentes(data.docentes || []);
+            const response = await axiosInstance.get("/docentes");
+            setDocentes(response.docentes || []);
         } catch (error) {
-            console.log("Não foi possível retornar a lista de docentes: ", error);
+            console.log(
+                "Não foi possível retornar a lista de docentes: ",
+                error
+            );
             setDocentes([]);
         }
     }
 
     async function getOrientadoresPorCurso(idCurso) {
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/orientadores/curso/${idCurso}`);
-            const data = await response.json();
-            setOrientadores(data.orientacoes || []);
+            const response = await axiosInstance.get(
+                `/orientadores/curso/${idCurso}`
+            );
+            setOrientadores(response.orientacoes || []);
         } catch (error) {
-            console.log("Não foi possível retornar a lista de orientadores: ", error);
+            console.log(
+                "Não foi possível retornar a lista de orientadores: ",
+                error
+            );
             setOrientadores([]);
         }
     }
 
     function handleDelete(row) {
-        setOrientacaoDelete({ id_curso: row.id_curso, codigo_docente: row.codigo_docente });
+        setOrientacaoDelete({
+            id_curso: row.id_curso,
+            codigo_docente: row.codigo_docente,
+        });
         setOpenDialog(true);
     }
 
@@ -102,7 +113,10 @@ export default function Orientadores() {
     }
 
     function handleNovoDocenteChange(e) {
-        setNovoDocenteData({ ...novoDocenteData, [e.target.name]: e.target.value });
+        setNovoDocenteData({
+            ...novoDocenteData,
+            [e.target.name]: e.target.value,
+        });
     }
 
     function handleOpenDocenteModal() {
@@ -121,8 +135,14 @@ export default function Orientadores() {
 
     async function handleCreateDocente() {
         try {
-            if (!novoDocenteData.codigo || !novoDocenteData.nome || !novoDocenteData.email) {
-                setMessageText("Por favor, preencha os campos obrigatórios (código, nome e email)!");
+            if (
+                !novoDocenteData.codigo ||
+                !novoDocenteData.nome ||
+                !novoDocenteData.email
+            ) {
+                setMessageText(
+                    "Por favor, preencha os campos obrigatórios (código, nome e email)!"
+                );
                 setMessageSeverity("error");
                 setOpenMessage(true);
                 return;
@@ -131,30 +151,25 @@ export default function Orientadores() {
             // Converter sala para número se não estiver vazio
             const docenteParaEnviar = {
                 ...novoDocenteData,
-                sala: novoDocenteData.sala ? parseInt(novoDocenteData.sala) : null
+                sala: novoDocenteData.sala
+                    ? parseInt(novoDocenteData.sala)
+                    : null,
             };
 
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/docentes`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    formData: docenteParaEnviar,
-                }),
+            await axiosInstance.post("/docentes", {
+                formData: docenteParaEnviar,
             });
 
-            if (response.ok) {
-                setMessageText("Docente criado com sucesso!");
-                setMessageSeverity("success");
-                handleCloseDocenteModal();
-                // Atualiza a lista de docentes
-                await getDocentes();
-            } else {
-                throw new Error("Erro ao criar docente");
-            }
+            setMessageText("Docente criado com sucesso!");
+            setMessageSeverity("success");
+            handleCloseDocenteModal();
+            // Atualiza a lista de docentes
+            await getDocentes();
         } catch (error) {
-            console.log("Não foi possível criar o docente no banco de dados", error);
+            console.log(
+                "Não foi possível criar o docente no banco de dados",
+                error
+            );
             setMessageText("Falha ao criar docente!");
             setMessageSeverity("error");
         } finally {
@@ -173,17 +188,11 @@ export default function Orientadores() {
 
             const orientacaoData = {
                 id_curso: cursoSelecionado,
-                codigo_docente: formData.codigo_docente
+                codigo_docente: formData.codigo_docente,
             };
 
-            await fetch(`${process.env.REACT_APP_API_URL}/orientadores`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    formData: orientacaoData,
-                }),
+            await axiosInstance.post("/orientadores", {
+                formData: orientacaoData,
             });
 
             setMessageText("Orientação adicionada com sucesso!");
@@ -193,7 +202,9 @@ export default function Orientadores() {
             // Atualiza a lista
             await getOrientadoresPorCurso(cursoSelecionado);
         } catch (error) {
-            console.log("Não foi possível inserir a orientação no banco de dados");
+            console.log(
+                "Não foi possível inserir a orientação no banco de dados"
+            );
             setMessageText("Falha ao gravar orientação!");
             setMessageSeverity("error");
         } finally {
@@ -220,9 +231,9 @@ export default function Orientadores() {
         try {
             if (!orientacaoDelete) return;
 
-            await fetch(`${process.env.REACT_APP_API_URL}/orientadores/${orientacaoDelete.id_curso}/${orientacaoDelete.codigo_docente}`, {
-                method: "DELETE",
-            });
+            await axiosInstance.delete(
+                `/orientadores/${orientacaoDelete.id_curso}/${orientacaoDelete.codigo_docente}`
+            );
             setMessageText("Orientação removida com sucesso!");
             setMessageSeverity("success");
 
@@ -231,7 +242,9 @@ export default function Orientadores() {
                 await getOrientadoresPorCurso(cursoSelecionado);
             }
         } catch (error) {
-            console.log("Não foi possível remover a orientação no banco de dados");
+            console.log(
+                "Não foi possível remover a orientação no banco de dados"
+            );
             setMessageText("Falha ao remover orientação!");
             setMessageSeverity("error");
         } finally {
@@ -254,8 +267,8 @@ export default function Orientadores() {
             width: 350,
             renderCell: (params) => {
                 const docente = params?.row?.docente;
-                return docente?.nome || 'N/A';
-            }
+                return docente?.nome || "N/A";
+            },
         },
         {
             field: "docente_email",
@@ -263,8 +276,8 @@ export default function Orientadores() {
             width: 300,
             renderCell: (params) => {
                 const docente = params?.row?.docente;
-                return docente?.email || 'N/A';
-            }
+                return docente?.email || "N/A";
+            },
         },
         {
             field: "actions",
@@ -314,27 +327,38 @@ export default function Orientadores() {
                         </Typography>
 
                         <Stack spacing={2}>
-                            <Stack direction="row" spacing={2} alignItems="center">
-                            <FormControl fullWidth size="small">
-                                <InputLabel>Docente</InputLabel>
-                                <Select
-                                    name="codigo_docente"
-                                    value={formData.codigo_docente}
-                                    label="Docente"
-                                    onChange={handleInputChange}
-                                >
-                                    {docentes.map((docente) => (
-                                        <MenuItem key={docente.codigo} value={docente.codigo}>
-                                            {docente.nome} ({docente.codigo})
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
+                            <Stack
+                                direction="row"
+                                spacing={2}
+                                alignItems="center"
+                            >
+                                <FormControl fullWidth size="small">
+                                    <InputLabel>Docente</InputLabel>
+                                    <Select
+                                        name="codigo_docente"
+                                        value={formData.codigo_docente}
+                                        label="Docente"
+                                        onChange={handleInputChange}
+                                    >
+                                        {docentes.map((docente) => (
+                                            <MenuItem
+                                                key={docente.codigo}
+                                                value={docente.codigo}
+                                            >
+                                                {docente.nome} ({docente.codigo}
+                                                )
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
                                 <Button
                                     variant="outlined"
                                     color="primary"
                                     onClick={handleOpenDocenteModal}
-                                    sx={{ minWidth: 'auto', whiteSpace: 'nowrap' }}
+                                    sx={{
+                                        minWidth: "auto",
+                                        whiteSpace: "nowrap",
+                                    }}
                                 >
                                     Novo Docente
                                 </Button>
@@ -453,9 +477,7 @@ export default function Orientadores() {
                         </DialogContentText>
                     </DialogContent>
                     <DialogActions>
-                        <Button onClick={handleNoDeleteClick}>
-                            Cancelar
-                        </Button>
+                        <Button onClick={handleNoDeleteClick}>Cancelar</Button>
                         <Button onClick={handleDeleteClick} autoFocus>
                             Confirmar
                         </Button>
@@ -470,7 +492,9 @@ export default function Orientadores() {
                             pageSize={5}
                             checkboxSelection={false}
                             disableSelectionOnClick
-                            getRowId={(row) => `${row.id_curso}_${row.codigo_docente}`}
+                            getRowId={(row) =>
+                                `${row.id_curso}_${row.codigo_docente}`
+                            }
                         />
                     </Box>
                 )}
@@ -478,4 +502,3 @@ export default function Orientadores() {
         </Box>
     );
 }
-

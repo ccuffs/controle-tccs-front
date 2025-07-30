@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import axiosInstance from "../auth/axios";
 
 import {
     Alert,
@@ -15,7 +16,7 @@ import {
     MenuItem,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
-import SaveIcon from '@mui/icons-material/Save';
+import SaveIcon from "@mui/icons-material/Save";
 
 export default function Orientacao() {
     const [dicentes, setDicentes] = useState([]);
@@ -25,7 +26,7 @@ export default function Orientacao() {
     const [orientacoes, setOrientacoes] = useState([]);
     const [selectedCurso, setSelectedCurso] = useState(null);
     const [selectedAnoSemestre, setSelectedAnoSemestre] = useState(null);
-    const [faseSelecionada, setFaseSelecionada] = useState('');
+    const [faseSelecionada, setFaseSelecionada] = useState("");
     const [loadingCursos, setLoadingCursos] = useState(false);
     const [loadingOfertasTcc, setLoadingOfertasTcc] = useState(false);
     const [loadingDicentes, setLoadingDicentes] = useState(false);
@@ -62,9 +63,8 @@ export default function Orientacao() {
     async function getCursos() {
         setLoadingCursos(true);
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/cursos`);
-            const data = await response.json();
-            setCursos(data.cursos || []);
+            const response = await axiosInstance.get("/cursos");
+            setCursos(response.cursos || []);
         } catch (error) {
             console.log("Não foi possível retornar a lista de cursos: ", error);
             setCursos([]);
@@ -75,11 +75,15 @@ export default function Orientacao() {
 
     async function getOrientadoresCurso(idCurso) {
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/orientadores/curso/${idCurso}`);
-            const data = await response.json();
-            setOrientadoresCurso(data.orientacoes || []);
+            const response = await axiosInstance.get(
+                `/orientadores/curso/${idCurso}`
+            );
+            setOrientadoresCurso(response.orientacoes || []);
         } catch (error) {
-            console.log("Não foi possível retornar a lista de orientadores do curso: ", error);
+            console.log(
+                "Não foi possível retornar a lista de orientadores do curso: ",
+                error
+            );
             setOrientadoresCurso([]);
         }
     }
@@ -87,11 +91,13 @@ export default function Orientacao() {
     async function getOfertasTcc() {
         setLoadingOfertasTcc(true);
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/ofertas-tcc`);
-            const data = await response.json();
-            setOfertasTcc(data.ofertas || []);
+            const response = await axiosInstance.get("/ofertas-tcc");
+            setOfertasTcc(response.ofertas || []);
         } catch (error) {
-            console.log("Não foi possível retornar a lista de ofertas TCC: ", error);
+            console.log(
+                "Não foi possível retornar a lista de ofertas TCC: ",
+                error
+            );
             setOfertasTcc([]);
         } finally {
             setLoadingOfertasTcc(false);
@@ -101,27 +107,30 @@ export default function Orientacao() {
     async function getDicentes() {
         setLoadingDicentes(true);
         try {
-            const params = new URLSearchParams();
+            const params = {};
 
             if (selectedAnoSemestre) {
-                const [ano, semestre] = selectedAnoSemestre.split('/');
-                params.append('ano', ano);
-                params.append('semestre', semestre);
+                const [ano, semestre] = selectedAnoSemestre.split("/");
+                params.ano = ano;
+                params.semestre = semestre;
             }
 
             if (faseSelecionada) {
-                params.append('fase', faseSelecionada);
+                params.fase = faseSelecionada;
             }
 
-            const url = `${process.env.REACT_APP_API_URL}/dicentes${params.toString() ? `?${params.toString()}` : ''}`;
-            const response = await fetch(url);
-            const data = await response.json();
+            const response = await axiosInstance.get("/dicentes", { params });
 
             // Ordena os dicentes por nome em ordem crescente
-            const dicentesOrdenados = (data.dicentes || []).sort((a, b) => a.nome.localeCompare(b.nome));
+            const dicentesOrdenados = (response.dicentes || []).sort((a, b) =>
+                a.nome.localeCompare(b.nome)
+            );
             setDicentes(dicentesOrdenados);
         } catch (error) {
-            console.log("Não foi possível retornar a lista de dicentes: ", error);
+            console.log(
+                "Não foi possível retornar a lista de dicentes: ",
+                error
+            );
             setDicentes([]);
         } finally {
             setLoadingDicentes(false);
@@ -130,40 +139,45 @@ export default function Orientacao() {
 
     async function getOrientacoes() {
         try {
-            const url = `${process.env.REACT_APP_API_URL}/orientacoes`;
-            console.log("Buscando orientações em:", url);
-            const response = await fetch(url);
-            const data = await response.json();
-            console.log("Orientações carregadas do servidor:", data.orientacoes);
-            setOrientacoes(data.orientacoes || []);
+            const response = await axiosInstance.get("/orientacoes");
+            console.log(
+                "Orientações carregadas do servidor:",
+                response.orientacoes
+            );
+            setOrientacoes(response.orientacoes || []);
         } catch (error) {
-            console.log("Não foi possível retornar a lista de orientações: ", error);
+            console.log(
+                "Não foi possível retornar a lista de orientações: ",
+                error
+            );
             setOrientacoes([]);
         }
     }
 
     function getOrientadorAtual(matricula) {
-        if (!selectedCurso || !selectedAnoSemestre || !faseSelecionada) return '';
+        if (!selectedCurso || !selectedAnoSemestre || !faseSelecionada)
+            return "";
 
-        const [ano, semestre] = selectedAnoSemestre.split('/');
-        const orientacao = orientacoes.find(o =>
-            o.matricula === matricula &&
-            o.ano === parseInt(ano) &&
-            o.semestre === parseInt(semestre) &&
-            o.id_curso === selectedCurso.id &&
-            o.fase === parseInt(faseSelecionada)
+        const [ano, semestre] = selectedAnoSemestre.split("/");
+        const orientacao = orientacoes.find(
+            (o) =>
+                o.matricula === matricula &&
+                o.ano === parseInt(ano) &&
+                o.semestre === parseInt(semestre) &&
+                o.id_curso === selectedCurso.id &&
+                o.fase === parseInt(faseSelecionada)
         );
 
-        return orientacao ? orientacao.codigo || '' : '';
+        return orientacao ? orientacao.codigo || "" : "";
     }
 
     function handleOrientadorChange(matricula, codigoDocente) {
         if (!selectedCurso || !selectedAnoSemestre || !faseSelecionada) return;
 
-        const [ano, semestre] = selectedAnoSemestre.split('/');
+        const [ano, semestre] = selectedAnoSemestre.split("/");
         const chave = `${matricula}_${ano}_${semestre}_${selectedCurso.id}_${faseSelecionada}`;
 
-        setOrientacoesAlteradas(prev => ({
+        setOrientacoesAlteradas((prev) => ({
             ...prev,
             [chave]: {
                 matricula: matricula,
@@ -171,8 +185,8 @@ export default function Orientacao() {
                 semestre: parseInt(semestre),
                 id_curso: selectedCurso.id,
                 fase: parseInt(faseSelecionada),
-                codigo: codigoDocente || null
-            }
+                codigo: codigoDocente || null,
+            },
         }));
     }
 
@@ -185,65 +199,50 @@ export default function Orientacao() {
                 console.log("Processando orientação:", orientacao);
 
                 // Verifica se já existe uma orientação
-                const orientacaoExistente = orientacoes.find(o =>
-                    o.matricula === orientacao.matricula &&
-                    o.ano === orientacao.ano &&
-                    o.semestre === orientacao.semestre &&
-                    o.id_curso === orientacao.id_curso &&
-                    o.fase === orientacao.fase
+                const orientacaoExistente = orientacoes.find(
+                    (o) =>
+                        o.matricula === orientacao.matricula &&
+                        o.ano === orientacao.ano &&
+                        o.semestre === orientacao.semestre &&
+                        o.id_curso === orientacao.id_curso &&
+                        o.fase === orientacao.fase
                 );
 
                 console.log("Orientação existente:", orientacaoExistente);
 
                 // Validar dados obrigatórios
-                if (!orientacao.matricula || !orientacao.ano || !orientacao.semestre || !orientacao.id_curso || !orientacao.fase) {
-                    throw new Error(`Dados obrigatórios faltando na orientação: ${JSON.stringify(orientacao)}`);
+                if (
+                    !orientacao.matricula ||
+                    !orientacao.ano ||
+                    !orientacao.semestre ||
+                    !orientacao.id_curso ||
+                    !orientacao.fase
+                ) {
+                    throw new Error(
+                        `Dados obrigatórios faltando na orientação: ${JSON.stringify(
+                            orientacao
+                        )}`
+                    );
                 }
 
                 if (orientacaoExistente) {
                     console.log("Atualizando orientação existente");
-                    const url = `${process.env.REACT_APP_API_URL}/orientacoes`;
-                    console.log("URL para atualização:", url);
                     console.log("Dados para atualização:", orientacao);
 
-                    const response = await fetch(url, {
-                        method: "PUT",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({
-                            formData: orientacao,
-                        }),
+                    await axiosInstance.put("/orientacoes", {
+                        formData: orientacao,
                     });
 
-                    console.log("Status da resposta (PUT):", response.status);
-                    if (!response.ok) {
-                        const errorData = await response.json().catch(() => ({}));
-                        console.error("Erro do servidor ao atualizar:", errorData);
-                        throw new Error(`Erro ao atualizar orientação: ${errorData.error || 'Erro desconhecido'}`);
-                    }
+                    console.log("Orientação atualizada com sucesso");
                 } else {
                     console.log("Criando nova orientação");
-                    const url = `${process.env.REACT_APP_API_URL}/orientacoes`;
-                    console.log("URL para criação:", url);
                     console.log("Dados para criação:", orientacao);
 
-                    const response = await fetch(url, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({
-                            formData: orientacao,
-                        }),
+                    await axiosInstance.post("/orientacoes", {
+                        formData: orientacao,
                     });
 
-                    console.log("Status da resposta (POST):", response.status);
-                    if (!response.ok) {
-                        const errorData = await response.json().catch(() => ({}));
-                        console.error("Erro do servidor ao criar:", errorData);
-                        throw new Error(`Erro ao criar orientação: ${errorData.error || 'Erro desconhecido'}`);
-                    }
+                    console.log("Orientação criada com sucesso");
                 }
             }
 
@@ -262,7 +261,7 @@ export default function Orientacao() {
     }
 
     function handleCursoChange(e) {
-        const curso = cursos.find(c => c.id === e.target.value);
+        const curso = cursos.find((c) => c.id === e.target.value);
         setSelectedCurso(curso || null);
         setOrientacoesAlteradas({}); // Limpa alterações pendentes
     }
@@ -273,7 +272,7 @@ export default function Orientacao() {
     }
 
     function handleFaseChange(e) {
-        setFaseSelecionada(e.target.value || '');
+        setFaseSelecionada(e.target.value || "");
         setOrientacoesAlteradas({}); // Limpa alterações pendentes
     }
 
@@ -285,12 +284,18 @@ export default function Orientacao() {
     }
 
     // Gerar listas únicas a partir das ofertas TCC
-    const anosSemsestresUnicos = [...new Set(ofertasTcc.map(oferta => `${oferta.ano}/${oferta.semestre}`))].sort();
-    const fasesUnicas = [...new Set(ofertasTcc.map(oferta => oferta.fase.toString()))].sort();
+    const anosSemsestresUnicos = [
+        ...new Set(
+            ofertasTcc.map((oferta) => `${oferta.ano}/${oferta.semestre}`)
+        ),
+    ].sort();
+    const fasesUnicas = [
+        ...new Set(ofertasTcc.map((oferta) => oferta.fase.toString())),
+    ].sort();
 
     // Filtrar apenas docentes que podem orientar no curso selecionado
     const docentesDisponiveis = selectedCurso
-        ? orientadoresCurso.map(oc => oc.docente)
+        ? orientadoresCurso.map((oc) => oc.docente)
         : [];
 
     // Configuração das colunas do DataGrid
@@ -304,13 +309,21 @@ export default function Orientacao() {
             width: 250,
             sortable: false,
             renderCell: (params) => {
-                const orientadorAtual = getOrientadorAtual(params.row.matricula);
-                const chave = selectedAnoSemestre && faseSelecionada
-                    ? `${params.row.matricula}_${selectedAnoSemestre.replace('/', '_')}_${selectedCurso.id}_${faseSelecionada}`
-                    : null;
-                const orientadorSelecionado = chave && orientacoesAlteradas[chave]
-                    ? orientacoesAlteradas[chave].codigo || ''
-                    : orientadorAtual;
+                const orientadorAtual = getOrientadorAtual(
+                    params.row.matricula
+                );
+                const chave =
+                    selectedAnoSemestre && faseSelecionada
+                        ? `${
+                              params.row.matricula
+                          }_${selectedAnoSemestre.replace("/", "_")}_${
+                              selectedCurso.id
+                          }_${faseSelecionada}`
+                        : null;
+                const orientadorSelecionado =
+                    chave && orientacoesAlteradas[chave]
+                        ? orientacoesAlteradas[chave].codigo || ""
+                        : orientadorAtual;
 
                 return (
                     <FormControl
@@ -320,14 +333,22 @@ export default function Orientacao() {
                     >
                         <Select
                             value={orientadorSelecionado}
-                            onChange={(e) => handleOrientadorChange(params.row.matricula, e.target.value)}
+                            onChange={(e) =>
+                                handleOrientadorChange(
+                                    params.row.matricula,
+                                    e.target.value
+                                )
+                            }
                             displayEmpty
                         >
                             <MenuItem value="">
                                 <em>Sem orientador</em>
                             </MenuItem>
                             {docentesDisponiveis.map((docente) => (
-                                <MenuItem key={docente.codigo} value={docente.codigo}>
+                                <MenuItem
+                                    key={docente.codigo}
+                                    value={docente.codigo}
+                                >
                                     {docente.nome}
                                 </MenuItem>
                             ))}
@@ -416,11 +437,12 @@ export default function Orientacao() {
                                     {anoSemestre}º Semestre
                                 </MenuItem>
                             ))}
-                            {anosSemsestresUnicos.length === 0 && !loadingOfertasTcc && (
-                                <MenuItem disabled>
-                                    Nenhum ano/semestre cadastrado
-                                </MenuItem>
-                            )}
+                            {anosSemsestresUnicos.length === 0 &&
+                                !loadingOfertasTcc && (
+                                    <MenuItem disabled>
+                                        Nenhum ano/semestre cadastrado
+                                    </MenuItem>
+                                )}
                         </Select>
                     </FormControl>
 
@@ -465,85 +487,128 @@ export default function Orientacao() {
                         </Select>
                     </FormControl>
 
-                    <Box display="flex" alignItems="center" sx={{ minWidth: 150 }}>
+                    <Box
+                        display="flex"
+                        alignItems="center"
+                        sx={{ minWidth: 150 }}
+                    >
                         {loadingDicentes ? (
                             <Box display="flex" alignItems="center">
                                 <CircularProgress size={16} sx={{ mr: 1 }} />
-                                <Typography variant="body2" color="text.secondary">
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                >
                                     Carregando...
                                 </Typography>
                             </Box>
                         ) : (
                             <Typography variant="body2" color="text.secondary">
-                                {`${dicentes.length} dicente${dicentes.length !== 1 ? 's' : ''} encontrado${dicentes.length !== 1 ? 's' : ''}`}
+                                {`${dicentes.length} dicente${
+                                    dicentes.length !== 1 ? "s" : ""
+                                } encontrado${
+                                    dicentes.length !== 1 ? "s" : ""
+                                }`}
                             </Typography>
                         )}
                     </Box>
                 </Stack>
 
-                {Object.keys(orientacoesAlteradas).length > 0 && (selectedCurso && selectedAnoSemestre && faseSelecionada) && (
-                    <Box>
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            startIcon={<SaveIcon />}
-                            onClick={salvarOrientacoes}
-                        >
-                            Salvar Alterações ({Object.keys(orientacoesAlteradas).length})
-                        </Button>
-                    </Box>
-                )}
+                {Object.keys(orientacoesAlteradas).length > 0 &&
+                    selectedCurso &&
+                    selectedAnoSemestre &&
+                    faseSelecionada && (
+                        <Box>
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                startIcon={<SaveIcon />}
+                                onClick={salvarOrientacoes}
+                            >
+                                Salvar Alterações (
+                                {Object.keys(orientacoesAlteradas).length})
+                            </Button>
+                        </Box>
+                    )}
 
                 {/* Mensagem informativa sobre filtros */}
-                {(!selectedCurso || !selectedAnoSemestre || !faseSelecionada) && (
-                    <Paper sx={{ p: 2, bgcolor: 'warning.light', color: 'warning.contrastText' }}>
+                {(!selectedCurso ||
+                    !selectedAnoSemestre ||
+                    !faseSelecionada) && (
+                    <Paper
+                        sx={{
+                            p: 2,
+                            bgcolor: "warning.light",
+                            color: "warning.contrastText",
+                        }}
+                    >
                         <Typography variant="body2">
-                            <strong>Selecione todos os filtros</strong> (curso, ano/semestre e fase) para visualizar e gerenciar as orientações.
+                            <strong>Selecione todos os filtros</strong> (curso,
+                            ano/semestre e fase) para visualizar e gerenciar as
+                            orientações.
                         </Typography>
                     </Paper>
                 )}
 
                 {/* Exibição de filtros ativos */}
-                {(selectedCurso && selectedAnoSemestre && faseSelecionada) && (
-                    <Paper sx={{ p: 2, bgcolor: 'primary.light', color: 'primary.contrastText' }}>
+                {selectedCurso && selectedAnoSemestre && faseSelecionada && (
+                    <Paper
+                        sx={{
+                            p: 2,
+                            bgcolor: "primary.light",
+                            color: "primary.contrastText",
+                        }}
+                    >
                         <Typography variant="body2">
                             <strong>Filtros ativos:</strong>
                             {selectedCurso && ` Curso: ${selectedCurso.nome}`}
-                            {selectedAnoSemestre && ` | Ano/Semestre: ${selectedAnoSemestre}`}
+                            {selectedAnoSemestre &&
+                                ` | Ano/Semestre: ${selectedAnoSemestre}`}
                             {faseSelecionada && ` | Fase: ${faseSelecionada}`}
                         </Typography>
                         <Typography variant="body2" sx={{ mt: 0.5 }}>
-                            {docentesDisponiveis.length} orientador(es) disponível(is) para este curso.
+                            {docentesDisponiveis.length} orientador(es)
+                            disponível(is) para este curso.
                         </Typography>
                     </Paper>
                 )}
 
                 {/* DataGrid de dicentes e orientações */}
-                {(selectedCurso && selectedAnoSemestre && faseSelecionada) && dicentes.length > 0 && (
-                    <Box style={{ height: "500px" }}>
-                        <DataGrid
-                            rows={dicentes}
-                            columns={columns}
-                            pageSize={10}
-                            checkboxSelection={false}
-                            disableSelectionOnClick
-                            getRowId={(row) => row.matricula}
-                            initialState={{
-                                sorting: {
-                                    sortModel: [{ field: 'nome', sort: 'asc' }],
-                                },
-                            }}
-                        />
-                    </Box>
-                )}
+                {selectedCurso &&
+                    selectedAnoSemestre &&
+                    faseSelecionada &&
+                    dicentes.length > 0 && (
+                        <Box style={{ height: "500px" }}>
+                            <DataGrid
+                                rows={dicentes}
+                                columns={columns}
+                                pageSize={10}
+                                checkboxSelection={false}
+                                disableSelectionOnClick
+                                getRowId={(row) => row.matricula}
+                                initialState={{
+                                    sorting: {
+                                        sortModel: [
+                                            { field: "nome", sort: "asc" },
+                                        ],
+                                    },
+                                }}
+                            />
+                        </Box>
+                    )}
 
-                {(selectedCurso && selectedAnoSemestre && faseSelecionada) && dicentes.length === 0 && !loadingDicentes && (
-                    <Paper sx={{ p: 3, textAlign: 'center' }}>
-                        <Typography variant="body2" color="text.secondary">
-                            Nenhum dicente encontrado com os filtros aplicados.
-                        </Typography>
-                    </Paper>
-                )}
+                {selectedCurso &&
+                    selectedAnoSemestre &&
+                    faseSelecionada &&
+                    dicentes.length === 0 &&
+                    !loadingDicentes && (
+                        <Paper sx={{ p: 3, textAlign: "center" }}>
+                            <Typography variant="body2" color="text.secondary">
+                                Nenhum dicente encontrado com os filtros
+                                aplicados.
+                            </Typography>
+                        </Paper>
+                    )}
 
                 <Snackbar
                     open={openMessage}

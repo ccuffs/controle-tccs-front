@@ -64,4 +64,4 @@ Permissoes.AREA_TCC = {
     DELETAR: 35,
 };
 
-module.exports = { Permissoes };
+export { Permissoes };

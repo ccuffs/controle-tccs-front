@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import axiosInstance from "../auth/axios";
 
 import {
     Alert,
@@ -20,11 +21,13 @@ import {
     Chip,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
+import PermissionContext from "../contexts/PermissionContext";
+import { Permissoes } from "../enums/permissoes";
 
 export default function TemasTcc() {
     const [temas, setTemas] = useState([]);
     const [cursos, setCursos] = useState([]);
-    const [cursoSelecionado, setCursoSelecionado] = useState('');
+    const [cursoSelecionado, setCursoSelecionado] = useState("");
     const [docentesOrientadores, setDocentesOrientadores] = useState([]);
     const [areasTcc, setAreasTcc] = useState([]);
     const [formData, setFormData] = useState({
@@ -39,7 +42,12 @@ export default function TemasTcc() {
     const [messageText, setMessageText] = React.useState("");
     const [messageSeverity, setMessageSeverity] = React.useState("success");
     const [temaDelete, setTemaDelete] = React.useState(null);
-    const [temaVagas, setTemaVagas] = React.useState({ id: null, vagas: 0, codigoDocente: null, docenteNome: null });
+    const [temaVagas, setTemaVagas] = React.useState({
+        id: null,
+        vagas: 0,
+        codigoDocente: null,
+        docenteNome: null,
+    });
     const [novaAreaData, setNovaAreaData] = useState({
         descicao: "",
         codigo_docente: "",
@@ -69,9 +77,8 @@ export default function TemasTcc() {
 
     async function getCursos() {
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/cursos`);
-            const data = await response.json();
-            setCursos(data.cursos || []);
+            const response = await axiosInstance.get("/cursos");
+            setCursos(response.cursos || []);
         } catch (error) {
             console.log("Não foi possível retornar a lista de cursos: ", error);
             setCursos([]);
@@ -80,33 +87,45 @@ export default function TemasTcc() {
 
     async function getDocentesOrientadoresPorCurso(idCurso) {
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/orientadores/curso/${idCurso}`);
-            const data = await response.json();
-            setDocentesOrientadores(data.orientacoes || []);
+            const response = await axiosInstance.get(
+                `/orientadores/curso/${idCurso}`
+            );
+            setDocentesOrientadores(response.orientacoes || []);
         } catch (error) {
-            console.log("Não foi possível retornar a lista de docentes orientadores: ", error);
+            console.log(
+                "Não foi possível retornar a lista de docentes orientadores: ",
+                error
+            );
             setDocentesOrientadores([]);
         }
     }
 
     async function getAreasTccPorDocente(codigoDocente) {
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/areas-tcc/docente/${codigoDocente}`);
-            const data = await response.json();
-            setAreasTcc(data.areas || []);
+            const response = await axiosInstance.get(
+                `/areas-tcc/docente/${codigoDocente}`
+            );
+            setAreasTcc(response.areas || []);
         } catch (error) {
-            console.log("Não foi possível retornar a lista de áreas TCC: ", error);
+            console.log(
+                "Não foi possível retornar a lista de áreas TCC: ",
+                error
+            );
             setAreasTcc([]);
         }
     }
 
     async function getTemasPorCurso(idCurso) {
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/temas-tcc/curso/${idCurso}`);
-            const data = await response.json();
-            setTemas(data || []);
+            const response = await axiosInstance.get(
+                `/temas-tcc/curso/${idCurso}`
+            );
+            setTemas(response || []);
         } catch (error) {
-            console.log("Não foi possível retornar a lista de temas TCC: ", error);
+            console.log(
+                "Não foi possível retornar a lista de temas TCC: ",
+                error
+            );
             setTemas([]);
         }
     }
@@ -121,28 +140,34 @@ export default function TemasTcc() {
             id: tema.id,
             vagas: tema.vagasOferta || tema.vagas || 0,
             codigoDocente: tema.codigo_docente,
-            docenteNome: tema.docenteNome
+            docenteNome: tema.docenteNome,
         });
         setOpenVagasModal(true);
     }
 
     function handleCloseVagasModal() {
         setOpenVagasModal(false);
-        setTemaVagas({ id: null, vagas: 0, codigoDocente: null, docenteNome: null });
+        setTemaVagas({
+            id: null,
+            vagas: 0,
+            codigoDocente: null,
+            docenteNome: null,
+        });
     }
 
     async function handleUpdateVagas() {
         try {
             // Usar o novo endpoint específico para vagas da oferta do docente
-            await fetch(`${process.env.REACT_APP_API_URL}/temas-tcc/docente/${temaVagas.codigoDocente}/curso/${cursoSelecionado}/vagas`, {
-                method: "PATCH",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ vagas: temaVagas.vagas }),
-            });
+            await axiosInstance.patch(
+                `/temas-tcc/docente/${temaVagas.codigoDocente}/curso/${cursoSelecionado}/vagas`,
+                {
+                    vagas: temaVagas.vagas,
+                }
+            );
 
-            setMessageText(`Vagas da oferta do ${temaVagas.docenteNome} atualizadas com sucesso!`);
+            setMessageText(
+                `Vagas da oferta do ${temaVagas.docenteNome} atualizadas com sucesso!`
+            );
             setMessageSeverity("success");
             setOpenMessage(true);
 
@@ -209,27 +234,20 @@ export default function TemasTcc() {
                 return;
             }
 
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/areas-tcc`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    formData: novaAreaData,
-                }),
+            await axiosInstance.post("/areas-tcc", {
+                formData: novaAreaData,
             });
 
-            if (response.ok) {
-                setMessageText("Área TCC criada com sucesso!");
-                setMessageSeverity("success");
-                handleCloseAreaModal();
-                // Atualiza a lista de áreas TCC
-                await getAreasTccPorDocente(formData.codigo_docente);
-            } else {
-                throw new Error("Erro ao criar área TCC");
-            }
+            setMessageText("Área TCC criada com sucesso!");
+            setMessageSeverity("success");
+            handleCloseAreaModal();
+            // Atualiza a lista de áreas TCC
+            await getAreasTccPorDocente(formData.codigo_docente);
         } catch (error) {
-            console.log("Não foi possível criar a área TCC no banco de dados", error);
+            console.log(
+                "Não foi possível criar a área TCC no banco de dados",
+                error
+            );
             setMessageText("Falha ao criar área TCC!");
             setMessageSeverity("error");
         } finally {
@@ -239,20 +257,20 @@ export default function TemasTcc() {
 
     async function handleAddTema() {
         try {
-            if (!formData.descricao || !formData.id_area_tcc || !formData.codigo_docente) {
-                setMessageText("Por favor, preencha todos os campos obrigatórios!");
+            if (
+                !formData.descricao ||
+                !formData.id_area_tcc ||
+                !formData.codigo_docente
+            ) {
+                setMessageText(
+                    "Por favor, preencha todos os campos obrigatórios!"
+                );
                 setMessageSeverity("error");
                 setOpenMessage(true);
                 return;
             }
 
-            await fetch(`${process.env.REACT_APP_API_URL}/temas-tcc`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(formData),
-            });
+            await axiosInstance.post("/temas-tcc", formData);
 
             setMessageText("Tema TCC adicionado com sucesso!");
             setMessageSeverity("success");
@@ -265,7 +283,9 @@ export default function TemasTcc() {
             // Atualiza a lista
             await getTemasPorCurso(cursoSelecionado);
         } catch (error) {
-            console.log("Não foi possível inserir o tema TCC no banco de dados");
+            console.log(
+                "Não foi possível inserir o tema TCC no banco de dados"
+            );
             setMessageText("Falha ao gravar tema TCC!");
             setMessageSeverity("error");
         } finally {
@@ -296,9 +316,7 @@ export default function TemasTcc() {
         try {
             if (!temaDelete) return;
 
-            await fetch(`${process.env.REACT_APP_API_URL}/temas-tcc/${temaDelete}`, {
-                method: "DELETE",
-            });
+            await axiosInstance.delete(`/temas-tcc/${temaDelete}`);
             setMessageText("Tema TCC removido com sucesso!");
             setMessageSeverity("success");
 
@@ -307,7 +325,9 @@ export default function TemasTcc() {
                 await getTemasPorCurso(cursoSelecionado);
             }
         } catch (error) {
-            console.log("Não foi possível remover o tema TCC no banco de dados");
+            console.log(
+                "Não foi possível remover o tema TCC no banco de dados"
+            );
             setMessageText("Falha ao remover tema TCC!");
             setMessageSeverity("error");
         } finally {
@@ -322,47 +342,47 @@ export default function TemasTcc() {
         setTemaDelete(null);
     }
 
-        // Função para agrupar temas por docente e área TCC
+    // Função para agrupar temas por docente e área TCC
     const agruparTemasPorDocente = (temas) => {
         const grupos = {};
 
         // Ordenar temas por docente, área e descrição
         const temasOrdenados = [...temas].sort((a, b) => {
             // Primeiro por nome do docente
-            const nomeA = a.Docente?.nome || '';
-            const nomeB = b.Docente?.nome || '';
+            const nomeA = a.Docente?.nome || "";
+            const nomeB = b.Docente?.nome || "";
             if (nomeA !== nomeB) {
                 return nomeA.localeCompare(nomeB);
             }
 
             // Se mesmo docente, ordenar por área
-            const areaA = a.AreaTcc?.descicao || '';
-            const areaB = b.AreaTcc?.descicao || '';
+            const areaA = a.AreaTcc?.descicao || "";
+            const areaB = b.AreaTcc?.descicao || "";
             if (areaA !== areaB) {
                 return areaA.localeCompare(areaB);
             }
 
             // Se mesma área, ordenar por descrição
-            return (a.descricao || '').localeCompare(b.descricao || '');
+            return (a.descricao || "").localeCompare(b.descricao || "");
         });
 
-        temasOrdenados.forEach(tema => {
-            const codigoDocente = tema.Docente?.codigo || 'sem-docente';
-            const nomeDocente = tema.Docente?.nome || 'N/A';
-            const idAreaTcc = tema.AreaTcc?.id || 'sem-area';
-            const nomeAreaTcc = tema.AreaTcc?.descicao || 'N/A';
+        temasOrdenados.forEach((tema) => {
+            const codigoDocente = tema.Docente?.codigo || "sem-docente";
+            const nomeDocente = tema.Docente?.nome || "N/A";
+            const idAreaTcc = tema.AreaTcc?.id || "sem-area";
+            const nomeAreaTcc = tema.AreaTcc?.descicao || "N/A";
 
             if (!grupos[codigoDocente]) {
                 grupos[codigoDocente] = {
                     docente: nomeDocente,
-                    areas: {}
+                    areas: {},
                 };
             }
 
             if (!grupos[codigoDocente].areas[idAreaTcc]) {
                 grupos[codigoDocente].areas[idAreaTcc] = {
                     area: nomeAreaTcc,
-                    temas: []
+                    temas: [],
                 };
             }
 
@@ -377,22 +397,26 @@ export default function TemasTcc() {
             return grupos[a].docente.localeCompare(grupos[b].docente);
         });
 
-        docentesOrdenados.forEach(codigoDocente => {
+        docentesOrdenados.forEach((codigoDocente) => {
             const grupoDocente = grupos[codigoDocente];
             let isFirstDocenteGroup = true;
 
             // Ordenar áreas por nome
-            const areasOrdenadas = Object.keys(grupoDocente.areas).sort((a, b) => {
-                return grupoDocente.areas[a].area.localeCompare(grupoDocente.areas[b].area);
-            });
+            const areasOrdenadas = Object.keys(grupoDocente.areas).sort(
+                (a, b) => {
+                    return grupoDocente.areas[a].area.localeCompare(
+                        grupoDocente.areas[b].area
+                    );
+                }
+            );
 
-            areasOrdenadas.forEach(idArea => {
+            areasOrdenadas.forEach((idArea) => {
                 const grupoArea = grupoDocente.areas[idArea];
                 let isFirstAreaGroup = true;
 
                 // Ordenar temas por descrição
                 const temasOrdenados = [...grupoArea.temas].sort((a, b) => {
-                    return (a.descricao || '').localeCompare(b.descricao || '');
+                    return (a.descricao || "").localeCompare(b.descricao || "");
                 });
 
                 temasOrdenados.forEach((tema) => {
@@ -403,7 +427,7 @@ export default function TemasTcc() {
                         isFirstAreaGroup: isFirstAreaGroup,
                         docenteNome: grupoDocente.docente,
                         areaNome: grupoArea.area,
-                        vagasOferta: vagasOferta // Usa vagas da oferta ou fallback para vagas do tema
+                        vagasOferta: vagasOferta, // Usa vagas da oferta ou fallback para vagas do tema
                     });
                     isFirstDocenteGroup = false;
                     isFirstAreaGroup = false;
@@ -418,7 +442,7 @@ export default function TemasTcc() {
 
     const columns = [
         { field: "id", headerName: "ID", width: 70 },
-                {
+        {
             field: "docente_nome",
             headerName: "Docente Responsável",
             width: 250,
@@ -426,19 +450,21 @@ export default function TemasTcc() {
                 // Só mostra o nome na primeira linha do grupo do docente
                 if (params.row.isFirstDocenteGroup) {
                     return (
-                        <Box sx={{
-                            fontWeight: 'bold',
-                            color: 'primary.main',
-                            borderLeft: '3px solid',
-                            borderColor: 'primary.main',
-                            paddingLeft: 1
-                        }}>
+                        <Box
+                            sx={{
+                                fontWeight: "bold",
+                                color: "primary.main",
+                                borderLeft: "3px solid",
+                                borderColor: "primary.main",
+                                paddingLeft: 1,
+                            }}
+                        >
                             {params.row.docenteNome}
                         </Box>
                     );
                 }
-                return '';
-            }
+                return "";
+            },
         },
         {
             field: "area_nome",
@@ -448,19 +474,21 @@ export default function TemasTcc() {
                 // Só mostra o nome na primeira linha do grupo da área
                 if (params.row.isFirstAreaGroup) {
                     return (
-                        <Box sx={{
-                            fontWeight: 'bold',
-                            color: 'secondary.main',
-                            borderLeft: '3px solid',
-                            borderColor: 'secondary.main',
-                            paddingLeft: 1
-                        }}>
+                        <Box
+                            sx={{
+                                fontWeight: "bold",
+                                color: "secondary.main",
+                                borderLeft: "3px solid",
+                                borderColor: "secondary.main",
+                                paddingLeft: 1,
+                            }}
+                        >
                             {params.row.areaNome}
                         </Box>
                     );
                 }
-                return '';
-            }
+                return "";
+            },
         },
         { field: "descricao", headerName: "Descrição", width: 250 },
         {
@@ -491,10 +519,10 @@ export default function TemasTcc() {
                                 variant="caption"
                                 color="text.secondary"
                                 sx={{
-                                    fontSize: '0.75rem',
-                                    fontStyle: 'italic',
-                                    textAlign: 'center',
-                                    maxWidth: '180px'
+                                    fontSize: "0.75rem",
+                                    fontStyle: "italic",
+                                    textAlign: "center",
+                                    maxWidth: "180px",
                                 }}
                             >
                                 Converse com o orientador sobre disponibilidade
@@ -508,15 +536,15 @@ export default function TemasTcc() {
                             color="success"
                             size="small"
                             sx={{
-                                fontWeight: 'bold',
-                                '& .MuiChip-label': {
-                                    fontSize: '0.875rem'
-                                }
+                                fontWeight: "bold",
+                                "& .MuiChip-label": {
+                                    fontSize: "0.875rem",
+                                },
                             }}
                         />
                     );
                 }
-                return '';
+                return "";
             },
         },
         {
@@ -558,18 +586,14 @@ export default function TemasTcc() {
         try {
             const novoStatus = !tema.ativo;
 
-            await fetch(`${process.env.REACT_APP_API_URL}/temas-tcc`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    id: tema.id,
-                    ativo: novoStatus
-                }),
+            await axiosInstance.put("/temas-tcc", {
+                id: tema.id,
+                ativo: novoStatus,
             });
 
-            setMessageText(`Tema ${novoStatus ? 'ativado' : 'desativado'} com sucesso!`);
+            setMessageText(
+                `Tema ${novoStatus ? "ativado" : "desativado"} com sucesso!`
+            );
             setMessageSeverity("success");
 
             // Atualiza a lista
@@ -626,15 +650,23 @@ export default function TemasTcc() {
                                     onChange={handleInputChange}
                                 >
                                     {docentesOrientadores.map((orientacao) => (
-                                        <MenuItem key={orientacao.docente?.codigo} value={orientacao.docente?.codigo}>
-                                            {orientacao.docente?.nome} ({orientacao.docente?.codigo})
+                                        <MenuItem
+                                            key={orientacao.docente?.codigo}
+                                            value={orientacao.docente?.codigo}
+                                        >
+                                            {orientacao.docente?.nome} (
+                                            {orientacao.docente?.codigo})
                                         </MenuItem>
                                     ))}
                                 </Select>
                             </FormControl>
 
                             {formData.codigo_docente && (
-                                <Stack direction="row" spacing={2} alignItems="center">
+                                <Stack
+                                    direction="row"
+                                    spacing={2}
+                                    alignItems="center"
+                                >
                                     <FormControl fullWidth size="small">
                                         <InputLabel>Área TCC</InputLabel>
                                         <Select
@@ -644,7 +676,10 @@ export default function TemasTcc() {
                                             onChange={handleInputChange}
                                         >
                                             {areasTcc.map((area) => (
-                                                <MenuItem key={area.id} value={area.id}>
+                                                <MenuItem
+                                                    key={area.id}
+                                                    value={area.id}
+                                                >
                                                     {area.descicao}
                                                 </MenuItem>
                                             ))}
@@ -654,7 +689,10 @@ export default function TemasTcc() {
                                         variant="outlined"
                                         color="primary"
                                         onClick={handleOpenAreaModal}
-                                        sx={{ minWidth: 'auto', whiteSpace: 'nowrap' }}
+                                        sx={{
+                                            minWidth: "auto",
+                                            whiteSpace: "nowrap",
+                                        }}
                                     >
                                         Nova Área
                                     </Button>
@@ -721,9 +759,7 @@ export default function TemasTcc() {
                         </Stack>
                     </DialogContent>
                     <DialogActions>
-                        <Button onClick={handleCloseAreaModal}>
-                            Cancelar
-                        </Button>
+                        <Button onClick={handleCloseAreaModal}>Cancelar</Button>
                         <Button
                             onClick={handleCreateArea}
                             variant="contained"
@@ -748,17 +784,27 @@ export default function TemasTcc() {
                     <DialogContent>
                         <Stack spacing={2} sx={{ mt: 1 }}>
                             <Typography variant="body2" color="text.secondary">
-                                Editando vagas da oferta do docente: <strong>{temaVagas.docenteNome}</strong>
+                                Editando vagas da oferta do docente:{" "}
+                                <strong>{temaVagas.docenteNome}</strong>
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                                Nota: As vagas são por oferta do docente, não por tema individual.
-                                Alterar aqui afetará todos os temas deste docente.
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                            >
+                                Nota: As vagas são por oferta do docente, não
+                                por tema individual. Alterar aqui afetará todos
+                                os temas deste docente.
                             </Typography>
                             <TextField
                                 label="Número de Vagas da Oferta"
                                 type="number"
                                 value={temaVagas.vagas}
-                                onChange={(e) => setTemaVagas({...temaVagas, vagas: parseInt(e.target.value) || 0})}
+                                onChange={(e) =>
+                                    setTemaVagas({
+                                        ...temaVagas,
+                                        vagas: parseInt(e.target.value) || 0,
+                                    })
+                                }
                                 fullWidth
                                 size="small"
                                 inputProps={{ min: 0 }}
@@ -807,9 +853,7 @@ export default function TemasTcc() {
                         </DialogContentText>
                     </DialogContent>
                     <DialogActions>
-                        <Button onClick={handleNoDeleteClick}>
-                            Cancelar
-                        </Button>
+                        <Button onClick={handleNoDeleteClick}>Cancelar</Button>
                         <Button onClick={handleDeleteClick} autoFocus>
                             Confirmar
                         </Button>
@@ -819,15 +863,30 @@ export default function TemasTcc() {
                 {cursoSelecionado && (
                     <>
                         <Typography variant="body2" color="text.secondary">
-                            Total: {temas.length} tema(s) • {Object.keys(temas.reduce((acc, tema) => {
-                                const codigo = tema.Docente?.codigo || 'sem-docente';
-                                acc[codigo] = true;
-                                return acc;
-                            }, {})).length} docente(s) • {Object.keys(temas.reduce((acc, tema) => {
-                                const idArea = tema.AreaTcc?.id || 'sem-area';
-                                acc[idArea] = true;
-                                return acc;
-                            }, {})).length} área(s)
+                            Total: {temas.length} tema(s) •{" "}
+                            {
+                                Object.keys(
+                                    temas.reduce((acc, tema) => {
+                                        const codigo =
+                                            tema.Docente?.codigo ||
+                                            "sem-docente";
+                                        acc[codigo] = true;
+                                        return acc;
+                                    }, {})
+                                ).length
+                            }{" "}
+                            docente(s) •{" "}
+                            {
+                                Object.keys(
+                                    temas.reduce((acc, tema) => {
+                                        const idArea =
+                                            tema.AreaTcc?.id || "sem-area";
+                                        acc[idArea] = true;
+                                        return acc;
+                                    }, {})
+                                ).length
+                            }{" "}
+                            área(s)
                         </Typography>
 
                         <Box style={{ height: "500px" }}>
@@ -839,14 +898,14 @@ export default function TemasTcc() {
                                 disableSelectionOnClick
                                 getRowId={(row) => row.id}
                                 sx={{
-                                    '& .MuiDataGrid-row': {
-                                        '&:not(:first-of-type)': {
-                                            '& .MuiDataGrid-cell:first-of-type': {
-                                                borderTop: 'none',
-                                            }
-                                        }
+                                    "& .MuiDataGrid-row": {
+                                        "&:not(:first-of-type)": {
+                                            "& .MuiDataGrid-cell:first-of-type":
+                                                {
+                                                    borderTop: "none",
+                                                },
+                                        },
                                     },
-
                                 }}
                                 // getRowClassName removido para manter aparência padrão
                             />
