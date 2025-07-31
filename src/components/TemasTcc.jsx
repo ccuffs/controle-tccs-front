@@ -342,160 +342,111 @@ export default function TemasTcc() {
         setTemaDelete(null);
     }
 
-    // Função para agrupar temas por docente e área TCC
-    const agruparTemasPorDocente = (temas) => {
-        const grupos = {};
-
-        // Ordenar temas por docente, área e descrição
-        const temasOrdenados = [...temas].sort((a, b) => {
-            // Primeiro por nome do docente
-            const nomeA = a.Docente?.nome || "";
-            const nomeB = b.Docente?.nome || "";
+    // Preparar dados para o DataGrid sem agrupamento
+    const temasParaGrid = temas
+        .map((tema) => ({
+            ...tema,
+            docenteNome: tema?.Docente?.nome || "N/A",
+            areaNome: tema?.AreaTcc?.descricao || "N/A",
+            vagasOferta: tema?.vagasOferta || tema?.vagas || 0,
+        }))
+        .sort((a, b) => {
+            // Primeiro ordenar por nome do docente
+            const nomeA = a.docenteNome || "";
+            const nomeB = b.docenteNome || "";
             if (nomeA !== nomeB) {
                 return nomeA.localeCompare(nomeB);
             }
 
-            // Se mesmo docente, ordenar por área
-            const areaA = a.AreaTcc?.descricao || "";
-            const areaB = b.AreaTcc?.descricao || "";
+            // Se mesmo docente, ordenar por área TCC
+            const areaA = a.areaNome || "";
+            const areaB = b.areaNome || "";
             if (areaA !== areaB) {
                 return areaA.localeCompare(areaB);
             }
 
-            // Se mesma área, ordenar por descrição
+            // Se mesma área, ordenar por descrição do tema
             return (a.descricao || "").localeCompare(b.descricao || "");
         });
-        console.log(temasOrdenados);
-        temasOrdenados.forEach((tema) => {
-            console.log(tema);
-            const codigoDocente = tema.Docente?.codigo || "sem-docente";
-            const nomeDocente = tema.Docente?.nome || "N/A";
-            const idAreaTcc = tema.AreaTcc?.id || "sem-area";
-            const nomeAreaTcc = tema.AreaTcc?.descricao || "N/A";
 
-            if (!grupos[codigoDocente]) {
-                grupos[codigoDocente] = {
-                    docente: nomeDocente,
-                    areas: {},
-                };
-            }
+    console.log(temasParaGrid);
 
-            if (!grupos[codigoDocente].areas[idAreaTcc]) {
-                grupos[codigoDocente].areas[idAreaTcc] = {
-                    area: nomeAreaTcc,
-                    temas: [],
-                };
-            }
+    // Função para determinar se uma linha deve ter borda inferior
+    const getRowClassName = (params) => {
+        const currentDocente = params.row.docenteNome;
 
-            grupos[codigoDocente].areas[idAreaTcc].temas.push(tema);
-        });
+        // Encontrar o índice da linha atual no array temasParaGrid
+        const currentIndex = temasParaGrid.findIndex(tema => tema.id === params.row.id);
 
-        // Converte para array e prepara dados para o DataGrid
-        const dadosGrid = [];
+        // Verificar se a próxima linha tem um docente diferente
+        const nextRow = temasParaGrid[currentIndex + 1];
+        if (nextRow && nextRow.docenteNome !== currentDocente) {
+            return 'row-with-bottom-border';
+        }
 
-        // Ordenar docentes por nome
-        const docentesOrdenados = Object.keys(grupos).sort((a, b) => {
-            return grupos[a].docente.localeCompare(grupos[b].docente);
-        });
-
-        docentesOrdenados.forEach((codigoDocente) => {
-            const grupoDocente = grupos[codigoDocente];
-            let isFirstDocenteGroup = true;
-
-            // Ordenar áreas por nome
-            const areasOrdenadas = Object.keys(grupoDocente.areas).sort(
-                (a, b) => {
-                    return grupoDocente.areas[a].area.localeCompare(
-                        grupoDocente.areas[b].area
-                    );
-                }
-            );
-
-            areasOrdenadas.forEach((idArea) => {
-                const grupoArea = grupoDocente.areas[idArea];
-                let isFirstAreaGroup = true;
-
-                // Ordenar temas por descrição
-                const temasOrdenados = [...grupoArea.temas].sort((a, b) => {
-                    return (a.descricao || "").localeCompare(b.descricao || "");
-                });
-
-                temasOrdenados.forEach((tema) => {
-                    const vagasOferta = tema.vagasOferta || tema.vagas || 0;
-                    dadosGrid.push({
-                        ...tema,
-                        isFirstDocenteGroup: isFirstDocenteGroup,
-                        isFirstAreaGroup: isFirstAreaGroup,
-                        docenteNome: grupoDocente.docente,
-                        areaNome: grupoArea.area,
-                        vagasOferta: vagasOferta, // Usa vagas da oferta ou fallback para vagas do tema
-                    });
-                    isFirstDocenteGroup = false;
-                    isFirstAreaGroup = false;
-                });
-            });
-        });
-
-        return dadosGrid;
+        return '';
     };
 
-    const temasAgrupados = agruparTemasPorDocente(temas);
-
     const columns = [
-        { field: "id", headerName: "ID", width: 70 },
         {
-            field: "docente_nome",
+            field: "docenteNome",
             headerName: "Docente Responsável",
             width: 250,
-            renderCell: (params) => {
-                // Só mostra o nome na primeira linha do grupo do docente
-                if (params.row.isFirstDocenteGroup) {
-                    return (
-                        <Box
-                            sx={{
-                                fontWeight: "bold",
-                                color: "primary.main",
-                                borderLeft: "3px solid",
-                                borderColor: "primary.main",
-                                paddingLeft: 1,
-                            }}
-                        >
-                            {params.row.docenteNome}
-                        </Box>
-                    );
-                }
-                return "";
-            },
+            renderCell: (params) => (
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    whiteSpace: 'normal',
+                    wordWrap: 'break-word',
+                    lineHeight: '1.2',
+                    width: '100%',
+                    padding: '4px 0',
+                }}>
+                    {params.value}
+                </div>
+            ),
         },
         {
-            field: "area_nome",
+            field: "areaNome",
             headerName: "Área TCC",
             width: 200,
-            renderCell: (params) => {
-                // Só mostra o nome na primeira linha do grupo da área
-                if (params.row.isFirstAreaGroup) {
-                    return (
-                        <Box
-                            sx={{
-                                fontWeight: "bold",
-                                color: "secondary.main",
-                                borderLeft: "3px solid",
-                                borderColor: "secondary.main",
-                                paddingLeft: 1,
-                            }}
-                        >
-                            {params.row.areaNome}
-                        </Box>
-                    );
-                }
-                return "";
-            },
+            renderCell: (params) => (
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    whiteSpace: 'normal',
+                    wordWrap: 'break-word',
+                    lineHeight: '1.2',
+                    width: '100%',
+                    padding: '4px 0'
+                }}>
+                    {params.value}
+                </div>
+            ),
         },
-        { field: "descricao", headerName: "Descrição", width: 250 },
+                {
+            field: "descricao",
+            headerName: "Descrição",
+            width: 250,
+            renderCell: (params) => (
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    whiteSpace: 'normal',
+                    wordWrap: 'break-word',
+                    lineHeight: '1.2',
+                    width: '100%',
+                    padding: '4px 0',
+                }}>
+                    {params.value}
+                </div>
+            ),
+        },
         {
-            field: "status",
+            field: "ativo",
             headerName: "Status",
             width: 120,
+            rowSpanValueGetter: () => null,
             renderCell: (params) => (
                 <Chip
                     label={params.row.ativo ? "Ativo" : "Inativo"}
@@ -506,46 +457,43 @@ export default function TemasTcc() {
             ),
         },
         {
-            field: "vagas",
+            field: "vagasOferta",
             headerName: "Vagas",
             width: 200,
+
             renderCell: (params) => {
-                // Só mostra as vagas na primeira linha do grupo do docente (pois vagas são por oferta do docente, não por tema)
-                if (params.row.isFirstDocenteGroup) {
-                    const vagas = params.row.vagasOferta || 0;
+                const vagas = params.row.vagasOferta || 0;
 
-                    if (vagas === 0) {
-                        return (
-                            <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{
-                                    fontSize: "0.75rem",
-                                    fontStyle: "italic",
-                                    textAlign: "center",
-                                    maxWidth: "180px",
-                                }}
-                            >
-                                Converse com o orientador sobre disponibilidade
-                            </Typography>
-                        );
-                    }
-
+                if (vagas === 0) {
                     return (
-                        <Chip
-                            label={vagas}
-                            color="success"
-                            size="small"
+                        <Typography
+                            variant="caption"
+                            color="text.secondary"
                             sx={{
-                                fontWeight: "bold",
-                                "& .MuiChip-label": {
-                                    fontSize: "0.875rem",
-                                },
+                                fontSize: "0.75rem",
+                                fontStyle: "italic",
+                                textAlign: "center",
+                                maxWidth: "180px",
                             }}
-                        />
+                        >
+                            Converse com o orientador sobre disponibilidade
+                        </Typography>
                     );
                 }
-                return "";
+
+                return (
+                    <Chip
+                        label={vagas}
+                        color="success"
+                        size="small"
+                        sx={{
+                            fontWeight: "bold",
+                            "& .MuiChip-label": {
+                                fontSize: "0.875rem",
+                            },
+                        }}
+                    />
+                );
             },
         },
         {
@@ -893,25 +841,35 @@ export default function TemasTcc() {
                             área(s)
                         </Typography>
 
-                        <Box style={{ height: "500px" }}>
+                        <Box style={{ display: 'flex', flexDirection: 'column'}}>
                             <DataGrid
-                                rows={temasAgrupados}
+                                rows={temasParaGrid}
                                 columns={columns}
                                 pageSize={10}
                                 checkboxSelection={false}
                                 disableSelectionOnClick
+                                rowSpanning
                                 getRowId={(row) => row.id}
+                                getRowClassName={getRowClassName}
+                                getRowHeight={() => 'auto'}
                                 sx={{
-                                    "& .MuiDataGrid-row": {
-                                        "&:not(:first-of-type)": {
-                                            "& .MuiDataGrid-cell:first-of-type":
-                                                {
-                                                    borderTop: "none",
-                                                },
-                                        },
+                                    '& .row-with-bottom-border': {
+                                        borderBottom: '1px solid #b5b6be !important',
+                                    },
+                                    '& .MuiDataGrid-cell': {
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'flex-start',
+                                        padding: '8px',
+                                        minHeight: 'auto',
+                                        height: 'auto',
+                                    },
+                                    '& .MuiDataGrid-columnHeader': {
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'flex-start',
                                     },
                                 }}
-                                // getRowClassName removido para manter aparência padrão
                             />
                         </Box>
                     </>
