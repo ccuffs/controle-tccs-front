@@ -49,7 +49,7 @@ export default function TemasTcc() {
         docenteNome: null,
     });
     const [novaAreaData, setNovaAreaData] = useState({
-        descicao: "",
+        descricao: "",
         codigo_docente: "",
     });
 
@@ -211,7 +211,7 @@ export default function TemasTcc() {
             return;
         }
         setNovaAreaData({
-            descicao: "",
+            descricao: "",
             codigo_docente: formData.codigo_docente,
         });
         setOpenAreaModal(true);
@@ -220,14 +220,14 @@ export default function TemasTcc() {
     function handleCloseAreaModal() {
         setOpenAreaModal(false);
         setNovaAreaData({
-            descicao: "",
+            descricao: "",
             codigo_docente: "",
         });
     }
 
     async function handleCreateArea() {
         try {
-            if (!novaAreaData.descicao) {
+            if (!novaAreaData.descricao) {
                 setMessageText("Por favor, preencha a descrição da área!");
                 setMessageSeverity("error");
                 setOpenMessage(true);
@@ -356,8 +356,8 @@ export default function TemasTcc() {
             }
 
             // Se mesmo docente, ordenar por área
-            const areaA = a.AreaTcc?.descicao || "";
-            const areaB = b.AreaTcc?.descicao || "";
+            const areaA = a.AreaTcc?.descricao || "";
+            const areaB = b.AreaTcc?.descricao || "";
             if (areaA !== areaB) {
                 return areaA.localeCompare(areaB);
             }
@@ -365,12 +365,13 @@ export default function TemasTcc() {
             // Se mesma área, ordenar por descrição
             return (a.descricao || "").localeCompare(b.descricao || "");
         });
-
+        console.log(temasOrdenados);
         temasOrdenados.forEach((tema) => {
+            console.log(tema);
             const codigoDocente = tema.Docente?.codigo || "sem-docente";
             const nomeDocente = tema.Docente?.nome || "N/A";
             const idAreaTcc = tema.AreaTcc?.id || "sem-area";
-            const nomeAreaTcc = tema.AreaTcc?.descicao || "N/A";
+            const nomeAreaTcc = tema.AreaTcc?.descricao || "N/A";
 
             if (!grupos[codigoDocente]) {
                 grupos[codigoDocente] = {
@@ -635,10 +636,8 @@ export default function TemasTcc() {
                 </FormControl>
 
                 {cursoSelecionado && (
-                     <PermissionContext
-                        permissoes={[
-                            Permissoes.TEMA_TCC.CRIAR,
-                        ]}
+                    <PermissionContext
+                        grupos={[Permissoes.GRUPOS.ADMIN, Permissoes.GRUPOS.PROFESSOR]}
                         showError={false}
                     >
                         <Typography variant="h6" component="h3">
@@ -685,7 +684,7 @@ export default function TemasTcc() {
                                                     key={area.id}
                                                     value={area.id}
                                                 >
-                                                    {area.descicao}
+                                                    {area.descricao}
                                                 </MenuItem>
                                             ))}
                                         </Select>
@@ -750,9 +749,9 @@ export default function TemasTcc() {
                     <DialogContent>
                         <Stack spacing={2} sx={{ mt: 1 }}>
                             <TextField
-                                name="descicao"
+                                name="descricao"
                                 label="Descrição da Área"
-                                value={novaAreaData.descicao}
+                                value={novaAreaData.descricao}
                                 onChange={handleNovaAreaChange}
                                 fullWidth
                                 size="small"
