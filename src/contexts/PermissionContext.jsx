@@ -1,19 +1,33 @@
 import React from "react";
 import { Alert, Box } from "@mui/material";
 import { useAuth } from "./AuthContext";
-import { verificarPermissaoPorIds } from "../utils/permissions";
+import permissoesService from "../services/permissoesService";
 
 export default function PermissionContext({
     children,
     permissoes,
+    grupos,
     fallback = null,
     showError = true, // Controla se deve exibir a mensagem de alerta quando não há permissão
 }) {
-    const { permissoesUsuario } = useAuth();
+    const { permissoesUsuario, gruposUsuario } = useAuth();
 
     let hasPermission = false;
 
-    hasPermission = verificarPermissaoPorIds(permissoesUsuario, permissoes);
+    // Se grupos foram especificados, verificar por grupos
+    if (grupos && grupos.length > 0) {
+        hasPermission = permissoesService.verificarPermissaoPorGrupos(
+            gruposUsuario,
+            grupos,
+        );
+    }
+    // Se permissões foram especificadas, verificar por IDs de permissão
+    else if (permissoes && permissoes.length > 0) {
+        hasPermission = permissoesService.verificarPermissaoPorIds(
+            permissoesUsuario,
+            permissoes,
+        );
+    }
 
     if (!hasPermission) {
         // Se um fallback foi fornecido, sempre retorna ele

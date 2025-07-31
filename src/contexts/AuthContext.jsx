@@ -7,6 +7,7 @@ const initialState = {
     usuario: null,
     token: localStorage.getItem("auth_token") || null,
     permissoesUsuario: [],
+    gruposUsuario: [],
     temConsultaTodos: false,
     isAuthenticated: false,
     loading: true,
@@ -30,6 +31,7 @@ const authReducer = (state, action) => {
                 usuario: null,
                 token: null,
                 permissoesUsuario: [],
+                gruposUsuario: [],
                 temConsultaTodos: false,
                 isAuthenticated: false,
                 loading: false,
@@ -40,6 +42,7 @@ const authReducer = (state, action) => {
                 usuario: null,
                 token: null,
                 permissoesUsuario: [],
+                gruposUsuario: [],
                 temConsultaTodos: false,
                 isAuthenticated: false,
                 loading: false,
@@ -48,6 +51,7 @@ const authReducer = (state, action) => {
             return {
                 ...state,
                 permissoesUsuario: action.payload.permissoesUsuario,
+                gruposUsuario: action.payload.gruposUsuario || [],
                 temConsultaTodos: action.payload.temConsultaTodos,
             };
         case "SET_LOADING":
@@ -95,6 +99,7 @@ export const AuthProvider = ({ children }) => {
                 type: "SET_PERMISSOES",
                 payload: {
                     permissoesUsuario: dadosUsuario.permissoes,
+                    gruposUsuario: dadosUsuario.grupos || [],
                     temConsultaTodos: dadosUsuario.temConsultaTodos,
                 },
             });
