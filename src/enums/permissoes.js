@@ -1,5 +1,12 @@
 const Permissoes = {};
 
+Permissoes.GRUPOS = {
+    ADMIN: 1,
+    PROFESSOR: 2,
+    ORIENTADOR: 3,
+    ESTUDANTE: 4,
+};
+
 Permissoes.CURSO = {
     VISUALIZAR: 1,
     VISUALIZAR_TODOS: 2,
