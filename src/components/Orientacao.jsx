@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import axiosInstance from "../auth/axios";
 import PermissionContext from "../contexts/PermissionContext";
 import { Permissoes } from "../enums/permissoes";
+import permissoesService from "../services/permissoesService";
+import { useAuth } from "../contexts/AuthContext";
 
 import {
     Alert,
@@ -36,6 +38,8 @@ export default function Orientacao() {
     const [messageText, setMessageText] = React.useState("");
     const [messageSeverity, setMessageSeverity] = React.useState("success");
     const [orientacoesAlteradas, setOrientacoesAlteradas] = useState({});
+
+    const { permissoesUsuario } = useAuth();
 
     useEffect(() => {
         getCursos();
@@ -329,7 +333,7 @@ export default function Orientacao() {
                         size="small"
                         disabled={!selectedAnoSemestre || !faseSelecionada}
                     >
-                        <Select
+                        {permissoesService.verificarPermissaoPorIds(permissoesUsuario, [Permissoes.ORIENTACAO.EDITAR]) ? (<Select
                             value={orientadorSelecionado}
                             onChange={(e) =>
                                 handleOrientadorChange(
@@ -350,7 +354,11 @@ export default function Orientacao() {
                                     {docente.nome}
                                 </MenuItem>
                             ))}
-                        </Select>
+                        </Select>) : (
+                            <Typography variant="body2" color="text.secondary">
+                                {orientadorSelecionado || "Sem orientador definido"}
+                            </Typography>
+                        )}
                     </FormControl>
                 );
             },
@@ -517,6 +525,7 @@ export default function Orientacao() {
                         Permissoes.ORIENTACAO.CRIAR,
                         Permissoes.ORIENTACAO.EDITAR,
                     ]}
+                    showError={false}
                 >
                     {Object.keys(orientacoesAlteradas).length > 0 &&
                         selectedCurso &&

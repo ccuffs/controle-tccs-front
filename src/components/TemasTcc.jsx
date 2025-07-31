@@ -635,7 +635,12 @@ export default function TemasTcc() {
                 </FormControl>
 
                 {cursoSelecionado && (
-                    <>
+                     <PermissionContext
+                        permissoes={[
+                            Permissoes.TEMA_TCC.CRIAR,
+                        ]}
+                        showError={false}
+                    >
                         <Typography variant="h6" component="h3">
                             Adicionar Novo Tema TCC
                         </Typography>
@@ -728,7 +733,7 @@ export default function TemasTcc() {
                                 </Button>
                             </Stack>
                         </Stack>
-                    </>
+                    </PermissionContext>
                 )}
 
                 {/* Modal para criar nova área TCC */}
