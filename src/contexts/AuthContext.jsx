@@ -3,6 +3,8 @@ import authService from "../services/authService";
 
 const AuthContext = createContext();
 
+export { AuthContext };
+
 const initialState = {
     usuario: null,
     token: localStorage.getItem("auth_token") || null,
