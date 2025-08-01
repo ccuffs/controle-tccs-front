@@ -8,7 +8,7 @@ export default function CustomDataGrid({
     pageSize = 10,
     checkboxSelection = false,
     disableSelectionOnClick = true,
-    rowSpanning = false,
+    rowSpanning = true,
     getRowId = (row) => row.id,
     getRowClassName,
     getRowHeight = () => 'auto',

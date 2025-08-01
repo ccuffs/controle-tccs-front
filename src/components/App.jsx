@@ -11,6 +11,7 @@ import Orientadores from "./Orientadores";
 import Dicentes from "./Dicentes";
 import Orientacao from "./Orientacao";
 import TemasTcc from "./TemasTcc";
+import ModuloOrientador from "./ModuloOrientador";
 import CustomThemeProvider from "./CustomThemeProvider";
 import ThemeSwitch from "./ThemeSwitch";
 import { AuthProvider } from "../contexts/AuthContext";
@@ -100,6 +101,14 @@ function App() {
                                         element={
                                             <ProtectedRoute>
                                                 <TemasTcc />
+                                            </ProtectedRoute>
+                                        }
+                                    />
+                                    <Route
+                                        path="modulo-orientador"
+                                        element={
+                                            <ProtectedRoute>
+                                                <ModuloOrientador />
                                             </ProtectedRoute>
                                         }
                                     />

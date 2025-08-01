@@ -76,6 +76,11 @@ function Navbar() {
         if (isMobile) setMobileOpen(false);
     }
 
+    function handleClickModuloOrientador() {
+        navigate("/modulo-orientador");
+        if (isMobile) setMobileOpen(false);
+    }
+
     const drawerContent = (
         <Box sx={{ overflow: "auto" }}>
             <Toolbar>
@@ -120,6 +125,16 @@ function Navbar() {
                         <ListItemText primary="Temas TCC" />
                     </ListItemButton>
                 </ListItem>
+                <PermissionContext
+                    grupos={[Permissoes.GRUPOS.ORIENTADOR]}
+                    showError={false}
+                >
+                    <ListItem disablePadding>
+                        <ListItemButton onClick={handleClickModuloOrientador}>
+                            <ListItemText primary="Módulo do Orientador" />
+                        </ListItemButton>
+                    </ListItem>
+                </PermissionContext>
             </List>
         </Box>
     );
