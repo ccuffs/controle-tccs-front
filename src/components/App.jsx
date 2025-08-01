@@ -12,6 +12,7 @@ import Dicentes from "./Dicentes";
 import Orientacao from "./Orientacao";
 import TemasTcc from "./TemasTcc";
 import ModuloOrientador from "./ModuloOrientador";
+import ModuloDiscente from "./ModuloDiscente";
 import CustomThemeProvider from "./CustomThemeProvider";
 import ThemeSwitch from "./ThemeSwitch";
 import { AuthProvider } from "../contexts/AuthContext";
@@ -109,6 +110,14 @@ function App() {
                                         element={
                                             <ProtectedRoute>
                                                 <ModuloOrientador />
+                                            </ProtectedRoute>
+                                        }
+                                    />
+                                    <Route
+                                        path="modulo-discente"
+                                        element={
+                                            <ProtectedRoute>
+                                                <ModuloDiscente />
                                             </ProtectedRoute>
                                         }
                                     />

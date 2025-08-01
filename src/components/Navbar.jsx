@@ -81,6 +81,11 @@ function Navbar() {
         if (isMobile) setMobileOpen(false);
     }
 
+    function handleClickModuloDiscente() {
+        navigate("/modulo-discente");
+        if (isMobile) setMobileOpen(false);
+    }
+
     const drawerContent = (
         <Box sx={{ overflow: "auto" }}>
             <Toolbar>
@@ -132,6 +137,16 @@ function Navbar() {
                     <ListItem disablePadding>
                         <ListItemButton onClick={handleClickModuloOrientador}>
                             <ListItemText primary="Módulo do Orientador" />
+                        </ListItemButton>
+                    </ListItem>
+                </PermissionContext>
+                <PermissionContext
+                    grupos={[Permissoes.GRUPOS.ESTUDANTE]}
+                    showError={false}
+                >
+                    <ListItem disablePadding>
+                        <ListItemButton onClick={handleClickModuloDiscente}>
+                            <ListItemText primary="Módulo do Discente" />
                         </ListItemButton>
                     </ListItem>
                 </PermissionContext>
