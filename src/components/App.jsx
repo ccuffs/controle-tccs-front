@@ -5,6 +5,8 @@ import React from "react";
 import Navbar from "./Navbar";
 import Login from "./Login";
 import ProtectedRoute from "../contexts/ProtectedRoute";
+import { useAuth } from "../contexts/AuthContext";
+import { Permissoes } from "../enums/permissoes";
 
 import Cursos from "./Cursos";
 import Orientadores from "./Orientadores";
@@ -16,9 +18,41 @@ import ModuloDiscente from "./ModuloDiscente";
 import CustomThemeProvider from "./CustomThemeProvider";
 import ThemeSwitch from "./ThemeSwitch";
 import { AuthProvider } from "../contexts/AuthContext";
+import Dashboard from "./Dashboard";
 
 // Contexto para gerenciar o estado do drawer
 export const DrawerContext = React.createContext();
+
+// Componente para roteamento condicional baseado no grupo do usuário
+function ConditionalRoute() {
+    const { gruposUsuario, loading } = useAuth();
+
+    // Aguarda o carregamento dos dados
+    if (loading) {
+        return null; // O ProtectedRoute já mostra loading
+    }
+
+    // Verifica se o usuário pertence aos grupos específicos
+    const isAdmin = gruposUsuario.some(grupo => grupo.id === Permissoes.GRUPOS.ADMIN);
+    const isProfessor = gruposUsuario.some(grupo => grupo.id === Permissoes.GRUPOS.PROFESSOR);
+    const isOrientador = gruposUsuario.some(grupo => grupo.id === Permissoes.GRUPOS.ORIENTADOR);
+    const isEstudante = gruposUsuario.some(grupo => grupo.id === Permissoes.GRUPOS.ESTUDANTE);
+
+    // Lógica de roteamento baseada nas regras especificadas
+    if (isAdmin) {
+        return <Dashboard />;
+    } else if (isProfessor) {
+        return <Dashboard />;
+    } else if (isOrientador) {
+        return <ModuloOrientador />;
+    } else if (isEstudante) {
+        return <ModuloDiscente />;
+    }
+
+    // Fallback para Dashboard caso não se encaixe em nenhuma regra
+    console.log('Redirecionando para Dashboard (fallback)');
+    return <Dashboard />;
+}
 
 function App() {
     const [desktopOpen, setDesktopOpen] = React.useState(false);
@@ -61,7 +95,7 @@ function App() {
                                         path="/"
                                         element={
                                             <ProtectedRoute>
-                                                <Cursos />
+                                                <ConditionalRoute />
                                             </ProtectedRoute>
                                         }
                                     />

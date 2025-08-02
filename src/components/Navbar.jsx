@@ -66,11 +66,6 @@ function Navbar() {
         if (isMobile) setMobileOpen(false);
     }
 
-    function handleClickOfertas() {
-        navigate("/ofertas");
-        if (isMobile) setMobileOpen(false);
-    }
-
     function handleClickTemasTcc() {
         navigate("/temas-tcc");
         if (isMobile) setMobileOpen(false);
@@ -96,7 +91,7 @@ function Navbar() {
             <Divider />
             <List>
                 <PermissionContext
-                    permissoes={[Permissoes.CURSO.VISUALIZAR_TODOS]}
+                    grupos={[Permissoes.GRUPOS.ADMIN]}
                     showError={false}
                 >
                     <ListItem disablePadding>
@@ -106,7 +101,10 @@ function Navbar() {
                     </ListItem>
                 </PermissionContext>
                 <PermissionContext
-                    permissoes={[Permissoes.ORIENTADOR.VISUALIZAR_TODOS]}
+                    grupos={[
+                        Permissoes.GRUPOS.ADMIN,
+                        Permissoes.GRUPOS.PROFESSOR,
+                    ]}
                     showError={false}
                 >
                     <ListItem disablePadding>
@@ -114,22 +112,23 @@ function Navbar() {
                             <ListItemText primary="Orientadores" />
                         </ListItemButton>
                     </ListItem>
+
+                    <ListItem disablePadding>
+                        <ListItemButton onClick={handleClickDicentes}>
+                            <ListItemText primary="Dicentes" />
+                        </ListItemButton>
+                    </ListItem>
+                    <ListItem disablePadding>
+                        <ListItemButton onClick={handleClickOrientacoes}>
+                            <ListItemText primary="Orientações" />
+                        </ListItemButton>
+                    </ListItem>
+                    <ListItem disablePadding>
+                        <ListItemButton onClick={handleClickTemasTcc}>
+                            <ListItemText primary="Temas TCC" />
+                        </ListItemButton>
+                    </ListItem>
                 </PermissionContext>
-                <ListItem disablePadding>
-                    <ListItemButton onClick={handleClickDicentes}>
-                        <ListItemText primary="Dicentes" />
-                    </ListItemButton>
-                </ListItem>
-                <ListItem disablePadding>
-                    <ListItemButton onClick={handleClickOrientacoes}>
-                        <ListItemText primary="Orientações" />
-                    </ListItemButton>
-                </ListItem>
-                <ListItem disablePadding>
-                    <ListItemButton onClick={handleClickTemasTcc}>
-                        <ListItemText primary="Temas TCC" />
-                    </ListItemButton>
-                </ListItem>
                 <PermissionContext
                     grupos={[Permissoes.GRUPOS.ORIENTADOR]}
                     showError={false}
