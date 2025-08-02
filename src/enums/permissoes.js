@@ -71,4 +71,12 @@ Permissoes.AREA_TCC = {
     DELETAR: 35,
 };
 
+Permissoes.TRABALHO_CONCLUSAO = {
+    VISUALIZAR: 36,
+    VISUALIZAR_TODOS: 37,
+    CRIAR: 38,
+    EDITAR: 39,
+    DELETAR: 40,
+};
+
 export { Permissoes };

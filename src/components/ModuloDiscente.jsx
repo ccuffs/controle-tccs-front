@@ -6,6 +6,7 @@ import {
     Tab
 } from "@mui/material";
 import VisualizarTemasTCC from "./VisualizarTemasTCC";
+import TccStepper from "./TccStepper";
 
 function TabPanel({ children, value, index, ...other }) {
     return (
@@ -56,7 +57,7 @@ export default function ModuloDiscente() {
                         {...a11yProps(0)}
                     />
                     <Tab
-                        label="Outras Funcionalidades"
+                        label="Desenvolvimento do TCC"
                         {...a11yProps(1)}
                     />
                 </Tabs>
@@ -67,12 +68,7 @@ export default function ModuloDiscente() {
             </TabPanel>
 
             <TabPanel value={tabValue} index={1}>
-                <Typography variant="h6" component="h2">
-                    Outras Funcionalidades do Discente
-                </Typography>
-                <Typography variant="body1" color="text.secondary">
-                    Aqui serão adicionadas outras funcionalidades específicas para discentes.
-                </Typography>
+                <TccStepper />
             </TabPanel>
         </Box>
     );
