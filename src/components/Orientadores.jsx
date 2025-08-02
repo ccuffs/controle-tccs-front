@@ -23,7 +23,6 @@ import {
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 
-
 export default function Orientadores() {
     const [orientadores, setOrientadores] = useState([]);
     const [cursos, setCursos] = useState([]);
@@ -326,11 +325,7 @@ export default function Orientadores() {
                     </Select>
                 </FormControl>
 
-                <PermissionContext
-                    permissoes={[
-                        Permissoes.ORIENTADOR.CRIAR,
-                    ]}
-                >
+                <PermissionContext permissoes={[Permissoes.ORIENTADOR.CRIAR]}>
                     {cursoSelecionado && (
                         <>
                             <Typography variant="h6" component="h3">
@@ -356,8 +351,8 @@ export default function Orientadores() {
                                                     key={docente.codigo}
                                                     value={docente.codigo}
                                                 >
-                                                    {docente.nome} ({docente.codigo}
-                                                    )
+                                                    {docente.nome} (
+                                                    {docente.codigo})
                                                 </MenuItem>
                                             ))}
                                         </Select>
@@ -382,7 +377,9 @@ export default function Orientadores() {
 
                                 <Stack spacing={2} direction="row">
                                     <PermissionContext
-                                        permissoes={[Permissoes.ORIENTADOR.CRIAR]}
+                                        permissoes={[
+                                            Permissoes.ORIENTADOR.CRIAR,
+                                        ]}
                                         showError={false}
                                     >
                                         <Button
@@ -407,9 +404,7 @@ export default function Orientadores() {
                 </PermissionContext>
 
                 {/* Modal para criar novo docente */}
-                <PermissionContext
-                    permissoes={[Permissoes.DOCENTE.CRIAR]}
-                >
+                <PermissionContext permissoes={[Permissoes.DOCENTE.CRIAR]}>
                     <Dialog
                         open={openDocenteModal}
                         onClose={handleCloseDocenteModal}

@@ -1,43 +1,66 @@
-import React, { useState } from "react";
-import {
-    Box,
-    Typography,
-    Tabs,
-    Tab
-} from "@mui/material";
-import VisualizarTemasTCC from "./VisualizarTemasTCC";
+import React, { useState, useEffect, useContext } from "react";
+import { Box, Typography } from "@mui/material";
 import TccStepper from "./TccStepper";
-
-function TabPanel({ children, value, index, ...other }) {
-    return (
-        <div
-            role="tabpanel"
-            hidden={value !== index}
-            id={`discente-tabpanel-${index}`}
-            aria-labelledby={`discente-tab-${index}`}
-            {...other}
-        >
-            {value === index && (
-                <Box sx={{ p: 3 }}>
-                    {children}
-                </Box>
-            )}
-        </div>
-    );
-}
-
-function a11yProps(index) {
-    return {
-        id: `discente-tab-${index}`,
-        'aria-controls': `discente-tabpanel-${index}`,
-    };
-}
+import { AuthContext } from "../contexts/AuthContext";
+import axiosInstance from "../auth/axios";
 
 export default function ModuloDiscente() {
-    const [tabValue, setTabValue] = useState(0);
+    const { usuario } = useContext(AuthContext);
+    const [etapaAtual, setEtapaAtual] = useState(0);
+    const [loading, setLoading] = useState(true);
 
-    const handleTabChange = (event, newValue) => {
-        setTabValue(newValue);
+    useEffect(() => {
+        if (usuario) {
+            carregarEtapaAtual();
+        }
+    }, [usuario]);
+
+    const carregarEtapaAtual = async () => {
+        try {
+            setLoading(true);
+
+            // Buscar o discente pelo id_usuario
+            const responseDiscente = await axiosInstance.get(
+                `/dicentes/usuario/${usuario.id}`
+            );
+
+            if (responseDiscente && responseDiscente.matricula) {
+                // Buscar o trabalho de conclusão do discente
+                const responseTcc = await axiosInstance.get(
+                    `/trabalho-conclusao/discente/${responseDiscente.matricula}`
+                );
+
+                if (responseTcc) {
+                    setEtapaAtual(responseTcc.etapa || 0);
+                } else {
+                    setEtapaAtual(0); // Se não existe TCC, começa na etapa 0
+                }
+            } else {
+                setEtapaAtual(0); // Se não existe discente, começa na etapa 0
+            }
+        } catch (error) {
+            console.error("Erro ao carregar etapa atual:", error);
+            setEtapaAtual(0); // Em caso de erro, começa na etapa 0
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const renderizarConteudo = () => {
+        if (loading) {
+            return (
+                <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+                    <Typography>Carregando...</Typography>
+                </Box>
+            );
+        }
+
+        return (
+            <TccStepper
+                etapaInicial={etapaAtual}
+                onEtapaChange={setEtapaAtual}
+            />
+        );
     };
 
     return (
@@ -46,30 +69,7 @@ export default function ModuloDiscente() {
                 Módulo do Discente
             </Typography>
 
-            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                <Tabs
-                    value={tabValue}
-                    onChange={handleTabChange}
-                    aria-label="discente tabs"
-                >
-                    <Tab
-                        label="Visualizar Temas TCC"
-                        {...a11yProps(0)}
-                    />
-                    <Tab
-                        label="Desenvolvimento do TCC"
-                        {...a11yProps(1)}
-                    />
-                </Tabs>
-            </Box>
-
-            <TabPanel value={tabValue} index={0}>
-                <VisualizarTemasTCC />
-            </TabPanel>
-
-            <TabPanel value={tabValue} index={1}>
-                <TccStepper />
-            </TabPanel>
+            {renderizarConteudo()}
         </Box>
     );
 }

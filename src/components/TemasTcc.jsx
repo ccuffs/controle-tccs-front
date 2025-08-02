@@ -341,8 +341,6 @@ export default function TemasTcc() {
         setTemaDelete(null);
     }
 
-
-
     async function handleToggleAtivo(tema) {
         try {
             const novoStatus = !tema.ativo;
@@ -397,7 +395,10 @@ export default function TemasTcc() {
 
                 {cursoSelecionado && (
                     <PermissionContext
-                        grupos={[Permissoes.GRUPOS.ADMIN, Permissoes.GRUPOS.PROFESSOR]}
+                        grupos={[
+                            Permissoes.GRUPOS.ADMIN,
+                            Permissoes.GRUPOS.PROFESSOR,
+                        ]}
                         showError={false}
                     >
                         <Typography variant="h6" component="h3">

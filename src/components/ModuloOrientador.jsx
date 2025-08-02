@@ -1,10 +1,5 @@
 import React, { useState } from "react";
-import {
-    Box,
-    Typography,
-    Tabs,
-    Tab
-} from "@mui/material";
+import { Box, Typography, Tabs, Tab } from "@mui/material";
 import GerenciarTemasOrientador from "./GerenciarTemasOrientador";
 
 function TabPanel({ children, value, index, ...other }) {
@@ -16,11 +11,7 @@ function TabPanel({ children, value, index, ...other }) {
             aria-labelledby={`orientador-tab-${index}`}
             {...other}
         >
-            {value === index && (
-                <Box sx={{ p: 3 }}>
-                    {children}
-                </Box>
-            )}
+            {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
         </div>
     );
 }
@@ -28,7 +19,7 @@ function TabPanel({ children, value, index, ...other }) {
 function a11yProps(index) {
     return {
         id: `orientador-tab-${index}`,
-        'aria-controls': `orientador-tabpanel-${index}`,
+        "aria-controls": `orientador-tabpanel-${index}`,
     };
 }
 
@@ -45,20 +36,14 @@ export default function ModuloOrientador() {
                 Módulo do Orientador
             </Typography>
 
-            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+            <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
                 <Tabs
                     value={tabValue}
                     onChange={handleTabChange}
                     aria-label="orientador tabs"
                 >
-                    <Tab
-                        label="Gerenciar Temas TCC"
-                        {...a11yProps(0)}
-                    />
-                    <Tab
-                        label="Outras Funcionalidades"
-                        {...a11yProps(1)}
-                    />
+                    <Tab label="Gerenciar Temas TCC" {...a11yProps(0)} />
+                    <Tab label="Outras Funcionalidades" {...a11yProps(1)} />
                 </Tabs>
             </Box>
 
@@ -71,7 +56,8 @@ export default function ModuloOrientador() {
                     Outras Funcionalidades do Orientador
                 </Typography>
                 <Typography variant="body1" color="text.secondary">
-                    Aqui serão adicionadas outras funcionalidades específicas para orientadores.
+                    Aqui serão adicionadas outras funcionalidades específicas
+                    para orientadores.
                 </Typography>
             </TabPanel>
         </Box>

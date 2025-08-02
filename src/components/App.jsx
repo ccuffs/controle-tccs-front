@@ -33,10 +33,18 @@ function ConditionalRoute() {
     }
 
     // Verifica se o usuário pertence aos grupos específicos
-    const isAdmin = gruposUsuario.some(grupo => grupo.id === Permissoes.GRUPOS.ADMIN);
-    const isProfessor = gruposUsuario.some(grupo => grupo.id === Permissoes.GRUPOS.PROFESSOR);
-    const isOrientador = gruposUsuario.some(grupo => grupo.id === Permissoes.GRUPOS.ORIENTADOR);
-    const isEstudante = gruposUsuario.some(grupo => grupo.id === Permissoes.GRUPOS.ESTUDANTE);
+    const isAdmin = gruposUsuario.some(
+        (grupo) => grupo.id === Permissoes.GRUPOS.ADMIN
+    );
+    const isProfessor = gruposUsuario.some(
+        (grupo) => grupo.id === Permissoes.GRUPOS.PROFESSOR
+    );
+    const isOrientador = gruposUsuario.some(
+        (grupo) => grupo.id === Permissoes.GRUPOS.ORIENTADOR
+    );
+    const isEstudante = gruposUsuario.some(
+        (grupo) => grupo.id === Permissoes.GRUPOS.ESTUDANTE
+    );
 
     // Lógica de roteamento baseada nas regras especificadas
     if (isAdmin) {
@@ -50,7 +58,7 @@ function ConditionalRoute() {
     }
 
     // Fallback para Dashboard caso não se encaixe em nenhuma regra
-    console.log('Redirecionando para Dashboard (fallback)');
+    console.log("Redirecionando para Dashboard (fallback)");
     return <Dashboard />;
 }
 

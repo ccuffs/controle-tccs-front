@@ -30,7 +30,6 @@ import { DataGrid } from "@mui/x-data-grid";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 
-
 export default function Dicentes() {
     const [dicentes, setDicentes] = useState([]);
     const [cursos, setCursos] = useState([]);
@@ -551,11 +550,7 @@ export default function Dicentes() {
                     </Box>
                 </Stack>
 
-                <PermissionContext
-                    permissoes={[
-                        Permissoes.DICENTE.CRIAR,
-                    ]}
-                >
+                <PermissionContext permissoes={[Permissoes.DICENTE.CRIAR]}>
                     <Stack direction="row" spacing={2}>
                         <PermissionContext
                             permissoes={[Permissoes.DICENTE.CRIAR]}

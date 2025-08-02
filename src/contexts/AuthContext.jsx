@@ -97,12 +97,13 @@ export const AuthProvider = ({ children }) => {
     const carregarPermissoes = async () => {
         try {
             const dadosUsuario = await authService.getMe();
+
             dispatch({
                 type: "SET_PERMISSOES",
                 payload: {
-                    permissoesUsuario: dadosUsuario.permissoes,
+                    permissoesUsuario: dadosUsuario.permissoes || [],
                     gruposUsuario: dadosUsuario.grupos || [],
-                    temConsultaTodos: dadosUsuario.temConsultaTodos,
+                    temConsultaTodos: dadosUsuario.temConsultaTodos || false,
                 },
             });
         } catch (error) {

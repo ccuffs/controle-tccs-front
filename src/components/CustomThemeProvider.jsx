@@ -26,7 +26,7 @@ export const customColors = {
     eerieBlack: "#1d1b1b",
     trueBlue: "#3365b3",
     raisinBlack: "#272829",
-    taupe: "#4a4342"
+    taupe: "#4a4342",
 };
 
 export default function CustomThemeProvider({ children }) {
@@ -75,14 +75,26 @@ export default function CustomThemeProvider({ children }) {
                         dark: customColors.teal,
                     },
                     background: {
-                        default: mode === "light" ? customColors.whiteSmoke : customColors.raisinBlack,
+                        default:
+                            mode === "light"
+                                ? customColors.whiteSmoke
+                                : customColors.raisinBlack,
                         paper: mode === "light" ? "#ffffff" : customColors.jet,
                     },
                     text: {
-                        primary: mode === "light" ? customColors.eerieBlack : customColors.whiteSmoke,
-                        secondary: mode === "light" ? customColors.taupe : customColors.platinum,
+                        primary:
+                            mode === "light"
+                                ? customColors.eerieBlack
+                                : customColors.whiteSmoke,
+                        secondary:
+                            mode === "light"
+                                ? customColors.taupe
+                                : customColors.platinum,
                     },
-                    divider: mode === "light" ? customColors.platinum : customColors.frenchGray,
+                    divider:
+                        mode === "light"
+                            ? customColors.platinum
+                            : customColors.frenchGray,
                     // Cores customizadas adicionais acessíveis via theme.palette
                     custom: {
                         veronica: customColors.veronica,
@@ -96,16 +108,28 @@ export default function CustomThemeProvider({ children }) {
                 typography: {
                     fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
                     h1: {
-                        color: mode === "light" ? customColors.darkGray : "#ffffff",
+                        color:
+                            mode === "light"
+                                ? customColors.darkGray
+                                : "#ffffff",
                     },
                     h2: {
-                        color: mode === "light" ? customColors.darkGray : "#ffffff",
+                        color:
+                            mode === "light"
+                                ? customColors.darkGray
+                                : "#ffffff",
                     },
                     h3: {
-                        color: mode === "light" ? customColors.teal : customColors.tiffanyBlue,
+                        color:
+                            mode === "light"
+                                ? customColors.teal
+                                : customColors.tiffanyBlue,
                     },
                     h4: {
-                        color: mode === "light" ? customColors.teal : customColors.tiffanyBlue,
+                        color:
+                            mode === "light"
+                                ? customColors.teal
+                                : customColors.tiffanyBlue,
                     },
                 },
                 components: {
@@ -125,14 +149,14 @@ export default function CustomThemeProvider({ children }) {
                             },
                             containedPrimary: {
                                 backgroundColor: customColors.teal,
-                                '&:hover': {
+                                "&:hover": {
                                     backgroundColor: customColors.darkGray,
                                 },
                             },
                             containedSecondary: {
                                 backgroundColor: customColors.orange,
                                 color: "#ffffff",
-                                '&:hover': {
+                                "&:hover": {
                                     backgroundColor: "#e69500",
                                 },
                             },
@@ -142,21 +166,22 @@ export default function CustomThemeProvider({ children }) {
                         styleOverrides: {
                             root: {
                                 borderRadius: 12,
-                                boxShadow: mode === "light"
-                                    ? "0 2px 8px rgba(0,0,0,0.1)"
-                                    : "0 2px 8px rgba(0,0,0,0.3)",
+                                boxShadow:
+                                    mode === "light"
+                                        ? "0 2px 8px rgba(0,0,0,0.1)"
+                                        : "0 2px 8px rgba(0,0,0,0.3)",
                             },
                         },
                     },
                     MuiTextField: {
                         styleOverrides: {
                             root: {
-                                '& .MuiOutlinedInput-root': {
-                                    '&.Mui-focused fieldset': {
+                                "& .MuiOutlinedInput-root": {
+                                    "&.Mui-focused fieldset": {
                                         borderColor: customColors.teal,
                                     },
                                 },
-                                '& .MuiInputLabel-root.Mui-focused': {
+                                "& .MuiInputLabel-root.Mui-focused": {
                                     color: customColors.teal,
                                 },
                             },
@@ -167,7 +192,7 @@ export default function CustomThemeProvider({ children }) {
                             root: {
                                 backgroundColor: customColors.tiffanyBlue,
                                 color: customColors.darkGray,
-                                '&:hover': {
+                                "&:hover": {
                                     backgroundColor: customColors.teal,
                                     color: "#ffffff",
                                 },
@@ -178,15 +203,22 @@ export default function CustomThemeProvider({ children }) {
                         styleOverrides: {
                             root: {
                                 borderRadius: 8,
-                                border: `1px solid ${mode === "light" ? customColors.platinum : customColors.frenchGray}`,
+                                border: `1px solid ${
+                                    mode === "light"
+                                        ? customColors.platinum
+                                        : customColors.frenchGray
+                                }`,
                             },
                         },
                     },
                     MuiTableHead: {
                         styleOverrides: {
                             root: {
-                                backgroundColor: mode === "light" ? customColors.glaucous : customColors.trueBlue,
-                                '& .MuiTableCell-head': {
+                                backgroundColor:
+                                    mode === "light"
+                                        ? customColors.glaucous
+                                        : customColors.trueBlue,
+                                "& .MuiTableCell-head": {
                                     color: "#ffffff",
                                     fontWeight: 600,
                                 },
@@ -196,11 +228,17 @@ export default function CustomThemeProvider({ children }) {
                     MuiTableRow: {
                         styleOverrides: {
                             root: {
-                                '&:nth-of-type(odd)': {
-                                    backgroundColor: mode === "light" ? customColors.whiteSmoke : customColors.raisinBlack,
+                                "&:nth-of-type(odd)": {
+                                    backgroundColor:
+                                        mode === "light"
+                                            ? customColors.whiteSmoke
+                                            : customColors.raisinBlack,
                                 },
-                                '&:hover': {
-                                    backgroundColor: mode === "light" ? customColors.platinum : customColors.taupe,
+                                "&:hover": {
+                                    backgroundColor:
+                                        mode === "light"
+                                            ? customColors.platinum
+                                            : customColors.taupe,
                                 },
                             },
                         },
@@ -222,7 +260,7 @@ export default function CustomThemeProvider({ children }) {
                             root: {
                                 textTransform: "none",
                                 fontWeight: 500,
-                                '&.Mui-selected': {
+                                "&.Mui-selected": {
                                     color: customColors.veronica,
                                 },
                             },
@@ -239,9 +277,15 @@ export default function CustomThemeProvider({ children }) {
                     MuiIconButton: {
                         styleOverrides: {
                             root: {
-                                color: mode === "light" ? customColors.platinum : customColors.frenchGray,
-                                '&:hover': {
-                                    backgroundColor: mode === "light" ? customColors.platinum : customColors.taupe,
+                                color:
+                                    mode === "light"
+                                        ? customColors.platinum
+                                        : customColors.frenchGray,
+                                "&:hover": {
+                                    backgroundColor:
+                                        mode === "light"
+                                            ? customColors.platinum
+                                            : customColors.taupe,
                                     color: customColors.veronica,
                                 },
                             },

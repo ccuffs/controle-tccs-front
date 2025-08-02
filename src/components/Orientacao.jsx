@@ -333,30 +333,36 @@ export default function Orientacao() {
                         size="small"
                         disabled={!selectedAnoSemestre || !faseSelecionada}
                     >
-                        {permissoesService.verificarPermissaoPorIds(permissoesUsuario, [Permissoes.ORIENTACAO.EDITAR]) ? (<Select
-                            value={orientadorSelecionado}
-                            onChange={(e) =>
-                                handleOrientadorChange(
-                                    params.row.matricula,
-                                    e.target.value
-                                )
-                            }
-                            displayEmpty
-                        >
-                            <MenuItem value="">
-                                <em>Sem orientador</em>
-                            </MenuItem>
-                            {docentesDisponiveis.map((docente) => (
-                                <MenuItem
-                                    key={docente.codigo}
-                                    value={docente.codigo}
-                                >
-                                    {docente.nome}
+                        {permissoesService.verificarPermissaoPorIds(
+                            permissoesUsuario,
+                            [Permissoes.ORIENTACAO.EDITAR]
+                        ) ? (
+                            <Select
+                                value={orientadorSelecionado}
+                                onChange={(e) =>
+                                    handleOrientadorChange(
+                                        params.row.matricula,
+                                        e.target.value
+                                    )
+                                }
+                                displayEmpty
+                            >
+                                <MenuItem value="">
+                                    <em>Sem orientador</em>
                                 </MenuItem>
-                            ))}
-                        </Select>) : (
+                                {docentesDisponiveis.map((docente) => (
+                                    <MenuItem
+                                        key={docente.codigo}
+                                        value={docente.codigo}
+                                    >
+                                        {docente.nome}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        ) : (
                             <Typography variant="body2" color="text.secondary">
-                                {orientadorSelecionado || "Sem orientador definido"}
+                                {orientadorSelecionado ||
+                                    "Sem orientador definido"}
                             </Typography>
                         )}
                     </FormControl>
@@ -630,7 +636,10 @@ export default function Orientacao() {
                         dicentes.length === 0 &&
                         !loadingDicentes && (
                             <Paper sx={{ p: 3, textAlign: "center" }}>
-                                <Typography variant="body2" color="text.secondary">
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                >
                                     Nenhum dicente encontrado com os filtros
                                     aplicados.
                                 </Typography>

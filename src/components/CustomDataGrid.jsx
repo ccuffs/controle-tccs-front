@@ -11,30 +11,30 @@ export default function CustomDataGrid({
     rowSpanning = true,
     getRowId = (row) => row.id,
     getRowClassName,
-    getRowHeight = () => 'auto',
+    getRowHeight = () => "auto",
     columnVisibilityModel = {},
     sx = {},
     ...otherProps
 }) {
     const defaultSx = {
-        '& .MuiDataGrid-cell': {
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'flex-start',
-            padding: '8px',
-            minHeight: 'auto',
-            height: 'auto',
+        "& .MuiDataGrid-cell": {
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-start",
+            padding: "8px",
+            minHeight: "auto",
+            height: "auto",
         },
-        '& .MuiDataGrid-columnHeader': {
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'flex-start',
+        "& .MuiDataGrid-columnHeader": {
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-start",
         },
-        ...sx
+        ...sx,
     };
 
     return (
-        <Box style={{ display: 'flex', flexDirection: 'column'}}>
+        <Box style={{ display: "flex", flexDirection: "column" }}>
             <DataGrid
                 rows={rows}
                 columns={columns}

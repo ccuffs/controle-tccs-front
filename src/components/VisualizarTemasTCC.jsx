@@ -23,7 +23,7 @@ import {
 import { DataGrid } from "@mui/x-data-grid";
 import TemasDataGridDiscente from "./TemasDataGridDiscente";
 
-export default function VisualizarTemasTCC() {
+export default function VisualizarTemasTCC({ onAvancarEtapa }) {
     const { usuario } = useContext(AuthContext);
     const [temas, setTemas] = useState([]);
     const [temasAtivos, setTemasAtivos] = useState([]);
@@ -47,14 +47,16 @@ export default function VisualizarTemasTCC() {
 
     useEffect(() => {
         // Filtrar apenas temas ativos
-        const temasFiltrados = temas.filter(tema => tema.ativo === true);
+        const temasFiltrados = temas.filter((tema) => tema.ativo === true);
         setTemasAtivos(temasFiltrados);
     }, [temas]);
 
     async function getCursoDiscente() {
         try {
             // Buscar o curso do discente através do usuário logado
-            const response = await axiosInstance.get(`/usuarios/${usuario.id}/cursos`);
+            const response = await axiosInstance.get(
+                `/usuarios/${usuario.id}/cursos`
+            );
             if (response.cursos && response.cursos.length > 0) {
                 setCursoDiscente(response.cursos[0]); // Assume o primeiro curso
             } else {
@@ -102,9 +104,9 @@ export default function VisualizarTemasTCC() {
 
     if (loading) {
         return (
-            <Box sx={{ width: '100%' }}>
+            <Box sx={{ width: "100%" }}>
                 <LinearProgress />
-                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+                <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
                     <CircularProgress />
                 </Box>
             </Box>
@@ -135,7 +137,8 @@ export default function VisualizarTemasTCC() {
                                 Curso: {cursoDiscente.nome}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                                Código: {cursoDiscente.codigo} - Turno: {cursoDiscente.turno}
+                                Código: {cursoDiscente.codigo} - Turno:{" "}
+                                {cursoDiscente.turno}
                             </Typography>
                         </Grid>
                         <Grid item xs={12} md={6}>
@@ -156,8 +159,7 @@ export default function VisualizarTemasTCC() {
                         Object.keys(
                             temasAtivos.reduce((acc, tema) => {
                                 const codigo =
-                                    tema.Docente?.codigo ||
-                                    "sem-docente";
+                                    tema.Docente?.codigo || "sem-docente";
                                 acc[codigo] = true;
                                 return acc;
                             }, {})
@@ -167,8 +169,7 @@ export default function VisualizarTemasTCC() {
                     {
                         Object.keys(
                             temasAtivos.reduce((acc, tema) => {
-                                const idArea =
-                                    tema.AreaTcc?.id || "sem-area";
+                                const idArea = tema.AreaTcc?.id || "sem-area";
                                 acc[idArea] = true;
                                 return acc;
                             }, {})
@@ -177,9 +178,27 @@ export default function VisualizarTemasTCC() {
                     área(s)
                 </Typography>
 
-                <TemasDataGridDiscente
-                    temas={temasAtivos}
-                />
+                <TemasDataGridDiscente temas={temasAtivos} />
+
+                {onAvancarEtapa && (
+                    <Box
+                        sx={{
+                            mt: 3,
+                            display: "flex",
+                            justifyContent: "center",
+                        }}
+                    >
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            size="large"
+                            onClick={() => onAvancarEtapa(1)}
+                            sx={{ px: 4, py: 1.5 }}
+                        >
+                            Iniciar Desenvolvimento do TCC
+                        </Button>
+                    </Box>
+                )}
             </Stack>
 
             <Snackbar
@@ -187,10 +206,7 @@ export default function VisualizarTemasTCC() {
                 autoHideDuration={6000}
                 onClose={handleCloseMessage}
             >
-                <Alert
-                    severity={messageSeverity}
-                    onClose={handleCloseMessage}
-                >
+                <Alert severity={messageSeverity} onClose={handleCloseMessage}>
                     {messageText}
                 </Alert>
             </Snackbar>

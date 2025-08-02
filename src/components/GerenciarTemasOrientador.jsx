@@ -75,14 +75,17 @@ export default function GerenciarTemasOrientador() {
                 `/orientadores/docente/${codigoDocente}`
             );
             const cursosOrientador = response.orientacoes || [];
-            setCursos(cursosOrientador.map(orientacao => orientacao.curso));
+            setCursos(cursosOrientador.map((orientacao) => orientacao.curso));
 
             // Se o orientador possui apenas 1 curso, pré-selecionar
             if (cursosOrientador.length === 1) {
                 setCursoSelecionado(cursosOrientador[0].curso.id);
             }
         } catch (error) {
-            console.log("Não foi possível retornar a lista de cursos do orientador: ", error);
+            console.log(
+                "Não foi possível retornar a lista de cursos do orientador: ",
+                error
+            );
             setCursos([]);
         }
     }
@@ -168,9 +171,7 @@ export default function GerenciarTemasOrientador() {
                 }
             );
 
-            setMessageText(
-                `Vagas da sua oferta atualizadas com sucesso!`
-            );
+            setMessageText(`Vagas da sua oferta atualizadas com sucesso!`);
             setMessageSeverity("success");
             setOpenMessage(true);
 
@@ -488,9 +489,7 @@ export default function GerenciarTemasOrientador() {
             width: 280,
             renderCell: (params) => (
                 <PermissionContext
-                    grupos={[
-                        Permissoes.GRUPOS.ORIENTADOR,
-                    ]}
+                    grupos={[Permissoes.GRUPOS.ORIENTADOR]}
                     showError={false}
                 >
                     <Stack direction="row" spacing={1}>
@@ -527,15 +526,12 @@ export default function GerenciarTemasOrientador() {
 
     // Criar modelo de visibilidade das colunas baseado nas permissões
     const columnVisibilityModel = {
-        actions: hasPermission([
-            Permissoes.GRUPOS.ORIENTADOR,
-        ]),
+        actions: hasPermission([Permissoes.GRUPOS.ORIENTADOR]),
     };
 
     return (
         <Box>
             <Stack spacing={2}>
-
                 <FormControl fullWidth size="small">
                     <InputLabel>Selecione um Curso</InputLabel>
                     <Select
@@ -685,7 +681,8 @@ export default function GerenciarTemasOrientador() {
                     <DialogContent>
                         <Stack spacing={2} sx={{ mt: 1 }}>
                             <Typography variant="body2" color="text.secondary">
-                                Editando vagas da sua oferta no curso selecionado.
+                                Editando vagas da sua oferta no curso
+                                selecionado.
                             </Typography>
                             <Typography
                                 variant="caption"

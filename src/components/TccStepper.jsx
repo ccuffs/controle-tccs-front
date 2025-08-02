@@ -15,16 +15,13 @@ import {
 } from "@mui/material";
 import axiosInstance from "../auth/axios";
 import { AuthContext } from "../contexts/AuthContext";
+import VisualizarTemasTCC from "./VisualizarTemasTCC";
 
-const steps = [
-    "Preenchimento do Tema do TCC",
-    "Preenchimento do Título do TCC",
-    "Preenchimento do Resumo"
-];
+const steps = ["1", "2", "3", "4"];
 
-export default function TccStepper() {
+export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
     const { usuario } = useContext(AuthContext);
-    const [activeStep, setActiveStep] = useState(0);
+    const [activeStep, setActiveStep] = useState(etapaInicial);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [trabalhoConclusao, setTrabalhoConclusao] = useState(null);
@@ -32,7 +29,7 @@ export default function TccStepper() {
     const [formData, setFormData] = useState({
         tema: "",
         titulo: "",
-        resumo: ""
+        resumo: "",
     });
     const [openMessage, setOpenMessage] = useState(false);
     const [messageText, setMessageText] = useState("");
@@ -44,35 +41,54 @@ export default function TccStepper() {
         }
     }, [usuario]);
 
-        const carregarTrabalhoConclusao = async () => {
+    useEffect(() => {
+        setActiveStep(etapaInicial);
+    }, [etapaInicial]);
+
+    const carregarTrabalhoConclusao = async () => {
         try {
             setLoading(true);
 
             // Primeiro, buscar a última oferta TCC
-            const responseOferta = await axiosInstance.get("/ofertas-tcc/ultima");
+            const responseOferta = await axiosInstance.get(
+                "/ofertas-tcc/ultima"
+            );
             setOfertaAtual(responseOferta);
 
             // Buscar o discente pelo id_usuario
-            const responseDiscente = await axiosInstance.get(`/dicentes/usuario/${usuario.id}`);
+            const responseDiscente = await axiosInstance.get(
+                `/dicentes/usuario/${usuario.id}`
+            );
 
             if (responseDiscente && responseDiscente.matricula) {
                 // Buscar o trabalho de conclusão do discente
-                const responseTcc = await axiosInstance.get(`/trabalho-conclusao/discente/${responseDiscente.matricula}`);
+                const responseTcc = await axiosInstance.get(
+                    `/trabalho-conclusao/discente/${responseDiscente.matricula}`
+                );
 
                 if (responseTcc) {
                     setTrabalhoConclusao(responseTcc);
                     setFormData({
                         tema: responseTcc.tema || "",
                         titulo: responseTcc.titulo || "",
-                        resumo: responseTcc.resumo || ""
+                        resumo: responseTcc.resumo || "",
                     });
-                    setActiveStep(responseTcc.etapa || 0);
+                    // Usar a etapa do banco de dados
+                    const etapaBanco = responseTcc.etapa || 0;
+                    setActiveStep(etapaBanco);
+                    if (onEtapaChange) {
+                        onEtapaChange(etapaBanco);
+                    }
                 } else {
                     // Criar novo trabalho de conclusão se não existir
-                    await criarNovoTrabalhoConclusao(responseDiscente.matricula);
+                    await criarNovoTrabalhoConclusao(
+                        responseDiscente.matricula
+                    );
                 }
             } else {
-                setMessageText("Usuário não possui matrícula de discente associada!");
+                setMessageText(
+                    "Usuário não possui matrícula de discente associada!"
+                );
                 setMessageSeverity("error");
                 setOpenMessage(true);
             }
@@ -93,12 +109,19 @@ export default function TccStepper() {
                 tema: "",
                 titulo: "",
                 resumo: "",
-                etapa: 0
+                etapa: 0, // Começar na etapa 0 (visualização de temas)
                 // ano, semestre, id_curso e fase serão obtidos automaticamente da última oferta TCC
             };
 
-            const response = await axiosInstance.post("/trabalho-conclusao", novoTcc);
+            const response = await axiosInstance.post(
+                "/trabalho-conclusao",
+                novoTcc
+            );
             setTrabalhoConclusao(response);
+            setActiveStep(0);
+            if (onEtapaChange) {
+                onEtapaChange(0);
+            }
         } catch (error) {
             console.error("Erro ao criar trabalho de conclusão:", error);
             setMessageText("Erro ao criar novo TCC!");
@@ -107,75 +130,200 @@ export default function TccStepper() {
         }
     };
 
-    const handleNext = async () => {
-        if (activeStep === steps.length - 1) {
-            // Última etapa - salvar tudo
-            await salvarTrabalhoConclusao();
-        } else {
-            // Avançar para próxima etapa
-            await salvarEtapaAtual();
-            setActiveStep((prevActiveStep) => prevActiveStep + 1);
+    const validarEtapaAtual = () => {
+        switch (activeStep) {
+            case 0:
+                return true; // Etapa 0 (visualização de temas) sempre válida
+            case 1:
+                return formData.tema && formData.tema.trim().length > 0;
+            case 2:
+                return formData.titulo && formData.titulo.trim().length > 0;
+            case 3:
+                return formData.resumo && formData.resumo.trim().length > 0;
+            default:
+                return true;
         }
     };
 
-    const handleBack = () => {
-        setActiveStep((prevActiveStep) => prevActiveStep - 1);
+    const handleNext = async () => {
+        // Validar se os campos da etapa atual estão preenchidos
+        if (!validarEtapaAtual()) {
+            setMessageText(
+                "Por favor, preencha todos os campos obrigatórios antes de continuar."
+            );
+            setMessageSeverity("warning");
+            setOpenMessage(true);
+            return;
+        }
+
+        try {
+            if (activeStep === 0) {
+                // Etapa 0: apenas avançar, não salvar
+                const novaEtapa = activeStep + 1;
+                setActiveStep(novaEtapa);
+                if (onEtapaChange) {
+                    onEtapaChange(novaEtapa);
+                }
+            } else if (activeStep === steps.length - 1) {
+                // Última etapa - salvar tudo
+                const sucesso = await salvarTrabalhoConclusao();
+                if (sucesso) {
+                    const novaEtapa = activeStep + 1;
+                    setActiveStep(novaEtapa);
+                    if (onEtapaChange) {
+                        onEtapaChange(novaEtapa);
+                    }
+                }
+            } else {
+                // Avançar para próxima etapa
+                const sucesso = await salvarEtapaAtual();
+                if (sucesso) {
+                    const novaEtapa = activeStep + 1;
+                    setActiveStep(novaEtapa);
+                    if (onEtapaChange) {
+                        onEtapaChange(novaEtapa);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Erro ao avançar etapa:", error);
+            setMessageText(
+                "Erro ao salvar dados. Verifique sua conexão e tente novamente."
+            );
+            setMessageSeverity("error");
+            setOpenMessage(true);
+        }
+    };
+
+    const handleBack = async () => {
+        const novaEtapa = activeStep - 1;
+        setActiveStep(novaEtapa);
+
+        // Atualizar etapa no banco de dados (exceto se voltando para etapa 0)
+        if (trabalhoConclusao && trabalhoConclusao.id && novaEtapa > 0) {
+            try {
+                const dadosAtualizados = {
+                    ...trabalhoConclusao,
+                    ...formData,
+                    etapa: novaEtapa,
+                };
+
+                await axiosInstance.put(
+                    `/trabalho-conclusao/${trabalhoConclusao.id}`,
+                    dadosAtualizados
+                );
+                setTrabalhoConclusao(dadosAtualizados);
+
+                // Notificar componente pai sobre mudança de etapa
+                if (onEtapaChange) {
+                    onEtapaChange(novaEtapa);
+                }
+            } catch (error) {
+                console.error("Erro ao atualizar etapa ao voltar:", error);
+                // Em caso de erro, não impede o usuário de voltar
+            }
+        } else {
+            // Se voltando para etapa 0, apenas notificar
+            if (onEtapaChange) {
+                onEtapaChange(novaEtapa);
+            }
+        }
     };
 
     const salvarEtapaAtual = async () => {
-        console.log("salvando etapa atual");
-        console.log(formData);
-        console.log(trabalhoConclusao);
-        console.log(activeStep);
+        if (!trabalhoConclusao || !trabalhoConclusao.id) {
+            setMessageText(
+                "Erro: Trabalho de conclusão não encontrado. Recarregue a página."
+            );
+            setMessageSeverity("error");
+            setOpenMessage(true);
+            return false;
+        }
+
         try {
             setSaving(true);
             const dadosAtualizados = {
                 ...trabalhoConclusao,
                 ...formData,
-                etapa: activeStep
+                etapa: activeStep,
             };
 
-            await axiosInstance.put(`/trabalho-conclusao/${trabalhoConclusao.id}`, dadosAtualizados);
+            await axiosInstance.put(
+                `/trabalho-conclusao/${trabalhoConclusao.id}`,
+                dadosAtualizados
+            );
             setTrabalhoConclusao(dadosAtualizados);
+
+            // Notificar componente pai sobre mudança de etapa
+            if (onEtapaChange) {
+                onEtapaChange(activeStep);
+            }
+
+            setMessageText("Etapa salva com sucesso!");
+            setMessageSeverity("success");
+            setOpenMessage(true);
+
+            return true;
         } catch (error) {
             console.error("Erro ao salvar etapa:", error);
             setMessageText("Erro ao salvar etapa atual!");
             setMessageSeverity("error");
             setOpenMessage(true);
+            return false;
         } finally {
             setSaving(false);
         }
     };
 
     const salvarTrabalhoConclusao = async () => {
+        if (!trabalhoConclusao || !trabalhoConclusao.id) {
+            setMessageText(
+                "Erro: Trabalho de conclusão não encontrado. Recarregue a página."
+            );
+            setMessageSeverity("error");
+            setOpenMessage(true);
+            return false;
+        }
+
         try {
             setSaving(true);
             const dadosAtualizados = {
                 ...trabalhoConclusao,
                 ...formData,
-                etapa: steps.length - 1
+                etapa: steps.length,
             };
 
-            await axiosInstance.put(`/trabalho-conclusao/${trabalhoConclusao.id}`, dadosAtualizados);
+            await axiosInstance.put(
+                `/trabalho-conclusao/${trabalhoConclusao.id}`,
+                dadosAtualizados
+            );
             setTrabalhoConclusao(dadosAtualizados);
+
+            // Notificar componente pai sobre mudança de etapa
+            if (onEtapaChange) {
+                onEtapaChange(steps.length);
+            }
 
             setMessageText("TCC salvo com sucesso!");
             setMessageSeverity("success");
             setOpenMessage(true);
+
+            return true;
         } catch (error) {
             console.error("Erro ao salvar TCC:", error);
             setMessageText("Erro ao salvar TCC!");
             setMessageSeverity("error");
             setOpenMessage(true);
+            return false;
         } finally {
             setSaving(false);
         }
     };
 
     const handleInputChange = (field, value) => {
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
-            [field]: value
+            [field]: value,
         }));
     };
 
@@ -191,34 +339,31 @@ export default function TccStepper() {
             case 0:
                 return (
                     <Box sx={{ mt: 2 }}>
-                        <Typography variant="h6" gutterBottom>
-                            Etapa 1: Tema do TCC
-                        </Typography>
-                        <TextField
-                            fullWidth
-                            label="Tema do TCC"
-                            value={formData.tema}
-                            onChange={(e) => handleInputChange("tema", e.target.value)}
-                            multiline
-                            rows={3}
-                            placeholder="Descreva o tema do seu trabalho de conclusão de curso..."
-                            helperText="Descreva de forma clara e objetiva o tema que será abordado no seu TCC"
-                        />
+                        <VisualizarTemasTCC />
                     </Box>
                 );
             case 1:
                 return (
                     <Box sx={{ mt: 2 }}>
                         <Typography variant="h6" gutterBottom>
-                            Etapa 2: Título do TCC
+                            Etapa 2: Tema do TCC
                         </Typography>
                         <TextField
                             fullWidth
-                            label="Título do TCC"
-                            value={formData.titulo}
-                            onChange={(e) => handleInputChange("titulo", e.target.value)}
-                            placeholder="Digite o título do seu trabalho de conclusão de curso..."
-                            helperText="O título deve ser claro, conciso e representativo do conteúdo do trabalho"
+                            label="Tema do TCC *"
+                            value={formData.tema}
+                            onChange={(e) =>
+                                handleInputChange("tema", e.target.value)
+                            }
+                            multiline
+                            rows={3}
+                            placeholder="Descreva o tema do seu trabalho de conclusão de curso..."
+                            helperText="Descreva de forma clara e objetiva o tema que será abordado no seu TCC"
+                            required
+                            error={
+                                !formData.tema ||
+                                formData.tema.trim().length === 0
+                            }
                         />
                     </Box>
                 );
@@ -226,17 +371,47 @@ export default function TccStepper() {
                 return (
                     <Box sx={{ mt: 2 }}>
                         <Typography variant="h6" gutterBottom>
-                            Etapa 3: Resumo do TCC
+                            Etapa 3: Título do TCC
                         </Typography>
                         <TextField
                             fullWidth
-                            label="Resumo do TCC"
+                            label="Título do TCC *"
+                            value={formData.titulo}
+                            onChange={(e) =>
+                                handleInputChange("titulo", e.target.value)
+                            }
+                            placeholder="Digite o título do seu trabalho de conclusão de curso..."
+                            helperText="O título deve ser claro, conciso e representativo do conteúdo do trabalho"
+                            required
+                            error={
+                                !formData.titulo ||
+                                formData.titulo.trim().length === 0
+                            }
+                        />
+                    </Box>
+                );
+            case 3:
+                return (
+                    <Box sx={{ mt: 2 }}>
+                        <Typography variant="h6" gutterBottom>
+                            Etapa 4: Resumo do TCC
+                        </Typography>
+                        <TextField
+                            fullWidth
+                            label="Resumo do TCC *"
                             value={formData.resumo}
-                            onChange={(e) => handleInputChange("resumo", e.target.value)}
+                            onChange={(e) =>
+                                handleInputChange("resumo", e.target.value)
+                            }
                             multiline
                             rows={6}
                             placeholder="Escreva um resumo do seu trabalho de conclusão de curso..."
                             helperText="O resumo deve apresentar os objetivos, metodologia, resultados e conclusões principais do trabalho"
+                            required
+                            error={
+                                !formData.resumo ||
+                                formData.resumo.trim().length === 0
+                            }
                         />
                     </Box>
                 );
@@ -247,29 +422,91 @@ export default function TccStepper() {
 
     if (loading) {
         return (
-            <Box sx={{ width: '100%' }}>
+            <Box sx={{ width: "100%" }}>
                 <LinearProgress />
-                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+                <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
                     <CircularProgress />
                 </Box>
             </Box>
         );
     }
 
+    if (!trabalhoConclusao && activeStep === 0) {
+        return (
+            <Box sx={{ width: "100%" }}>
+                <Typography variant="h5" component="h2" gutterBottom>
+                    Processo do TCC
+                </Typography>
+
+                <Paper sx={{ p: 3, mb: 3 }}>
+                    <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
+                        {steps.map((label, index) => {
+                            const stepProps = {};
+                            const labelProps = {};
+
+                            return (
+                                <Step key={label} {...stepProps}>
+                                    <StepLabel {...labelProps}>
+                                        {label}
+                                    </StepLabel>
+                                </Step>
+                            );
+                        })}
+                    </Stepper>
+
+                    <Box>
+                        {renderStepContent(activeStep)}
+
+                        <Box
+                            sx={{
+                                display: "flex",
+                                flexDirection: "row",
+                                pt: 2,
+                            }}
+                        >
+                            <Box sx={{ flex: "1 1 auto" }} />
+                            <Button
+                                onClick={() => {
+                                    const novaEtapa = activeStep + 1;
+                                    setActiveStep(novaEtapa);
+                                    if (onEtapaChange) {
+                                        onEtapaChange(novaEtapa);
+                                    }
+                                }}
+                                variant="contained"
+                                color="primary"
+                            >
+                                Próximo
+                            </Button>
+                        </Box>
+                    </Box>
+                </Paper>
+            </Box>
+        );
+    }
+
     return (
-        <Box sx={{ width: '100%' }}>
+        <Box sx={{ width: "100%" }}>
             <Typography variant="h5" component="h2" gutterBottom>
-                Desenvolvimento do TCC
+                Processo do TCC
             </Typography>
 
             {ofertaAtual && (
-                <Paper sx={{ p: 2, mb: 2, bgcolor: 'primary.light', color: 'primary.contrastText' }}>
+                <Paper
+                    sx={{
+                        p: 2,
+                        mb: 2,
+                        bgcolor: "primary.light",
+                        color: "primary.contrastText",
+                    }}
+                >
                     <Typography variant="h6" gutterBottom>
                         Oferta TCC Atual
                     </Typography>
                     <Typography variant="body2">
-                        Ano: {ofertaAtual.ano} • Semestre: {ofertaAtual.semestre} •
-                        Curso: {ofertaAtual.Curso?.nome} • Fase: {ofertaAtual.fase}
+                        Ano: {ofertaAtual.ano} • Semestre:{" "}
+                        {ofertaAtual.semestre} • Curso:{" "}
+                        {ofertaAtual.Curso?.nome} • Fase: {ofertaAtual.fase}
                     </Typography>
                 </Paper>
             )}
@@ -279,9 +516,42 @@ export default function TccStepper() {
                     {steps.map((label, index) => {
                         const stepProps = {};
                         const labelProps = {};
+
+                        // Verificar se a etapa está completa
+                        const isStepComplete = (() => {
+                            switch (index) {
+                                case 0:
+                                    return true; // Etapa 0 sempre completa (visualização)
+                                case 1:
+                                    return (
+                                        formData.tema &&
+                                        formData.tema.trim().length > 0
+                                    );
+                                case 2:
+                                    return (
+                                        formData.titulo &&
+                                        formData.titulo.trim().length > 0
+                                    );
+                                case 3:
+                                    return (
+                                        formData.resumo &&
+                                        formData.resumo.trim().length > 0
+                                    );
+                                default:
+                                    return false;
+                            }
+                        })();
+
                         return (
                             <Step key={label} {...stepProps}>
-                                <StepLabel {...labelProps}>{label}</StepLabel>
+                                <StepLabel
+                                    {...labelProps}
+                                    error={
+                                        activeStep === index && !isStepComplete
+                                    }
+                                >
+                                    {label}
+                                </StepLabel>
                             </Step>
                         );
                     })}
@@ -298,9 +568,41 @@ export default function TccStepper() {
                     </Box>
                 ) : (
                     <Box>
+                        {saving && (
+                            <Box sx={{ mb: 2 }}>
+                                <LinearProgress />
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                    sx={{ mt: 1 }}
+                                >
+                                    Salvando dados...
+                                </Typography>
+                            </Box>
+                        )}
+
                         {renderStepContent(activeStep)}
 
-                        <Box sx={{ display: 'flex', flexDirection: 'row', pt: 2 }}>
+                        <Box
+                            sx={{
+                                display: "flex",
+                                flexDirection: "row",
+                                pt: 2,
+                            }}
+                        >
+                            {activeStep > 0 && (
+                                <Button
+                                    color="inherit"
+                                    onClick={() => {
+                                        if (onEtapaChange) {
+                                            onEtapaChange(0);
+                                        }
+                                    }}
+                                    sx={{ mr: 1 }}
+                                >
+                                    Voltar para Temas
+                                </Button>
+                            )}
                             <Button
                                 color="inherit"
                                 disabled={activeStep === 0}
@@ -309,12 +611,26 @@ export default function TccStepper() {
                             >
                                 Voltar
                             </Button>
-                            <Box sx={{ flex: '1 1 auto' }} />
+                            <Box sx={{ flex: "1 1 auto" }} />
                             <Button
                                 onClick={handleNext}
-                                disabled={saving}
+                                disabled={saving || !validarEtapaAtual()}
+                                variant="contained"
+                                color="primary"
                             >
-                                {activeStep === steps.length - 1 ? 'Finalizar' : 'Próximo'}
+                                {saving ? (
+                                    <>
+                                        <CircularProgress
+                                            size={20}
+                                            sx={{ mr: 1 }}
+                                        />
+                                        Salvando...
+                                    </>
+                                ) : activeStep === steps.length - 1 ? (
+                                    "Finalizar"
+                                ) : (
+                                    "Próximo"
+                                )}
                             </Button>
                         </Box>
                     </Box>
@@ -326,10 +642,7 @@ export default function TccStepper() {
                 autoHideDuration={6000}
                 onClose={handleCloseMessage}
             >
-                <Alert
-                    severity={messageSeverity}
-                    onClose={handleCloseMessage}
-                >
+                <Alert severity={messageSeverity} onClose={handleCloseMessage}>
                     {messageText}
                 </Alert>
             </Snackbar>
