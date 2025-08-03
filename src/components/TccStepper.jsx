@@ -16,6 +16,8 @@ import {
 import axiosInstance from "../auth/axios";
 import { AuthContext } from "../contexts/AuthContext";
 import VisualizarTemasTCC from "./VisualizarTemasTCC";
+import ConviteOrientadorModal from "./ConviteOrientadorModal";
+import conviteService from "../services/conviteService";
 
 const steps = ["1", "2", "3", "4"];
 
@@ -34,6 +36,8 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
     const [openMessage, setOpenMessage] = useState(false);
     const [messageText, setMessageText] = useState("");
     const [messageSeverity, setMessageSeverity] = useState("success");
+    const [openConviteModal, setOpenConviteModal] = useState(false);
+    const [conviteExistente, setConviteExistente] = useState(null);
 
     useEffect(() => {
         if (usuario) {
@@ -79,6 +83,9 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                     if (onEtapaChange) {
                         onEtapaChange(etapaBanco);
                     }
+
+                    // Carregar convite existente se houver
+                    await carregarConviteExistente(responseTcc.id);
                 } else {
                     // Criar novo trabalho de conclusão se não existir
                     await criarNovoTrabalhoConclusao(
@@ -99,6 +106,17 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
             setOpenMessage(true);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const carregarConviteExistente = async (idTcc) => {
+        try {
+            const convites = await conviteService.getConvites({ id_tcc: idTcc });
+            if (convites.length > 0) {
+                setConviteExistente(convites[0]);
+            }
+        } catch (error) {
+            console.error("Erro ao carregar convite existente:", error);
         }
     };
 
@@ -133,7 +151,11 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
     const validarEtapaAtual = () => {
         switch (activeStep) {
             case 0:
-                return true; // Etapa 0 (visualização de temas) sempre válida
+                // Na etapa 0, só pode avançar se tiver um convite aceito ou se não tiver enviado convite ainda
+                if (!conviteExistente) {
+                    return true; // Pode avançar se não enviou convite ainda
+                }
+                return conviteExistente.aceito === true; // Só pode avançar se o convite foi aceito
             case 1:
                 return formData.tema && formData.tema.trim().length > 0;
             case 2:
@@ -327,6 +349,23 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
         }));
     };
 
+    const handleOpenConviteModal = () => {
+        setOpenConviteModal(true);
+    };
+
+    const handleCloseConviteModal = () => {
+        setOpenConviteModal(false);
+    };
+
+    const handleConviteEnviado = async () => {
+        if (trabalhoConclusao) {
+            await carregarConviteExistente(trabalhoConclusao.id);
+        }
+        setMessageText("Convite enviado com sucesso!");
+        setMessageSeverity("success");
+        setOpenMessage(true);
+    };
+
     const handleCloseMessage = (_, reason) => {
         if (reason === "clickaway") {
             return;
@@ -339,6 +378,59 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
             case 0:
                 return (
                     <Box sx={{ mt: 2 }}>
+                        {/* Seção de Convite para Orientador - Posicionada acima do VisualizarTemasTCC */}
+                        {trabalhoConclusao && (
+                            <Paper sx={{ p: 3, mb: 3 }}>
+                                <Typography variant="h6" gutterBottom>
+                                    Convite para Orientador
+                                </Typography>
+
+                                {conviteExistente ? (
+                                    <Box>
+                                        <Alert
+                                            severity={conviteExistente.aceito ? "success" : "warning"}
+                                            sx={{ mb: 2 }}
+                                        >
+                                            <Typography variant="body2">
+                                                <strong>Status do Convite:</strong> {conviteExistente.aceito ? "Aceito" : "Pendente"}
+                                            </Typography>
+                                            {conviteExistente.data_envio && (
+                                                <Typography variant="body2">
+                                                    <strong>Enviado em:</strong> {new Date(conviteExistente.data_envio).toLocaleDateString('pt-BR')}
+                                                </Typography>
+                                            )}
+                                            {conviteExistente.Docente && (
+                                                <Typography variant="body2">
+                                                    <strong>Orientador:</strong> {conviteExistente.Docente.nome}
+                                                </Typography>
+                                            )}
+                                        </Alert>
+
+                                        <Button
+                                            variant="outlined"
+                                            onClick={handleOpenConviteModal}
+                                            disabled={conviteExistente.aceito}
+                                        >
+                                            {conviteExistente.aceito ? "Convite Aceito" : "Ver Detalhes do Convite"}
+                                        </Button>
+                                    </Box>
+                                ) : (
+                                    <Box>
+                                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                            Para prosseguir com o TCC, você precisa enviar um convite para um orientador.
+                                        </Typography>
+
+                                        <Button
+                                            variant="contained"
+                                            onClick={handleOpenConviteModal}
+                                        >
+                                            Enviar Convite para Orientador
+                                        </Button>
+                                    </Box>
+                                )}
+                            </Paper>
+                        )}
+
                         <VisualizarTemasTCC />
                     </Box>
                 );
@@ -359,11 +451,6 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                             rows={3}
                             placeholder="Descreva o tema do seu trabalho de conclusão de curso..."
                             helperText="Descreva de forma clara e objetiva o tema que será abordado no seu TCC"
-                            required
-                            error={
-                                !formData.tema ||
-                                formData.tema.trim().length === 0
-                            }
                         />
                     </Box>
                 );
@@ -382,11 +469,6 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                             }
                             placeholder="Digite o título do seu trabalho de conclusão de curso..."
                             helperText="O título deve ser claro, conciso e representativo do conteúdo do trabalho"
-                            required
-                            error={
-                                !formData.titulo ||
-                                formData.titulo.trim().length === 0
-                            }
                         />
                     </Box>
                 );
@@ -407,11 +489,6 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                             rows={6}
                             placeholder="Escreva um resumo do seu trabalho de conclusão de curso..."
                             helperText="O resumo deve apresentar os objetivos, metodologia, resultados e conclusões principais do trabalho"
-                            required
-                            error={
-                                !formData.resumo ||
-                                formData.resumo.trim().length === 0
-                            }
                         />
                     </Box>
                 );
@@ -557,6 +634,66 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                     })}
                 </Stepper>
 
+                {/* Botões de navegação na parte superior */}
+                {activeStep !== steps.length && (
+                    <Box
+                        sx={{
+                            display: "flex",
+                            flexDirection: "row",
+                            mb: 3,
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                        }}
+                    >
+                        <Box sx={{ display: "flex", gap: 1 }}>
+                            {activeStep > 0 && (
+                                <Button
+                                    color="inherit"
+                                    onClick={() => {
+                                        if (onEtapaChange) {
+                                            onEtapaChange(0);
+                                        }
+                                    }}
+                                    variant="outlined"
+                                    size="small"
+                                >
+                                    Voltar para Temas
+                                </Button>
+                            )}
+                            <Button
+                                color="inherit"
+                                disabled={activeStep === 0}
+                                onClick={handleBack}
+                                variant="outlined"
+                                size="small"
+                            >
+                                Voltar
+                            </Button>
+                        </Box>
+                        <Button
+                            onClick={handleNext}
+                            disabled={saving || !validarEtapaAtual()}
+                            variant="contained"
+                            color="primary"
+                            size="small"
+                        >
+                            {saving ? (
+                                <>
+                                    <CircularProgress
+                                        size={16}
+                                        sx={{ mr: 1 }}
+                                    />
+                                    Salvando...
+                                </>
+                            ) : activeStep === steps.length - 1 ? (
+                                "Finalizar"
+                            ) : (
+                                "Próximo"
+                            )}
+                        </Button>
+                    </Box>
+                )}
+
                 {activeStep === steps.length ? (
                     <Box>
                         <Typography sx={{ mt: 2, mb: 1 }}>
@@ -582,57 +719,6 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                         )}
 
                         {renderStepContent(activeStep)}
-
-                        <Box
-                            sx={{
-                                display: "flex",
-                                flexDirection: "row",
-                                pt: 2,
-                            }}
-                        >
-                            {activeStep > 0 && (
-                                <Button
-                                    color="inherit"
-                                    onClick={() => {
-                                        if (onEtapaChange) {
-                                            onEtapaChange(0);
-                                        }
-                                    }}
-                                    sx={{ mr: 1 }}
-                                >
-                                    Voltar para Temas
-                                </Button>
-                            )}
-                            <Button
-                                color="inherit"
-                                disabled={activeStep === 0}
-                                onClick={handleBack}
-                                sx={{ mr: 1 }}
-                            >
-                                Voltar
-                            </Button>
-                            <Box sx={{ flex: "1 1 auto" }} />
-                            <Button
-                                onClick={handleNext}
-                                disabled={saving || !validarEtapaAtual()}
-                                variant="contained"
-                                color="primary"
-                            >
-                                {saving ? (
-                                    <>
-                                        <CircularProgress
-                                            size={20}
-                                            sx={{ mr: 1 }}
-                                        />
-                                        Salvando...
-                                    </>
-                                ) : activeStep === steps.length - 1 ? (
-                                    "Finalizar"
-                                ) : (
-                                    "Próximo"
-                                )}
-                            </Button>
-                        </Box>
                     </Box>
                 )}
             </Paper>
@@ -646,6 +732,18 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                     {messageText}
                 </Alert>
             </Snackbar>
+
+            {/* Modal de Convite para Orientador */}
+            {trabalhoConclusao && (
+                <ConviteOrientadorModal
+                    open={openConviteModal}
+                    onClose={handleCloseConviteModal}
+                    idTcc={trabalhoConclusao.id}
+                    idCurso={trabalhoConclusao.id_curso}
+                    onConviteEnviado={handleConviteEnviado}
+                    conviteExistente={conviteExistente}
+                />
+            )}
         </Box>
     );
 }
