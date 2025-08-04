@@ -69,107 +69,123 @@ function App() {
         <AuthProvider>
             <CustomThemeProvider>
                 <DrawerContext.Provider value={{ desktopOpen, setDesktopOpen }}>
-                    <Box sx={{ display: "flex" }}>
-                        <Navbar />
-                        <Box
-                            component="main"
-                            sx={{
-                                flexGrow: 1,
-                                p: 3,
-                                width: {
-                                    md: desktopOpen
-                                        ? `calc(100% - 240px)`
-                                        : "100%",
-                                },
-                                transition: (theme) =>
-                                    theme.transitions.create(
-                                        ["width", "margin"],
-                                        {
-                                            easing: theme.transitions.easing
-                                                .sharp,
-                                            duration:
-                                                theme.transitions.duration
-                                                    .leavingScreen,
-                                        }
-                                    ),
-                            }}
-                        >
-                            <Toolbar /> {/* Spacing for AppBar */}
-                            <ThemeSwitch />
-                            <Container maxWidth="xl" sx={{ mt: 2 }}>
-                                <Routes>
-                                    <Route path="/login" element={<Login />} />
-                                    <Route
-                                        path="/"
-                                        element={
-                                            <ProtectedRoute>
-                                                <ConditionalRoute />
-                                            </ProtectedRoute>
-                                        }
-                                    />
-                                    <Route
-                                        path="cursos"
-                                        element={
-                                            <ProtectedRoute>
-                                                <Cursos />
-                                            </ProtectedRoute>
-                                        }
-                                    />
-                                    <Route
-                                        path="orientadores"
-                                        element={
-                                            <ProtectedRoute>
-                                                <Orientadores />
-                                            </ProtectedRoute>
-                                        }
-                                    />
-                                    <Route
-                                        path="dicentes"
-                                        element={
-                                            <ProtectedRoute>
-                                                <Dicentes />
-                                            </ProtectedRoute>
-                                        }
-                                    />
-                                    <Route
-                                        path="orientacoes"
-                                        element={
-                                            <ProtectedRoute>
-                                                <Orientacao />
-                                            </ProtectedRoute>
-                                        }
-                                    />
-                                    <Route
-                                        path="temas-tcc"
-                                        element={
-                                            <ProtectedRoute>
-                                                <TemasTcc />
-                                            </ProtectedRoute>
-                                        }
-                                    />
-                                    <Route
-                                        path="modulo-orientador"
-                                        element={
-                                            <ProtectedRoute>
-                                                <ModuloOrientador />
-                                            </ProtectedRoute>
-                                        }
-                                    />
-                                    <Route
-                                        path="modulo-discente"
-                                        element={
-                                            <ProtectedRoute>
-                                                <ModuloDiscente />
-                                            </ProtectedRoute>
-                                        }
-                                    />
-                                </Routes>
-                            </Container>
-                        </Box>
-                    </Box>
+                    <AppContent />
                 </DrawerContext.Provider>
             </CustomThemeProvider>
         </AuthProvider>
+    );
+}
+
+function AppContent() {
+    const { gruposUsuario } = useAuth();
+    const { desktopOpen } = React.useContext(DrawerContext);
+
+    // Verifica se o usuário é um estudante
+    const isEstudante = gruposUsuario.some(
+        (grupo) => grupo.id === Permissoes.GRUPOS.ESTUDANTE
+    );
+
+    return (
+        <Box sx={{ display: "flex" }}>
+            <Navbar />
+            <Box
+                component="main"
+                sx={{
+                    flexGrow: 1,
+                    p: 3,
+                    width: {
+                        md: isEstudante
+                            ? "100%"
+                            : desktopOpen
+                            ? `calc(100% - 240px)`
+                            : "100%",
+                    },
+                    transition: (theme) =>
+                        theme.transitions.create(
+                            ["width", "margin"],
+                            {
+                                easing: theme.transitions.easing
+                                    .sharp,
+                                duration:
+                                    theme.transitions.duration
+                                        .leavingScreen,
+                            }
+                        ),
+                }}
+            >
+                <Toolbar /> {/* Spacing for AppBar */}
+                <ThemeSwitch />
+                <Container maxWidth="xl" sx={{ mt: 2 }}>
+                    <Routes>
+                        <Route path="/login" element={<Login />} />
+                        <Route
+                            path="/"
+                            element={
+                                <ProtectedRoute>
+                                    <ConditionalRoute />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="cursos"
+                            element={
+                                <ProtectedRoute>
+                                    <Cursos />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="orientadores"
+                            element={
+                                <ProtectedRoute>
+                                    <Orientadores />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="dicentes"
+                            element={
+                                <ProtectedRoute>
+                                    <Dicentes />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="orientacoes"
+                            element={
+                                <ProtectedRoute>
+                                    <Orientacao />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="temas-tcc"
+                            element={
+                                <ProtectedRoute>
+                                    <TemasTcc />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="modulo-orientador"
+                            element={
+                                <ProtectedRoute>
+                                    <ModuloOrientador />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="modulo-discente"
+                            element={
+                                <ProtectedRoute>
+                                    <ModuloDiscente />
+                                </ProtectedRoute>
+                            }
+                        />
+                    </Routes>
+                </Container>
+            </Box>
+        </Box>
     );
 }
 

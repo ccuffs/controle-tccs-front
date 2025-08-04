@@ -28,10 +28,15 @@ const drawerWidth = 240;
 function Navbar() {
     const [mobileOpen, setMobileOpen] = React.useState(false);
     const { desktopOpen, setDesktopOpen } = React.useContext(DrawerContext);
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, gruposUsuario } = useAuth();
     const navigate = useNavigate();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+
+    // Verifica se o usuário é um estudante
+    const isEstudante = gruposUsuario.some(
+        (grupo) => grupo.id === Permissoes.GRUPOS.ESTUDANTE
+    );
 
     function handleDrawerToggle() {
         setMobileOpen(!mobileOpen);
@@ -160,13 +165,13 @@ function Navbar() {
                 sx={{
                     width: {
                         md:
-                            isAuthenticated && desktopOpen
+                            isAuthenticated && !isEstudante && desktopOpen
                                 ? `calc(100% - ${drawerWidth}px)`
                                 : "100%",
                     },
                     ml: {
                         md:
-                            isAuthenticated && desktopOpen
+                            isAuthenticated && !isEstudante && desktopOpen
                                 ? `${drawerWidth}px`
                                 : 0,
                     },
@@ -178,7 +183,7 @@ function Navbar() {
                 }}
             >
                 <Toolbar>
-                    {isAuthenticated && (
+                    {isAuthenticated && !isEstudante && (
                         <IconButton
                             color="inherit"
                             aria-label="open drawer"
@@ -215,7 +220,7 @@ function Navbar() {
             </AppBar>
 
             {/* Mobile drawer */}
-            {isAuthenticated && (
+            {isAuthenticated && !isEstudante && (
                 <Drawer
                     variant="temporary"
                     open={mobileOpen}
@@ -236,7 +241,7 @@ function Navbar() {
             )}
 
             {/* Desktop drawer */}
-            {isAuthenticated && (
+            {isAuthenticated && !isEstudante && (
                 <Drawer
                     variant="persistent"
                     open={desktopOpen}
