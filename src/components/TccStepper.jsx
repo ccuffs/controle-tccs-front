@@ -17,7 +17,6 @@ import axiosInstance from "../auth/axios";
 import { AuthContext } from "../contexts/AuthContext";
 import VisualizarTemasTCC from "./VisualizarTemasTCC";
 import ConviteOrientadorModal from "./ConviteOrientadorModal";
-import conviteService from "../services/conviteService";
 
 const steps = ["1", "2", "3", "4"];
 
@@ -111,10 +110,14 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 
     const carregarConviteExistente = async (idTcc) => {
         try {
-            const convites = await conviteService.getConvites({ id_tcc: idTcc });
+            const params = new URLSearchParams();
+            params.append('id_tcc', idTcc);
+            const response = await axiosInstance.get(`/convites?${params.toString()}`);
+            const convites = response.data?.convites || response.convites || [];
             if (convites.length > 0) {
                 setConviteExistente(convites[0]);
             }
+            console.log("Convite existente:", convites);
         } catch (error) {
             console.error("Erro ao carregar convite existente:", error);
         }
@@ -140,6 +143,9 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
             if (onEtapaChange) {
                 onEtapaChange(0);
             }
+
+            // Carregar convites após criar o TCC
+            await carregarConviteExistente(response.id);
         } catch (error) {
             console.error("Erro ao criar trabalho de conclusão:", error);
             setMessageText("Erro ao criar novo TCC!");
@@ -151,11 +157,8 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
     const validarEtapaAtual = () => {
         switch (activeStep) {
             case 0:
-                // Na etapa 0, só pode avançar se tiver um convite aceito ou se não tiver enviado convite ainda
-                if (!conviteExistente) {
-                    return true; // Pode avançar se não enviou convite ainda
-                }
-                return conviteExistente.aceito === true; // Só pode avançar se o convite foi aceito
+                // Na etapa 0, só pode avançar se tiver um convite aceito
+                return conviteExistente && conviteExistente.aceito === true;
             case 1:
                 return formData.tema && formData.tema.trim().length > 0;
             case 2:
@@ -416,15 +419,28 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                                     </Box>
                                 ) : (
                                     <Box>
-                                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                                            Para prosseguir com o TCC, você precisa enviar um convite para um orientador.
-                                        </Typography>
+                                        {conviteExistente && !conviteExistente.aceito ? (
+                                            <Alert severity="info" sx={{ mb: 2 }}>
+                                                <Typography variant="body2">
+                                                    Você já possui um convite pendente para um orientador.
+                                                    Aguarde a resposta antes de prosseguir com o TCC.
+                                                </Typography>
+                                            </Alert>
+                                        ) : (
+                                            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                                Para prosseguir com o TCC, você precisa enviar um convite para um orientador.
+                                            </Typography>
+                                        )}
 
                                         <Button
                                             variant="contained"
                                             onClick={handleOpenConviteModal}
+                                            disabled={conviteExistente && !conviteExistente.aceito}
                                         >
-                                            Enviar Convite para Orientador
+                                            {conviteExistente && !conviteExistente.aceito
+                                                ? "Convite Pendente"
+                                                : "Enviar Convite para Orientador"
+                                            }
                                         </Button>
                                     </Box>
                                 )}
@@ -719,6 +735,15 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                         )}
 
                         {renderStepContent(activeStep)}
+
+                        {/* Mensagem de ajuda para etapa 0 */}
+                        {activeStep === 0 && !validarEtapaAtual() && (
+                            <Alert severity="info" sx={{ mt: 2 }}>
+                                <Typography variant="body2">
+                                    Para prosseguir, você precisa ter um convite aceito por um orientador.
+                                </Typography>
+                            </Alert>
+                        )}
                     </Box>
                 )}
             </Paper>
