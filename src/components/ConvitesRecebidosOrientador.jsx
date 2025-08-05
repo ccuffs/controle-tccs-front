@@ -6,7 +6,6 @@ import {
     Dialog,
     DialogTitle,
     DialogContent,
-    DialogContentText,
     DialogActions,
     Snackbar,
     Stack,
@@ -144,7 +143,6 @@ export default function ConvitesRecebidosOrientador() {
             if (nomeA !== nomeB) {
                 return nomeA.localeCompare(nomeB);
             }
-
             // Se mesmo estudante, ordenar por data de envio
             return new Date(a.data_envio || 0) - new Date(b.data_envio || 0);
         });
@@ -352,58 +350,56 @@ export default function ConvitesRecebidosOrientador() {
                         {"Confirmar Resposta"}
                     </DialogTitle>
                     <DialogContent>
-                        <DialogContentText id="alert-dialog-description">
-                            {conviteSelecionado && (
-                                <>
-                                    <Typography variant="body1" gutterBottom>
-                                        <strong>Estudante:</strong>{" "}
-                                        {
-                                            conviteSelecionado.TrabalhoConclusao
-                                                ?.Dicente?.nome
-                                        }
-                                    </Typography>
-                                    <Typography variant="body1" gutterBottom>
-                                        <strong>Matrícula:</strong>{" "}
-                                        {
-                                            conviteSelecionado.TrabalhoConclusao
-                                                ?.Dicente?.matricula
-                                        }
-                                    </Typography>
-                                    <Typography variant="body1" gutterBottom>
-                                        <strong>Título do TCC:</strong>{" "}
-                                        {
-                                            conviteSelecionado.TrabalhoConclusao
-                                                ?.titulo
-                                        }
-                                    </Typography>
-                                    <Typography variant="body1" gutterBottom>
-                                        <strong>Curso:</strong>{" "}
-                                        {
-                                            conviteSelecionado.TrabalhoConclusao
-                                                ?.Curso?.nome
-                                        }
-                                    </Typography>
-                                    <Typography variant="body1" gutterBottom>
-                                        <strong>Mensagem:</strong>{" "}
-                                        {conviteSelecionado.mensagem_envio ||
-                                            "Sem mensagem"}
-                                    </Typography>
-                                    <Typography
-                                        variant="body1"
-                                        color="primary"
-                                        sx={{ mt: 2 }}
-                                    >
-                                        Deseja realmente{" "}
-                                        <strong>
-                                            {conviteSelecionado.acao
-                                                ? "aceitar"
-                                                : "rejeitar"}
-                                        </strong>{" "}
-                                        este convite?
-                                    </Typography>
-                                </>
-                            )}
-                        </DialogContentText>
+                        {conviteSelecionado && (
+                            <Box>
+                                <Typography variant="body1" gutterBottom>
+                                    <strong>Estudante:</strong>{" "}
+                                    {
+                                        conviteSelecionado.TrabalhoConclusao
+                                            ?.Dicente?.nome
+                                    }
+                                </Typography>
+                                <Typography variant="body1" gutterBottom>
+                                    <strong>Matrícula:</strong>{" "}
+                                    {
+                                        conviteSelecionado.TrabalhoConclusao
+                                            ?.Dicente?.matricula
+                                    }
+                                </Typography>
+                                <Typography variant="body1" gutterBottom>
+                                    <strong>Título do TCC:</strong>{" "}
+                                    {
+                                        conviteSelecionado.TrabalhoConclusao
+                                            ?.titulo
+                                    }
+                                </Typography>
+                                <Typography variant="body1" gutterBottom>
+                                    <strong>Curso:</strong>{" "}
+                                    {
+                                        conviteSelecionado.TrabalhoConclusao
+                                            ?.Curso?.nome
+                                    }
+                                </Typography>
+                                <Typography variant="body1" gutterBottom>
+                                    <strong>Mensagem:</strong>{" "}
+                                    {conviteSelecionado.mensagem_envio ||
+                                        "Sem mensagem"}
+                                </Typography>
+                                <Typography
+                                    variant="body1"
+                                    color="primary"
+                                    sx={{ mt: 2 }}
+                                >
+                                    Deseja realmente{" "}
+                                    <strong>
+                                        {conviteSelecionado.acao
+                                            ? "aceitar"
+                                            : "rejeitar"}
+                                    </strong>{" "}
+                                    este convite?
+                                </Typography>
+                            </Box>
+                        )}
                     </DialogContent>
                     <DialogActions>
                         <Button onClick={handleCancelarResposta}>
