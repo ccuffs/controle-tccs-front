@@ -70,7 +70,6 @@ export default function TrabalhosOrientador() {
             const response = await axiosInstance.get("/orientacoes", {
                 params,
             });
-            console.log("Trabalhos retornados:", response.orientacoes);
             // Filtrar por curso, ano e semestre
             const trabalhosFiltrados = (response.orientacoes || [])
                 .filter(
@@ -85,7 +84,6 @@ export default function TrabalhosOrientador() {
                     nomeDiscente: o.TrabalhoConclusao.Dicente?.nome || "",
                     nomeCurso: o.TrabalhoConclusao.Curso?.nome || "",
                 }));
-            console.log("Trabalhos filtrados:", trabalhosFiltrados);
             setTrabalhos(trabalhosFiltrados);
         } catch (error) {
             setTrabalhos([]);
