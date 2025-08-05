@@ -440,7 +440,7 @@ export default function ConvitesRecebidosOrientador() {
                                     pageSize={5}
                                     checkboxSelection={false}
                                     disableSelectionOnClick
-                                    rowSpanning
+                                    rowSpanning={false}
                                     getRowId={(row) => {
                                         return row.id_tcc;
                                     }}
