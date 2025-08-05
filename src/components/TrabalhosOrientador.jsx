@@ -179,6 +179,7 @@ export default function TrabalhosOrientador() {
                     columns={columns}
                     pageSize={10}
                     checkboxSelection={false}
+                    rowSpanning={false}
                     disableSelectionOnClick
                     getRowId={(row) => row.id}
                     getRowHeight={() => "auto"}
