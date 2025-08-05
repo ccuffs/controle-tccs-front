@@ -59,8 +59,6 @@ export default function ConvitesRecebidosOrientador() {
     }
 
     function handleResponderConvite(convite, aceito) {
-        console.log("handleResponderConvite - Convite:", convite);
-        console.log("handleResponderConvite - Aceito:", aceito);
         setConviteSelecionado({ ...convite, acao: aceito });
         setOpenDialog(true);
     }
@@ -80,11 +78,6 @@ export default function ConvitesRecebidosOrientador() {
     async function handleConfirmarResposta() {
         try {
             const { id_tcc, codigo_docente, acao } = conviteSelecionado;
-            console.log("Frontend - Responder convite:", {
-                id_tcc,
-                codigo_docente,
-                acao,
-            });
 
             const response = await axiosInstance.put(
                 `/convites/${id_tcc}/${codigo_docente}`,
@@ -93,18 +86,12 @@ export default function ConvitesRecebidosOrientador() {
                 }
             );
 
-            console.log("Frontend - Resposta da API:", response);
-
             setMessageText(
                 `Convite ${acao ? "aceito" : "rejeitado"} com sucesso!`
             );
             setMessageSeverity("success");
         } catch (error) {
             console.log("Não foi possível responder ao convite: ", error);
-            console.log(
-                "Erro completo:",
-                error.response?.data || error.message
-            );
             setMessageText("Falha ao responder ao convite!");
             setMessageSeverity("error");
         } finally {
