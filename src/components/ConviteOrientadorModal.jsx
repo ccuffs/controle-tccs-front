@@ -16,7 +16,6 @@ import {
     CircularProgress,
 } from "@mui/material";
 import axiosInstance from "../auth/axios";
-import conviteService from "../services/conviteService";
 
 export default function ConviteOrientadorModal({
     open,
@@ -47,13 +46,11 @@ export default function ConviteOrientadorModal({
         try {
             setLoadingOrientadores(true);
             const response = await axiosInstance.get(`/orientadores/curso/${idCurso}`);
-            console.log("Resposta da API de orientadores do curso:", response);
 
             // Extrair os docentes das orientações
             const orientacoes = response.data?.orientacoes || response.orientacoes || [];
             const docentes = orientacoes.map(orientacao => orientacao.docente).filter(Boolean);
 
-            console.log("Orientadores do curso carregados:", docentes);
             setOrientadores(docentes);
         } catch (error) {
             console.error("Erro ao carregar orientadores do curso:", error);
@@ -79,7 +76,9 @@ export default function ConviteOrientadorModal({
                 mensagem_envio: mensagem || "Convite para orientação de TCC",
             };
 
-            await conviteService.criarConvite(dadosConvite);
+            await axiosInstance.post('/convites', {
+                formData: dadosConvite
+            });
 
             if (onConviteEnviado) {
                 onConviteEnviado();
@@ -166,11 +165,6 @@ export default function ConviteOrientadorModal({
                             {conviteExistente.data_envio && (
                                 <Typography variant="body2">
                                     <strong>Enviado em:</strong> {new Date(conviteExistente.data_envio).toLocaleDateString('pt-BR')}
-                                </Typography>
-                            )}
-                            {conviteExistente.Docente && (
-                                <Typography variant="body2">
-                                    <strong>Orientador:</strong> {conviteExistente.Docente.nome}
                                 </Typography>
                             )}
                         </Alert>

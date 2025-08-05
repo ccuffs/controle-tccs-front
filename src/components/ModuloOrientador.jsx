@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Box, Typography, Tabs, Tab } from "@mui/material";
 import GerenciarTemasOrientador from "./GerenciarTemasOrientador";
+import ConvitesRecebidosOrientador from "./ConvitesRecebidosOrientador";
 
 function TabPanel({ children, value, index, ...other }) {
     return (
@@ -43,7 +44,8 @@ export default function ModuloOrientador() {
                     aria-label="orientador tabs"
                 >
                     <Tab label="Gerenciar Temas TCC" {...a11yProps(0)} />
-                    <Tab label="Outras Funcionalidades" {...a11yProps(1)} />
+                    <Tab label="Convites Recebidos" {...a11yProps(1)} />
+                    <Tab label="Outras Funcionalidades" {...a11yProps(2)} />
                 </Tabs>
             </Box>
 
@@ -52,6 +54,10 @@ export default function ModuloOrientador() {
             </TabPanel>
 
             <TabPanel value={tabValue} index={1}>
+                <ConvitesRecebidosOrientador />
+            </TabPanel>
+
+            <TabPanel value={tabValue} index={2}>
                 <Typography variant="h6" component="h2">
                     Outras Funcionalidades do Orientador
                 </Typography>
