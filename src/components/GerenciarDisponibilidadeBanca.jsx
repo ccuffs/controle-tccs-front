@@ -2,14 +2,6 @@ import React, { useState, useEffect } from "react";
 import {
 	Box,
 	Typography,
-	Paper,
-	Table,
-	TableBody,
-	TableCell,
-	TableContainer,
-	TableHead,
-	TableRow,
-	Checkbox,
 	FormControl,
 	InputLabel,
 	Select,
@@ -18,9 +10,11 @@ import {
 	Alert,
 	CircularProgress,
 	Stack,
+	Checkbox,
 } from "@mui/material";
 import axiosInstance from "../auth/axios";
 import { useAuth } from "../contexts/AuthContext";
+import CustomDataGrid from "./CustomDataGrid";
 
 const GerenciarDisponibilidadeBanca = () => {
 	const { usuario } = useAuth();
@@ -34,6 +28,7 @@ const GerenciarDisponibilidadeBanca = () => {
 	const [fase, setFase] = useState(1);
 	const [grade, setGrade] = useState(null);
 	const [disponibilidades, setDisponibilidades] = useState({});
+	const [rows, setRows] = useState([]);
 
 	function getAnoSemestreAtual() {
 		const data = new Date();
@@ -53,8 +48,33 @@ const GerenciarDisponibilidadeBanca = () => {
 			buscarGradeDisponibilidade();
 		} else {
 			setGrade(null);
+			setRows([]);
 		}
 	}, [cursoSelecionado, ano, semestre, fase]);
+
+	// Gerar linhas para o DataGrid quando a grade mudar
+	useEffect(() => {
+		if (grade && grade.horarios && grade.datas) {
+			const novasRows = grade.horarios.map((hora, index) => {
+				const row = {
+					id: index,
+					horario: formatarHora(hora),
+					...grade.datas.reduce((acc, data) => {
+						acc[`data_${data}`] = {
+							data: data,
+							hora: hora,
+							disponivel: isDisponivel(data, hora)
+						};
+						return acc;
+					}, {})
+				};
+				return row;
+			});
+			setRows(novasRows);
+		} else {
+			setRows([]);
+		}
+	}, [grade, disponibilidades]);
 
 	async function getCursosOrientador() {
 		try {
@@ -151,7 +171,11 @@ const GerenciarDisponibilidadeBanca = () => {
 	};
 
 	const handleHeaderClick = (data) => {
-		if (!cursoSelecionado || !grade) return;
+		console.log("Clique no cabeçalho da data:", data);
+		if (!cursoSelecionado || !grade) {
+			console.log("Retornando - curso ou grade não disponível");
+			return;
+		}
 
 		// Verificar se todos os horários da data estão selecionados
 		const todosHorarios = grade.horarios.map(hora => `${data}-${hora}`);
@@ -236,18 +260,6 @@ const GerenciarDisponibilidadeBanca = () => {
 		}
 	};
 
-	function handleCursoChange(e) {
-		setCursoSelecionado(e.target.value);
-	}
-
-	function handleAnoChange(e) {
-		setAno(e.target.value);
-	}
-
-	function handleSemestreChange(e) {
-		setSemestre(e.target.value);
-	}
-
 	const formatarData = (data) => {
 		const [ano, mes, dia] = data.split("-");
 		return `${dia}/${mes}/${ano}`;
@@ -280,6 +292,74 @@ const GerenciarDisponibilidadeBanca = () => {
 		return horariosSelecionados.length > 0 && horariosSelecionados.length < todosHorarios.length;
 	};
 
+	// Gerar colunas dinamicamente baseadas nas datas da grade
+	const generateColumns = () => {
+		if (!grade || !grade.datas) return [];
+
+		const baseColumns = [
+			{
+				field: "horario",
+				headerName: "Horário",
+				width: 120,
+				sortable: false,
+				headerAlign: "center",
+				align: "center",
+				headerClassName: "header-horario",
+			}
+		];
+
+		const dataColumns = grade.datas.map((data) => ({
+			field: `data_${data}`,
+			headerName: formatarData(data),
+			width: 165,
+			sortable: false,
+			headerClassName: isDataCompleta(data)
+				? "header-completa"
+				: isDataParcial(data)
+					? "header-parcial"
+					: "header-padrao",
+			headerAlign: "center",
+			renderHeader: (params) => (
+				<span
+					style={{
+						width: "100%",
+						height: "100%",
+						display: "flex",
+						alignItems: "center",
+						justifyContent: "center",
+						cursor: "pointer",
+						userSelect: "none",
+					}}
+					onClick={(e) => {
+						e.stopPropagation();
+						handleHeaderClick(data);
+					}}
+				>
+					{formatarData(data)}
+				</span>
+			),
+			renderCell: (params) => {
+				const cellData = params.value;
+				if (!cellData) return null;
+
+				return (
+					<Box sx={{ display: "flex", justifyContent: "center" }}>
+						<Checkbox
+							checked={cellData.disponivel}
+							onChange={(e) =>
+								handleCheckboxChange(cellData.data, cellData.hora, e.target.checked)
+							}
+							disabled={loading}
+							color="primary"
+						/>
+					</Box>
+				);
+			}
+		}));
+
+		return [...baseColumns, ...dataColumns];
+	};
+
 	if (loading && !grade) {
 		return (
 			<Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
@@ -290,7 +370,7 @@ const GerenciarDisponibilidadeBanca = () => {
 
 	return (
 		<Box>
-			<Typography variant="h5" component="h2" gutterBottom>
+			<Typography variant="h6" component="h3" gutterBottom>
 				Gerenciar Disponibilidade para Bancas
 			</Typography>
 
@@ -377,108 +457,87 @@ const GerenciarDisponibilidadeBanca = () => {
 				</Button>
 			</Stack>
 
-			{grade && (
-				<Paper sx={{ width: "100%", overflow: "hidden" }}>
-					<TableContainer sx={{ maxHeight: 600 }}>
-						<Table stickyHeader>
-							<TableHead>
-								<TableRow>
-									<TableCell
-										sx={{
-											backgroundColor: "primary.main",
-											color: "primary.contrastText",
-											fontWeight: "bold",
-											minWidth: 120,
-										}}
-									>
-										Horário
-									</TableCell>
-									{grade.datas.map((data) => (
-										<TableCell
-											key={data}
-											align="center"
-											onClick={() => handleHeaderClick(data)}
-											sx={{
-												backgroundColor: isDataCompleta(data)
-													? "success.main"
-													: isDataParcial(data)
-														? "warning.main"
-														: "primary.main",
-												color: "primary.contrastText",
-												fontWeight: "bold",
-												minWidth: 120,
-												cursor: "pointer",
-												"&:hover": {
-													backgroundColor: isDataCompleta(data)
-														? "success.dark"
-														: isDataParcial(data)
-															? "warning.dark"
-															: "primary.dark",
-												},
-												position: "relative",
-											}}
-										>
-											{formatarData(data)}
-											{isDataCompleta(data) && (
-												<Box
-													sx={{
-														position: "absolute",
-														top: 2,
-														right: 2,
-														width: 8,
-														height: 8,
-														borderRadius: "50%",
-														backgroundColor: "white",
-													}}
-												/>
-											)}
-											{isDataParcial(data) && (
-												<Box
-													sx={{
-														position: "absolute",
-														top: 2,
-														right: 2,
-														width: 8,
-														height: 8,
-														borderRadius: "50%",
-														backgroundColor: "orange",
-													}}
-												/>
-											)}
-										</TableCell>
-									))}
-								</TableRow>
-							</TableHead>
-							<TableBody>
-								{grade.horarios.map((hora) => (
-									<TableRow key={hora}>
-										<TableCell
-											sx={{
-												backgroundColor: "grey.100",
-												fontWeight: "bold",
-												borderRight: "1px solid #e0e0e0",
-											}}
-										>
-											{formatarHora(hora)}
-										</TableCell>
-										{grade.datas.map((data) => (
-											<TableCell key={`${data}-${hora}`} align="center">
-												<Checkbox
-													checked={isDisponivel(data, hora)}
-													onChange={(e) =>
-														handleCheckboxChange(data, hora, e.target.checked)
-													}
-													disabled={loading}
-													color="primary"
-												/>
-											</TableCell>
-										))}
-									</TableRow>
-								))}
-							</TableBody>
-						</Table>
-					</TableContainer>
-				</Paper>
+			{grade && rows.length > 0 && (
+				<CustomDataGrid
+					rows={rows}
+					columns={generateColumns()}
+					pageSize={10}
+					checkboxSelection={false}
+					rowSpanning={false}
+					disableSelectionOnClick
+					getRowId={(row) => row.id}
+					getRowHeight={() => "auto"}
+					sx={{
+						"& .MuiDataGrid-cell": {
+							border: "1px solid #e0e0e0",
+						},
+						"& .MuiDataGrid-columnHeader": {
+							border: "1px solid #e0e0e0",
+						},
+						"& .header-padrao": {
+							backgroundColor: "info.light",
+							color: "primary.contrastText",
+							fontWeight: "bold",
+							cursor: "pointer",
+							"&:hover": {
+								backgroundColor: "info.dark",
+							},
+						},
+						"& .header-completa": {
+							backgroundColor: "success.main",
+							color: "primary.contrastText",
+							fontWeight: "bold",
+							cursor: "pointer",
+							position: "relative",
+							"&:hover": {
+								backgroundColor: "success.dark",
+							},
+							"&::after": {
+								content: '""',
+								position: "absolute",
+								top: 2,
+								right: 2,
+								width: 8,
+								height: 8,
+								borderRadius: "50%",
+								backgroundColor: "white",
+							},
+						},
+						"& .header-parcial": {
+							backgroundColor: "primary.main",
+							color: "primary.contrastText",
+							fontWeight: "bold",
+							cursor: "pointer",
+							position: "relative",
+							"&:hover": {
+								backgroundColor: "primary.dark",
+							},
+							"&::after": {
+								content: '""',
+								position: "absolute",
+								top: 2,
+								right: 2,
+								width: 8,
+								height: 8,
+								borderRadius: "50%",
+								backgroundColor: "orange",
+							},
+						},
+						"& .header-horario": {
+							backgroundColor: "grey.100",
+							fontWeight: "bold",
+							borderRight: "1px solid #e0e0e0",
+						},
+						"& .MuiDataGrid-cell[data-field='horario']": {
+							backgroundColor: "grey.100",
+							fontWeight: "bold",
+							borderRight: "1px solid #e0e0e0",
+							display: "flex",
+							alignItems: "center",
+							justifyContent: "center",
+						},
+					}}
+				/>
 			)}
 
 			{cursoSelecionado && !grade && !loading && (
