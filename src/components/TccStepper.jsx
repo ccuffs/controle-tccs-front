@@ -24,7 +24,7 @@ import { AuthContext } from "../contexts/AuthContext";
 import VisualizarTemasTCC from "./VisualizarTemasTCC";
 import ConviteOrientadorModal from "./ConviteOrientadorModal";
 
-const steps = ["1", "2", "3", "4"];
+const steps = ["1", "2", "3", "4", "5"];
 
 export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
     const { usuario } = useContext(AuthContext);
@@ -37,6 +37,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
         tema: "",
         titulo: "",
         resumo: "",
+        seminario_andamento: "",
     });
     const [openMessage, setOpenMessage] = useState(false);
     const [messageText, setMessageText] = useState("");
@@ -110,6 +111,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                             tema: responseTcc.tema || "",
                             titulo: responseTcc.titulo || "",
                             resumo: responseTcc.resumo || "",
+                            seminario_andamento: responseTcc.seminario_andamento || "",
                         });
 
                         // Usar a etapa do banco de dados
@@ -190,6 +192,14 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
         }
     };
 
+    // Função para determinar quais etapas são válidas baseado na fase do TCC
+    const getEtapasValidas = () => {
+        if (trabalhoConclusao && trabalhoConclusao.fase === 1) {
+            return steps.slice(0, 4); // Etapas 1-4 para fase 1 (TCC I)
+        }
+        return steps; // Todas as etapas para fase 2 (TCC II)
+    };
+
     const validarEtapaAtual = () => {
         switch (activeStep) {
             case 0:
@@ -201,6 +211,12 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                 return formData.titulo && formData.titulo.trim().length > 0;
             case 3:
                 return formData.resumo && formData.resumo.trim().length > 0;
+            case 4:
+                // Etapa 4 (seminário de andamento) só é obrigatória para fase 2
+                if (trabalhoConclusao && trabalhoConclusao.fase === 2) {
+                    return formData.seminario_andamento && formData.seminario_andamento.trim().length > 0;
+                }
+                return true; // Para fase 1, a etapa 4 não é obrigatória
             default:
                 return true;
         }
@@ -218,7 +234,8 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
         }
 
         try {
-            if (activeStep === steps.length - 1) {
+            const etapasValidas = getEtapasValidas();
+            if (activeStep === etapasValidas.length - 1) {
                 // Última etapa - salvar tudo
                 const sucesso = await salvarTrabalhoConclusao();
                 if (sucesso) {
@@ -313,10 +330,11 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 
         try {
             setSaving(true);
+            const etapasValidas = getEtapasValidas();
             const dadosAtualizados = {
                 ...trabalhoConclusao,
                 ...formData,
-                etapa: steps.length,
+                etapa: etapasValidas.length,
             };
 
             await axiosInstance.put(
@@ -327,7 +345,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 
             // Notificar componente pai sobre mudança de etapa
             if (onEtapaChange) {
-                onEtapaChange(steps.length);
+                onEtapaChange(etapasValidas.length);
             }
 
             setMessageText("TCC salvo com sucesso!");
@@ -406,6 +424,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                         tema: tccAtualizado.tema || "",
                         titulo: tccAtualizado.titulo || "",
                         resumo: tccAtualizado.resumo || "",
+                        seminario_andamento: tccAtualizado.seminario_andamento || "",
                     });
 
                     const etapaAtual = tccAnterior.etapa || 0;
@@ -448,6 +467,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                         tema: novoTcc.tema,
                         titulo: novoTcc.titulo,
                         resumo: novoTcc.resumo,
+                        seminario_andamento: novoTcc.seminario_andamento || "",
                     });
                     setActiveStep(0);
                     if (onEtapaChange) {
@@ -618,6 +638,50 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                         />
                     </Box>
                 );
+            case 4:
+                // Etapa 5: Seminário de Andamento - apenas para fase 2
+                if (trabalhoConclusao && trabalhoConclusao.fase === 2) {
+                    return (
+                        <Box sx={{ mt: 2 }}>
+                            <Typography variant="h6" gutterBottom>
+                                Etapa 5: Seminário de Andamento
+                            </Typography>
+                            <Alert severity="info" sx={{ mb: 2 }}>
+                                <Typography variant="body2">
+                                    Esta etapa é específica para estudantes na fase TCC II.
+                                    Descreva as atividades e progresso do seu seminário de andamento.
+                                </Typography>
+                            </Alert>
+                            <TextField
+                                fullWidth
+                                label="Seminário de Andamento *"
+                                value={formData.seminario_andamento}
+                                onChange={(e) =>
+                                    handleInputChange("seminario_andamento", e.target.value)
+                                }
+                                multiline
+                                rows={6}
+                                placeholder="Descreva as atividades, progresso e resultados do seminário de andamento..."
+                                helperText="Apresente o desenvolvimento do trabalho, metodologia aplicada, resultados parciais e próximos passos"
+                            />
+                        </Box>
+                    );
+                } else {
+                    // Para fase 1, pular esta etapa
+                    return (
+                        <Box sx={{ mt: 2 }}>
+                            <Alert severity="info" sx={{ mb: 2 }}>
+                                <Typography variant="h6" gutterBottom>
+                                    Etapa Não Aplicável
+                                </Typography>
+                                <Typography variant="body2">
+                                    A etapa de Seminário de Andamento é específica para estudantes na fase TCC II.
+                                    Como você está na fase TCC I, esta etapa será automaticamente ignorada.
+                                </Typography>
+                            </Alert>
+                        </Box>
+                    );
+                }
             default:
                 return "Etapa desconhecida";
         }
@@ -787,7 +851,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 
             <Paper sx={{ p: 3, mb: 3 }}>
                 <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
-                    {steps.map((label, index) => {
+                    {getEtapasValidas().map((label, index) => {
                         const stepProps = {};
                         const labelProps = {};
 
@@ -811,6 +875,15 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                                         formData.resumo &&
                                         formData.resumo.trim().length > 0
                                     );
+                                case 4:
+                                    // Etapa 4 (seminário) só é obrigatória para fase 2
+                                    if (trabalhoConclusao && trabalhoConclusao.fase === 2) {
+                                        return (
+                                            formData.seminario_andamento &&
+                                            formData.seminario_andamento.trim().length > 0
+                                        );
+                                    }
+                                    return true; // Para fase 1, considera completa
                                 default:
                                     return false;
                             }
@@ -832,7 +905,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                 </Stepper>
 
                 {/* Botões de navegação na parte superior */}
-                {activeStep !== steps.length && (
+                {activeStep !== getEtapasValidas().length && (
                     <Box
                         sx={{
                             display: "flex",
@@ -882,7 +955,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                                     />
                                     Salvando...
                                 </>
-                            ) : activeStep === steps.length - 1 ? (
+                            ) : activeStep === getEtapasValidas().length - 1 ? (
                                 "Finalizar"
                             ) : (
                                 "Próximo"
@@ -891,7 +964,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                     </Box>
                 )}
 
-                {activeStep === steps.length ? (
+                {activeStep === getEtapasValidas().length ? (
                     <Box>
                         <Typography sx={{ mt: 2, mb: 1 }}>
                             Todas as etapas foram concluídas!
