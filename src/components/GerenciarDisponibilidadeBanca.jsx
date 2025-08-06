@@ -171,7 +171,7 @@ const GerenciarDisponibilidadeBanca = () => {
 	};
 
 	const handleHeaderClick = (data) => {
-		console.log("Clique no cabeçalho da data:", data);
+
 		if (!cursoSelecionado || !grade) {
 			console.log("Retornando - curso ou grade não disponível");
 			return;
