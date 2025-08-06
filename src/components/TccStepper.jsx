@@ -12,6 +12,12 @@ import {
     Snackbar,
     CircularProgress,
     LinearProgress,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    DialogContentText,
+    Chip,
 } from "@mui/material";
 import axiosInstance from "../auth/axios";
 import { AuthContext } from "../contexts/AuthContext";
@@ -37,6 +43,10 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
     const [messageSeverity, setMessageSeverity] = useState("success");
     const [openConviteModal, setOpenConviteModal] = useState(false);
     const [conviteExistente, setConviteExistente] = useState(null);
+    const [tccAnterior, setTccAnterior] = useState(null);
+    const [openImportModal, setOpenImportModal] = useState(false);
+    const [showCompletedMessage, setShowCompletedMessage] = useState(false);
+    const [modalType, setModalType] = useState(''); // 'import', 'next_phase'
 
     useEffect(() => {
         if (usuario) {
@@ -70,21 +80,48 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                 );
 
                 if (responseTcc) {
-                    setTrabalhoConclusao(responseTcc);
-                    setFormData({
-                        tema: responseTcc.tema || "",
-                        titulo: responseTcc.titulo || "",
-                        resumo: responseTcc.resumo || "",
-                    });
-                    // Usar a etapa do banco de dados
-                    const etapaBanco = responseTcc.etapa || 0;
-                    setActiveStep(etapaBanco);
-                    if (onEtapaChange) {
-                        onEtapaChange(etapaBanco);
-                    }
+                    // Verificar se o TCC é da oferta atual ou anterior
+                    const isTccOfertaAtual = responseTcc.ano === responseOferta.ano &&
+                                           responseTcc.semestre === responseOferta.semestre;
 
-                    // Carregar convite existente se houver
-                    await carregarConviteExistente(responseTcc.id);
+                    if (!isTccOfertaAtual) {
+                        // TCC é de oferta anterior - aplicar regras de importação
+                        setTccAnterior(responseTcc);
+
+                        if (responseTcc.aprovado_tcc) {
+                            // 1.3 TCC já concluído - exibir mensagem
+                            setShowCompletedMessage(true);
+                            return;
+                        } else if (responseTcc.aprovado_projeto) {
+                            // 1.1 Projeto aprovado - perguntar se quer seguir com próxima fase
+                            setModalType('next_phase');
+                            setOpenImportModal(true);
+                            return;
+                        } else {
+                            // 1.2 Projeto não aprovado - perguntar se quer importar TCC anterior
+                            setModalType('import');
+                            setOpenImportModal(true);
+                            return;
+                        }
+                    } else {
+                        // TCC da oferta atual - carregar normalmente
+                        setTrabalhoConclusao(responseTcc);
+                        setFormData({
+                            tema: responseTcc.tema || "",
+                            titulo: responseTcc.titulo || "",
+                            resumo: responseTcc.resumo || "",
+                        });
+
+                        // Usar a etapa do banco de dados
+                        const etapaBanco = responseTcc.etapa || 0;
+                        setActiveStep(etapaBanco);
+                        if (onEtapaChange) {
+                            onEtapaChange(etapaBanco);
+                        }
+
+                        // Carregar convite existente se houver
+                        await carregarConviteExistente(responseTcc.id);
+                    }
                 } else {
                     // Criar novo trabalho de conclusão se não existir
                     await criarNovoTrabalhoConclusao(
@@ -117,7 +154,6 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
             if (convites.length > 0) {
                 setConviteExistente(convites[0]);
             }
-            console.log("Convite existente:", convites);
         } catch (error) {
             console.error("Erro ao carregar convite existente:", error);
         }
@@ -182,14 +218,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
         }
 
         try {
-            if (activeStep === 0) {
-                // Etapa 0: apenas avançar, não salvar
-                const novaEtapa = activeStep + 1;
-                setActiveStep(novaEtapa);
-                if (onEtapaChange) {
-                    onEtapaChange(novaEtapa);
-                }
-            } else if (activeStep === steps.length - 1) {
+            if (activeStep === steps.length - 1) {
                 // Última etapa - salvar tudo
                 const sucesso = await salvarTrabalhoConclusao();
                 if (sucesso) {
@@ -200,7 +229,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                     }
                 }
             } else {
-                // Avançar para próxima etapa
+                // Salvar etapa atual e avançar para próxima etapa (incluindo etapa 0)
                 const sucesso = await salvarEtapaAtual();
                 if (sucesso) {
                     const novaEtapa = activeStep + 1;
@@ -224,34 +253,10 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
         const novaEtapa = activeStep - 1;
         setActiveStep(novaEtapa);
 
-        // Atualizar etapa no banco de dados (exceto se voltando para etapa 0)
-        if (trabalhoConclusao && trabalhoConclusao.id && novaEtapa > 0) {
-            try {
-                const dadosAtualizados = {
-                    ...trabalhoConclusao,
-                    ...formData,
-                    etapa: novaEtapa,
-                };
-
-                await axiosInstance.put(
-                    `/trabalho-conclusao/${trabalhoConclusao.id}`,
-                    dadosAtualizados
-                );
-                setTrabalhoConclusao(dadosAtualizados);
-
-                // Notificar componente pai sobre mudança de etapa
-                if (onEtapaChange) {
-                    onEtapaChange(novaEtapa);
-                }
-            } catch (error) {
-                console.error("Erro ao atualizar etapa ao voltar:", error);
-                // Em caso de erro, não impede o usuário de voltar
-            }
-        } else {
-            // Se voltando para etapa 0, apenas notificar
-            if (onEtapaChange) {
-                onEtapaChange(novaEtapa);
-            }
+        // Ao voltar, apenas atualizar o estado local sem persistir no banco de dados
+        // A etapa no banco só deve ser atualizada ao avançar (handleNext)
+        if (onEtapaChange) {
+            onEtapaChange(novaEtapa);
         }
     };
 
@@ -267,10 +272,11 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 
         try {
             setSaving(true);
+            const novaEtapa = activeStep + 1;
             const dadosAtualizados = {
                 ...trabalhoConclusao,
                 ...formData,
-                etapa: activeStep,
+                etapa: novaEtapa,
             };
 
             await axiosInstance.put(
@@ -278,11 +284,6 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                 dadosAtualizados
             );
             setTrabalhoConclusao(dadosAtualizados);
-
-            // Notificar componente pai sobre mudança de etapa
-            if (onEtapaChange) {
-                onEtapaChange(activeStep);
-            }
 
             setMessageText("Etapa salva com sucesso!");
             setMessageSeverity("success");
@@ -368,6 +369,115 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
         setMessageSeverity("success");
         setOpenMessage(true);
     };
+
+    const handleImportModalClose = () => {
+        setOpenImportModal(false);
+    };
+
+    const handleImportData = async (opcaoSelecionada) => {
+        setOpenImportModal(false);
+
+        if (!tccAnterior || !ofertaAtual) return;
+
+        try {
+            setLoading(true);
+            const responseDiscente = await axiosInstance.get(`/dicentes/usuario/${usuario.id}`);
+
+            if (modalType === 'next_phase') {
+                // 1.1 Projeto aprovado - pergunta sobre próxima fase
+                if (opcaoSelecionada) {
+                    // Sim: atualizar TCC existente para oferta atual (próxima fase)
+                    const dadosAtualizados = {
+                        ...tccAnterior,
+                        ano: ofertaAtual.ano,
+                        semestre: ofertaAtual.semestre,
+                        id_curso: ofertaAtual.id_curso,
+                        fase: 2, // TCC II (próxima fase)
+                    };
+
+                    const response = await axiosInstance.put(
+                        `/trabalho-conclusao/${tccAnterior.id}`,
+                        dadosAtualizados
+                    );
+
+                    const tccAtualizado = response.trabalho;
+                    setTrabalhoConclusao(tccAtualizado);
+                    setFormData({
+                        tema: tccAtualizado.tema || "",
+                        titulo: tccAtualizado.titulo || "",
+                        resumo: tccAtualizado.resumo || "",
+                    });
+
+                    const etapaAtual = tccAnterior.etapa || 0;
+                    setActiveStep(etapaAtual);
+                    if (onEtapaChange) {
+                        onEtapaChange(etapaAtual);
+                    }
+
+                    await carregarConviteExistente(tccAnterior.id);
+
+                    setMessageText(`TCC atualizado para ${ofertaAtual.ano}/${ofertaAtual.semestre}! Você está na fase TCC II.`);
+                    setMessageSeverity("success");
+                    setOpenMessage(true);
+                } else {
+                    // Não: criar novo TCC em etapa 0
+                    await criarNovoTrabalhoConclusao(responseDiscente.matricula);
+                    setMessageText(`Novo TCC criado para ${ofertaAtual.ano}/${ofertaAtual.semestre}!`);
+                    setMessageSeverity("success");
+                    setOpenMessage(true);
+                }
+            } else if (modalType === 'import') {
+                // 1.2 Projeto não aprovado - pergunta sobre importar
+                if (opcaoSelecionada) {
+                    // Sim: criar novo TCC copiando valores do anterior
+                    const novoTcc = {
+                        matricula: responseDiscente.matricula,
+                        tema: tccAnterior.tema || "",
+                        titulo: tccAnterior.titulo || "",
+                        resumo: tccAnterior.resumo || "",
+                        etapa: tccAnterior.etapa,
+                        ano: ofertaAtual.ano,
+                        semestre: ofertaAtual.semestre,
+                        id_curso: ofertaAtual.id_curso,
+                        fase: ofertaAtual.fase,
+                    };
+
+                    const response = await axiosInstance.post("/trabalho-conclusao", novoTcc);
+                    setTrabalhoConclusao(response);
+                    setFormData({
+                        tema: novoTcc.tema,
+                        titulo: novoTcc.titulo,
+                        resumo: novoTcc.resumo,
+                    });
+                    setActiveStep(0);
+                    if (onEtapaChange) {
+                        onEtapaChange(0);
+                    }
+
+                    await carregarConviteExistente(response.id);
+
+                    setMessageText(`TCC importado com sucesso para ${ofertaAtual.ano}/${ofertaAtual.semestre}!`);
+                    setMessageSeverity("success");
+                    setOpenMessage(true);
+                } else {
+                    // Não: criar novo TCC em etapa 0
+                    await criarNovoTrabalhoConclusao(responseDiscente.matricula);
+                    setMessageText(`Novo TCC criado para ${ofertaAtual.ano}/${ofertaAtual.semestre}!`);
+                    setMessageSeverity("success");
+                    setOpenMessage(true);
+                }
+            }
+        } catch (error) {
+            console.error("Erro ao processar ação:", error);
+            setMessageText("Erro ao processar ação. Tente novamente.");
+            setMessageSeverity("error");
+            setOpenMessage(true);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+
 
     const handleCloseMessage = (_, reason) => {
         if (reason === "clickaway") {
@@ -520,6 +630,77 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                 <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
                     <CircularProgress />
                 </Box>
+            </Box>
+        );
+    }
+
+    // Exibir mensagem de TCC concluído
+    if (showCompletedMessage && tccAnterior) {
+        return (
+            <Box sx={{ width: "100%" }}>
+                <Typography variant="h5" component="h2" gutterBottom>
+                    TCC Concluído
+                </Typography>
+
+                <Paper sx={{ p: 3, textAlign: 'center' }}>
+                    <Alert severity="success" sx={{ mb: 3 }}>
+                        <Typography variant="h6" gutterBottom>
+                            🎉 Parabéns! Seu TCC foi concluído com sucesso!
+                        </Typography>
+                        <Typography variant="body1">
+                            Você já concluiu seu Trabalho de Conclusão de Curso no período de {tccAnterior.ano}/{tccAnterior.semestre}.
+                        </Typography>
+                    </Alert>
+
+                    <Paper sx={{ p: 2, bgcolor: 'grey.50', mb: 3 }}>
+                        <Typography variant="subtitle1" gutterBottom>
+                            Dados do seu TCC:
+                        </Typography>
+
+                        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mb: 2 }}>
+                            <Chip label="TCC Aprovado" color="success" />
+                            <Chip label={`${tccAnterior.ano}/${tccAnterior.semestre}`} color="info" />
+                            <Chip label={`Fase ${tccAnterior.fase}`} color="primary" />
+                        </Box>
+
+                        {tccAnterior.titulo && (
+                            <Box sx={{ mb: 2 }}>
+                                <Typography variant="body2" color="text.secondary">
+                                    Título:
+                                </Typography>
+                                <Typography variant="body1" fontWeight="medium">
+                                    {tccAnterior.titulo}
+                                </Typography>
+                            </Box>
+                        )}
+
+                        {tccAnterior.tema && (
+                            <Box sx={{ mb: 2 }}>
+                                <Typography variant="body2" color="text.secondary">
+                                    Tema:
+                                </Typography>
+                                <Typography variant="body2">
+                                    {tccAnterior.tema}
+                                </Typography>
+                            </Box>
+                        )}
+                    </Paper>
+
+                    <Typography variant="body2" color="text.secondary">
+                        Como você já concluiu seu TCC, não é necessário realizar novamente o processo.
+                        Entre em contato com a coordenação caso tenha dúvidas.
+                    </Typography>
+                </Paper>
+
+                <Snackbar
+                    open={openMessage}
+                    autoHideDuration={6000}
+                    onClose={handleCloseMessage}
+                >
+                    <Alert severity={messageSeverity} onClose={handleCloseMessage}>
+                        {messageText}
+                    </Alert>
+                </Snackbar>
             </Box>
         );
     }
@@ -769,6 +950,111 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                     conviteExistente={conviteExistente}
                 />
             )}
+
+            {/* Modal de Importação de Dados */}
+            <Dialog
+                open={openImportModal}
+                onClose={handleImportModalClose}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle>
+                    {modalType === 'next_phase' ? 'Projeto Aprovado Encontrado' : 'TCC Anterior Encontrado'}
+                </DialogTitle>
+                <DialogContent>
+                    {tccAnterior && (
+                        <Box>
+                            <DialogContentText sx={{ mb: 2 }}>
+                                {modalType === 'next_phase' ? (
+                                    <>
+                                        Seu projeto de TCC foi aprovado em {tccAnterior.ano}/{tccAnterior.semestre}.
+                                        Deseja continuar para a próxima fase (TCC II) na oferta atual {ofertaAtual?.ano}/{ofertaAtual?.semestre}?
+                                    </>
+                                ) : (
+                                    <>
+                                        Encontramos um TCC seu de {tccAnterior.ano}/{tccAnterior.semestre}.
+                                        Deseja importar os dados deste TCC para a oferta atual {ofertaAtual?.ano}/{ofertaAtual?.semestre}?
+                                    </>
+                                )}
+                            </DialogContentText>
+
+                            <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
+                                <Typography variant="subtitle2" gutterBottom>
+                                    Dados do TCC Anterior:
+                                </Typography>
+
+                                <Box sx={{ mb: 1 }}>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Status:
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
+                                        <Chip
+                                            label={tccAnterior.aprovado_projeto ? "Projeto Aprovado" : "Projeto Não Aprovado"}
+                                            color={tccAnterior.aprovado_projeto ? "success" : "default"}
+                                            size="small"
+                                        />
+                                        <Chip
+                                            label={`Fase ${tccAnterior.fase}`}
+                                            color="info"
+                                            size="small"
+                                        />
+                                    </Box>
+                                </Box>
+
+                                {tccAnterior.tema && (
+                                    <Box sx={{ mb: 1 }}>
+                                        <Typography variant="body2" color="text.secondary">
+                                            Tema:
+                                        </Typography>
+                                        <Typography variant="body2">
+                                            {tccAnterior.tema}
+                                        </Typography>
+                                    </Box>
+                                )}
+
+                                {tccAnterior.titulo && (
+                                    <Box sx={{ mb: 1 }}>
+                                        <Typography variant="body2" color="text.secondary">
+                                            Título:
+                                        </Typography>
+                                        <Typography variant="body2">
+                                            {tccAnterior.titulo}
+                                        </Typography>
+                                    </Box>
+                                )}
+                            </Paper>
+
+                            {modalType === 'next_phase' && (
+                                <Alert severity="success" sx={{ mt: 2 }}>
+                                    <Typography variant="body2">
+                                        Ao continuar, você será direcionado para a fase TCC II mantendo seus dados anteriores.
+                                    </Typography>
+                                </Alert>
+                            )}
+
+                            {modalType === 'import' && (
+                                <Alert severity="info" sx={{ mt: 2 }}>
+                                    <Typography variant="body2">
+                                        Ao importar, um novo TCC será criado com os dados do TCC anterior.
+                                    </Typography>
+                                </Alert>
+                            )}
+                        </Box>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => handleImportData(false)} color="inherit">
+                        {modalType === 'next_phase' ? 'Criar Novo TCC' : 'Não Importar'}
+                    </Button>
+                    <Button
+                        onClick={() => handleImportData(true)}
+                        variant="contained"
+                        color="primary"
+                    >
+                        {modalType === 'next_phase' ? 'Continuar TCC II' : 'Importar Dados'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 }
