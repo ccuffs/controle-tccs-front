@@ -79,4 +79,20 @@ Permissoes.TRABALHO_CONCLUSAO = {
     DELETAR: 40,
 };
 
+Permissoes.CONVITE = {
+    VISUALIZAR: 41,
+    VISUALIZAR_TODOS: 42,
+    CRIAR: 43,
+    EDITAR: 44,
+    DELETAR: 45,
+};
+
+Permissoes.DISPONIBILIDADE_BANCA = {
+    VISUALIZAR: 46,
+    VISUALIZAR_TODOS: 47,
+    CRIAR: 48,
+    EDITAR: 49,
+    DELETAR: 50,
+};
+
 export { Permissoes };
