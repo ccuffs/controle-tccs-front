@@ -25,7 +25,7 @@ import VisualizarTemasTCC from "./VisualizarTemasTCC";
 import ConviteOrientadorModal from "./ConviteOrientadorModal";
 import ConviteBancaModal from "./ConviteBancaModal";
 
-const steps = ["1", "2", "3", "4", "5", "6"];
+const steps = ["1", "2", "3", "4", "5", "6", "7"];
 
 export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
     const { usuario } = useContext(AuthContext);
@@ -47,6 +47,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
     const [conviteExistente, setConviteExistente] = useState(null);
     const [convitesBanca, setConvitesBanca] = useState([]);
     const [openConviteBancaModal, setOpenConviteBancaModal] = useState(false);
+    const [openConviteBancaFinalModal, setOpenConviteBancaFinalModal] = useState(false);
     const [tccAnterior, setTccAnterior] = useState(null);
     const [openImportModal, setOpenImportModal] = useState(false);
     const [showCompletedMessage, setShowCompletedMessage] = useState(false);
@@ -204,9 +205,9 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
     // Função para determinar quais etapas são válidas baseado na fase do TCC
     const getEtapasValidas = () => {
         if (trabalhoConclusao && trabalhoConclusao.fase === 1) {
-            return steps.slice(0, 5); // Etapas 1-5 para fase 1 (TCC I) - incluindo banca
+            return steps.slice(0, 5); // Etapas 1-5 para fase 1 (TCC I) - incluindo banca projeto
         }
-        return steps; // Todas as etapas para fase 2 (TCC II)
+        return steps; // Todas as etapas para fase 2 (TCC II) - incluindo banca trabalho
     };
 
     const validarEtapaAtual = () => {
@@ -221,15 +222,27 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
             case 3:
                 return formData.resumo && formData.resumo.trim().length > 0;
             case 4:
-                // Etapa 4 (convite para banca) - precisa de 2 convites aceitos
-                const convitesAceitos = convitesBanca.filter(convite => convite.aceito === true);
-                return convitesAceitos.length >= 2;
+                // Etapa 4 (convite para banca do projeto - fase 1) - precisa de 2 convites aceitos
+                const convitesAceitosFase1 = convitesBanca.filter(convite =>
+                    convite.aceito === true && convite.fase === 1
+                );
+                return convitesAceitosFase1.length >= 2;
             case 5:
                 // Etapa 5 (seminário de andamento) só é obrigatória para fase 2
                 if (trabalhoConclusao && trabalhoConclusao.fase === 2) {
                     return formData.seminario_andamento && formData.seminario_andamento.trim().length > 0;
                 }
                 return true; // Para fase 1, a etapa 5 não é obrigatória
+            case 6:
+                // Etapa 6 (convite para banca do trabalho final - fase 2) - só existe na fase 2
+                if (trabalhoConclusao && trabalhoConclusao.fase === 2) {
+                    // Para etapa 7, considerar apenas convites da fase 2 e aceitos
+                    const convitesAceitosFase2 = convitesBanca.filter(convite =>
+                        convite.aceito === true && convite.fase === 2
+                    );
+                    return convitesAceitosFase2.length >= 2;
+                }
+                return true; // Para fase 1, não existe esta etapa
             default:
                 return true;
         }
@@ -398,6 +411,14 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 
     const handleCloseConviteBancaModal = () => {
         setOpenConviteBancaModal(false);
+    };
+
+    const handleOpenConviteBancaFinalModal = () => {
+        setOpenConviteBancaFinalModal(true);
+    };
+
+    const handleCloseConviteBancaFinalModal = () => {
+        setOpenConviteBancaFinalModal(false);
     };
 
     const handleConviteEnviado = async () => {
@@ -672,33 +693,40 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                 return (
                     <Box sx={{ mt: 2 }}>
                         <Typography variant="h6" gutterBottom>
-                            Etapa 5: Convite para Banca de Avaliação
+                            Etapa 5: Convite para Banca de Avaliação do Projeto
                         </Typography>
 
                         {trabalhoConclusao && (
                             <Paper sx={{ p: 3, mb: 3 }}>
                                 <Typography variant="h6" gutterBottom>
-                                    Composição da Banca de Avaliação
+                                    Composição da Banca de Avaliação do Projeto
                                 </Typography>
 
-                                                                {/* Mostrar mensagem explicativa apenas se não há convites aceitos ainda */}
-                                {convitesBanca.filter(c => c.aceito === true).length === 0 && (
-                                    <Alert severity="info" sx={{ mb: 2 }}>
-                                        <Typography variant="body2">
-                                            Para prosseguir, você precisa convidar 2 docentes para compor a banca de avaliação do seu projeto.
-                                            Você pode enviar até 2 convites por vez.
-                                        </Typography>
-                                    </Alert>
-                                )}
+                                {/* Filtrar apenas convites da fase 1 (banca do projeto) */}
+                                {(() => {
+                                    const convitesBancaFase1 = convitesBanca.filter(c => c.fase === 1);
+                                    const convitesAceitosFase1 = convitesBancaFase1.filter(c => c.aceito === true);
 
-                                {convitesBanca.length > 0 ? (
-                                    <Box>
-                                        {/* Mostrar status detalhado dos convites */}
-                                        <Typography variant="subtitle1" gutterBottom>
-                                            Status dos Convites para Banca:
-                                        </Typography>
+                                    return (
+                                        <>
+                                            {/* Mostrar mensagem explicativa apenas se não há convites aceitos ainda */}
+                                            {convitesAceitosFase1.length === 0 && (
+                                                <Alert severity="info" sx={{ mb: 2 }}>
+                                                    <Typography variant="body2">
+                                                        Para prosseguir, você precisa convidar 2 docentes para compor a banca de avaliação do seu projeto.
+                                                        Você pode enviar até 2 convites por vez.
+                                                    </Typography>
+                                                </Alert>
+                                            )}
 
-                                        {convitesBanca.map((convite, index) => (
+                                            {convitesBancaFase1.length > 0 ? (
+                                                <Box>
+                                                    {/* Mostrar status detalhado dos convites da fase 1 */}
+                                                    <Typography variant="subtitle1" gutterBottom>
+                                                        Status dos Convites para Banca do Projeto:
+                                                    </Typography>
+
+                                                    {convitesBancaFase1.map((convite, index) => (
                                             <Alert
                                                 key={index}
                                                 severity={
@@ -739,63 +767,66 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                                             </Alert>
                                         ))}
 
-                                        {/* Resumo visual com chips */}
-                                        <Box sx={{ mb: 2 }}>
-                                            <Typography variant="body2" color="text.secondary" gutterBottom>
-                                                Resumo:
-                                            </Typography>
-                                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                                                <Chip
-                                                    label={`${convitesBanca.filter(c => c.aceito === true).length} Aceito(s)`}
-                                                    color="success"
-                                                    size="small"
-                                                />
-                                                <Chip
-                                                    label={`${convitesBanca.filter(c => !c.data_feedback).length} Pendente(s)`}
-                                                    color="warning"
-                                                    size="small"
-                                                />
-                                                <Chip
-                                                    label={`${convitesBanca.filter(c => c.data_feedback && !c.aceito).length} Recusado(s)`}
-                                                    color="error"
-                                                    size="small"
-                                                />
-                                            </Box>
-                                        </Box>
+                                                    {/* Resumo visual com chips para fase 1 */}
+                                                    <Box sx={{ mb: 2 }}>
+                                                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                                                            Resumo:
+                                                        </Typography>
+                                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                                            <Chip
+                                                                label={`${convitesAceitosFase1.length} Aceito(s)`}
+                                                                color="success"
+                                                                size="small"
+                                                            />
+                                                            <Chip
+                                                                label={`${convitesBancaFase1.filter(c => !c.data_feedback).length} Pendente(s)`}
+                                                                color="warning"
+                                                                size="small"
+                                                            />
+                                                            <Chip
+                                                                label={`${convitesBancaFase1.filter(c => c.data_feedback && !c.aceito).length} Recusado(s)`}
+                                                                color="error"
+                                                                size="small"
+                                                            />
+                                                        </Box>
+                                                    </Box>
 
-                                        {convitesBanca.filter(c => c.aceito === true).length === 2 ? (
+                                                    {convitesAceitosFase1.length === 2 ? (
                                             <Alert severity="success" sx={{ mb: 2 }}>
                                                 <Typography variant="body2">
                                                     🎉 Excelente! Sua banca de avaliação está completa com 2 membros confirmados.
                                                     Agora você pode prosseguir para a próxima etapa.
                                                 </Typography>
                                             </Alert>
-                                        ) : (
-                                            <Button
-                                                variant="contained"
-                                                onClick={handleOpenConviteBancaModal}
-                                                disabled={convitesBanca.filter(c => !c.data_feedback).length >= 2}
-                                            >
-                                                {convitesBanca.filter(c => !c.data_feedback).length >= 2
-                                                    ? "Limite de Convites Atingido"
-                                                    : "Enviar Convites para Banca"
-                                                }
-                                            </Button>
-                                        )}
-                                    </Box>
-                                ) : (
-                                    <Box>
-                                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                                            Você ainda não enviou convites para a banca de avaliação.
-                                        </Typography>
-                                        <Button
-                                            variant="contained"
-                                            onClick={handleOpenConviteBancaModal}
-                                        >
-                                            Enviar Convites para Banca
-                                        </Button>
-                                    </Box>
-                                )}
+                                                    ) : (
+                                                        <Button
+                                                            variant="contained"
+                                                            onClick={handleOpenConviteBancaModal}
+                                                            disabled={convitesBancaFase1.filter(c => !c.data_feedback).length >= 2}
+                                                        >
+                                                            {convitesBancaFase1.filter(c => !c.data_feedback).length >= 2
+                                                                ? "Limite de Convites Atingido"
+                                                                : `Enviar ${2 - convitesAceitosFase1.length} Convite(s) para Banca do Projeto`
+                                                            }
+                                                        </Button>
+                                                    )}
+                                                </Box>
+                                            ) : (
+                                                <Box>
+                                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                                        Você ainda não enviou convites para a banca de avaliação do projeto.
+                                                    </Typography>
+                                                    <Button
+                                                        variant="contained"
+                                                        onClick={handleOpenConviteBancaModal}
+                                                    >
+                                                        Enviar 2 Convites para Banca do Projeto
+                                                    </Button>
+                                                </Box>
+                                            )}
+                                        </>
+                                    );
+                                })()}
                             </Paper>
                         )}
                     </Box>
@@ -839,6 +870,179 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                                 <Typography variant="body2">
                                     A etapa de Seminário de Andamento é específica para estudantes na fase TCC II.
                                     Como você está na fase TCC I, esta etapa será automaticamente ignorada.
+                                </Typography>
+                            </Alert>
+                        </Box>
+                    );
+                }
+            case 6:
+                // Etapa 7: Convite para Banca de Avaliação do Trabalho Final - apenas para fase 2
+                if (trabalhoConclusao && trabalhoConclusao.fase === 2) {
+                    // Separar convites por fase
+                    const convitesFase1 = convitesBanca.filter(c => c.fase === 1); // Convites da etapa 5 (banca do projeto)
+                    const convitesFase2 = convitesBanca.filter(c => c.fase === 2); // Convites da etapa 7 (banca final)
+                    const convitesAceitosFase2 = convitesFase2.filter(c => c.aceito === true);
+
+                    return (
+                        <Box sx={{ mt: 2 }}>
+                            <Typography variant="h6" gutterBottom>
+                                Etapa 7: Convite para Banca de Avaliação do Trabalho Final
+                            </Typography>
+
+                            <Paper sx={{ p: 3, mb: 3 }}>
+                                <Typography variant="h6" gutterBottom>
+                                    Composição da Banca de Avaliação Final
+                                </Typography>
+
+                                <Alert severity="info" sx={{ mb: 2 }}>
+                                    <Typography variant="body2">
+                                        <strong>Nova Etapa:</strong> Para a avaliação final do seu trabalho, você precisa convidar 2 docentes para uma nova banca.
+                                        Os docentes que participaram da banca do projeto (etapa 5) vêm pré-selecionados como sugestão.
+                                    </Typography>
+                                </Alert>
+
+                                {/* Histórico de convites da fase 1 (etapa 5) */}
+                                {convitesFase1.length > 0 && (
+                                    <Box sx={{ mb: 3 }}>
+                                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                            📚 Histórico - Banca do Projeto (Etapa 5):
+                                        </Typography>
+                                        {convitesFase1.map((convite, index) => (
+                                            <Alert
+                                                key={`fase1-${index}`}
+                                                severity={convite.aceito ? "success" : "info"}
+                                                sx={{ mb: 1, opacity: 0.7 }}
+                                            >
+                                                <Typography variant="caption">
+                                                    <strong>{convite.Docente?.nome || convite.codigo_docente}</strong> - {
+                                                        convite.aceito ? "Participou da banca do projeto" :
+                                                        convite.data_feedback ? "Recusou participar" : "Convite pendente"
+                                                    } {convite.data_feedback && `em ${new Date(convite.data_feedback).toLocaleDateString('pt-BR')}`}
+                                                </Typography>
+                                            </Alert>
+                                        ))}
+                                    </Box>
+                                )}
+
+                                                                {/* Convites da fase 2 para banca final */}
+                                {convitesFase2.length > 0 ? (
+                                    <Box>
+                                        <Typography variant="subtitle1" gutterBottom>
+                                            📋 Convites para Banca de Avaliação Final:
+                                        </Typography>
+
+                                        {convitesFase2.map((convite, index) => (
+                                            <Alert
+                                                key={`fase2-${index}`}
+                                                severity={
+                                                    convite.aceito === true ? "success" :
+                                                    convite.data_feedback && !convite.aceito ? "error" : "warning"
+                                                }
+                                                sx={{ mb: 2 }}
+                                            >
+                                                <Typography variant="body2">
+                                                    <strong>Docente:</strong> {convite.Docente?.nome || convite.codigo_docente}
+                                                </Typography>
+                                                <Typography variant="body2">
+                                                    <strong>Status:</strong> {
+                                                        convite.aceito === true ? "Aceito" :
+                                                        convite.data_feedback && !convite.aceito ? "Recusado" : "Pendente"
+                                                    }
+                                                </Typography>
+                                                {convite.data_envio && (
+                                                    <Typography variant="body2">
+                                                        <strong>Enviado em:</strong> {new Date(convite.data_envio).toLocaleDateString('pt-BR')}
+                                                    </Typography>
+                                                )}
+                                                {convite.data_feedback && (
+                                                    <Typography variant="body2">
+                                                        <strong>Respondido em:</strong> {new Date(convite.data_feedback).toLocaleDateString('pt-BR')}
+                                                    </Typography>
+                                                )}
+                                                {convite.mensagem_feedback && convite.data_feedback && (
+                                                    <Typography variant="body2">
+                                                        <strong>Mensagem do docente:</strong> {convite.mensagem_feedback}
+                                                    </Typography>
+                                                )}
+                                                {convite.mensagem_envio && (
+                                                    <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
+                                                        <strong>Sua mensagem:</strong> "{convite.mensagem_envio}"
+                                                    </Typography>
+                                                )}
+                                            </Alert>
+                                        ))}
+
+                                        {/* Resumo dos convites da fase 2 */}
+                                        <Box sx={{ mb: 2 }}>
+                                            <Typography variant="body2" color="text.secondary" gutterBottom>
+                                                Status da Banca Final:
+                                            </Typography>
+                                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                                <Chip
+                                                    label={`${convitesAceitosFase2.length} Aceito(s)`}
+                                                    color="success"
+                                                    size="small"
+                                                />
+                                                <Chip
+                                                    label={`${convitesFase2.filter(c => !c.data_feedback).length} Pendente(s)`}
+                                                    color="warning"
+                                                    size="small"
+                                                />
+                                                <Chip
+                                                    label={`${convitesFase2.filter(c => c.data_feedback && !c.aceito).length} Recusado(s)`}
+                                                    color="error"
+                                                    size="small"
+                                                />
+                                            </Box>
+                                        </Box>
+
+                                        {convitesAceitosFase2.length === 2 ? (
+                                            <Alert severity="success" sx={{ mb: 2 }}>
+                                                <Typography variant="body2">
+                                                    🎉 Excelente! Sua banca de avaliação final está completa com 2 membros confirmados.
+                                                    Agora você pode finalizar seu TCC.
+                                                </Typography>
+                                            </Alert>
+                                        ) : (
+                                            <Button
+                                                variant="contained"
+                                                onClick={handleOpenConviteBancaFinalModal}
+                                                disabled={convitesFase2.filter(c => !c.data_feedback).length >= 2}
+                                            >
+                                                                                                            {convitesFase2.filter(c => !c.data_feedback).length >= 2
+                                                    ? "Aguardando Respostas"
+                                                    : `Enviar ${2 - convitesAceitosFase2.length} Convite(s) para Banca Final`
+                                                }
+                                            </Button>
+                                        )}
+                                    </Box>
+                                ) : (
+                                    <Box>
+                                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                            Inicie o processo de convites para a banca de avaliação final.
+                                        </Typography>
+                                        <Button
+                                            variant="contained"
+                                            onClick={handleOpenConviteBancaFinalModal}
+                                        >
+                                            Enviar 2 Convites para Banca Final
+                                        </Button>
+                                    </Box>
+                                )}
+                            </Paper>
+                        </Box>
+                    );
+                } else {
+                    // Para fase 1, esta etapa não existe
+                    return (
+                        <Box sx={{ mt: 2 }}>
+                            <Alert severity="info" sx={{ mb: 2 }}>
+                                <Typography variant="h6" gutterBottom>
+                                    Etapa Não Aplicável
+                                </Typography>
+                                <Typography variant="body2">
+                                    A etapa de Convite para Banca Final é específica para estudantes na fase TCC II.
+                                    Como você está na fase TCC I, esta etapa não está disponível.
                                 </Typography>
                             </Alert>
                         </Box>
@@ -1038,9 +1242,11 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                                         formData.resumo.trim().length > 0
                                     );
                                 case 4:
-                                    // Etapa 4 (convite para banca) - precisa de 2 convites aceitos
-                                    const convitesAceitosBanca = convitesBanca.filter(convite => convite.aceito === true);
-                                    return convitesAceitosBanca.length >= 2;
+                                    // Etapa 4 (convite para banca do projeto - fase 1) - precisa de 2 convites aceitos
+                                    const convitesAceitosBancaFase1 = convitesBanca.filter(convite =>
+                                        convite.aceito === true && convite.fase === 1
+                                    );
+                                    return convitesAceitosBancaFase1.length >= 2;
                                 case 5:
                                     // Etapa 5 (seminário) só é obrigatória para fase 2
                                     if (trabalhoConclusao && trabalhoConclusao.fase === 2) {
@@ -1050,6 +1256,15 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                                         );
                                     }
                                     return true; // Para fase 1, considera completa
+                                case 6:
+                                    // Etapa 6 (convite para banca final - fase 2) - só existe na fase 2
+                                    if (trabalhoConclusao && trabalhoConclusao.fase === 2) {
+                                        const convitesAceitosBancaFase2 = convitesBanca.filter(convite =>
+                                            convite.aceito === true && convite.fase === 2
+                                        );
+                                        return convitesAceitosBancaFase2.length >= 2;
+                                    }
+                                    return true; // Para fase 1, não existe
                                 default:
                                     return false;
                             }
@@ -1177,6 +1392,22 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                                 </Typography>
                             </Alert>
                         )}
+
+                        {/* Mensagem de ajuda para etapa 6 (banca final) */}
+                        {activeStep === 6 && !validarEtapaAtual() && (
+                            <Alert severity="warning" sx={{ mt: 2 }}>
+                                <Typography variant="body2">
+                                    <strong>Aguardando confirmação da banca final:</strong> Para finalizar seu TCC, você precisa ter 2 convites aceitos para a banca de avaliação final.
+                                    {(() => {
+                                        const convitesFase2Atuais = convitesBanca.filter(c => c.fase === 2);
+                                        const convitesAceitosFase2 = convitesFase2Atuais.filter(c => c.aceito === true);
+                                        return convitesAceitosFase2.length > 0 ?
+                                            ` Você já tem ${convitesAceitosFase2.length} convite(s) aceito(s) para a banca final, falta(m) ${2 - convitesAceitosFase2.length}.` :
+                                            " Ainda não há convites aceitos para a banca final.";
+                                    })()}
+                                </Typography>
+                            </Alert>
+                        )}
                     </Box>
                 )}
             </Paper>
@@ -1211,9 +1442,25 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                     idTcc={trabalhoConclusao.id}
                     idCurso={trabalhoConclusao.id_curso}
                     onConviteEnviado={handleConviteBancaEnviado}
-                    convitesExistentes={convitesBanca}
+                    convitesExistentes={convitesBanca.filter(c => c.fase === 1)} // Apenas convites da fase 1 (banca do projeto)
                     conviteOrientacao={conviteExistente}
                     tipoConvite="banca_projeto"
+                    docentesPreSelecionados={[]} // Etapa 5 não tem pré-seleção
+                />
+            )}
+
+            {/* Modal de Convite para Banca Final */}
+            {trabalhoConclusao && (
+                <ConviteBancaModal
+                    open={openConviteBancaFinalModal}
+                    onClose={handleCloseConviteBancaFinalModal}
+                    idTcc={trabalhoConclusao.id}
+                    idCurso={trabalhoConclusao.id_curso}
+                    onConviteEnviado={handleConviteBancaEnviado}
+                    convitesExistentes={convitesBanca.filter(c => c.fase === 2)} // Apenas convites da fase 2 (banca final)
+                    conviteOrientacao={conviteExistente}
+                    tipoConvite="banca_trabalho"
+                    docentesPreSelecionados={convitesBanca.filter(c => c.fase === 1 && c.aceito === true).map(c => c.codigo_docente)} // Docentes aceitos na fase 1
                 />
             )}
 

@@ -30,6 +30,7 @@ export default function ConviteBancaModal({
     convitesExistentes = [],
     conviteOrientacao = null, // Convite de orientação para excluir orientador da lista
     tipoConvite = "banca_projeto", // "banca_projeto" ou "banca_trabalho"
+    docentesPreSelecionados = [], // Docentes que devem vir pré-selecionados
 }) {
     const [orientadores, setOrientadores] = useState([]);
     const [orientadoresSelecionados, setOrientadoresSelecionados] = useState(
@@ -46,14 +47,33 @@ export default function ConviteBancaModal({
         }
     }, [open, idCurso]);
 
-    useEffect(() => {
+        useEffect(() => {
         if (open) {
-            // Resetar seleções quando abrir o modal
-            setOrientadoresSelecionados([]);
+            // Lógica de pré-seleção inteligente
+            let selecionadosIniciais = [];
+
+            if (tipoConvite === "banca_trabalho" && docentesPreSelecionados.length > 0 && convitesExistentes) {
+                // Para etapa 7 (banca final), verificar se já há convites respondidos na fase 2
+                const convitesRespondidosFase2 = convitesExistentes.filter(c => c.data_feedback);
+
+                if (convitesRespondidosFase2.length === 0) {
+                    // Se não há convites respondidos, manter pré-seleção apenas para docentes não convidados na fase 2
+                    const docentesJaConvidadosFase2 = convitesExistentes.map(c => c.codigo_docente);
+                    selecionadosIniciais = docentesPreSelecionados.filter(
+                        codigo => !docentesJaConvidadosFase2.includes(codigo)
+                    );
+                }
+                // Se há convites respondidos, não pré-selecionar ninguém (selecionadosIniciais = [])
+            } else {
+                // Para outras situações, usar pré-seleção normal
+                selecionadosIniciais = docentesPreSelecionados || [];
+            }
+
+            setOrientadoresSelecionados(selecionadosIniciais);
             setMensagem("");
             setError("");
         }
-    }, [open]);
+    }, [open, docentesPreSelecionados, convitesExistentes, tipoConvite]);
 
     const carregarOrientadores = async () => {
         try {
@@ -79,9 +99,8 @@ export default function ConviteBancaModal({
     };
 
     // Filtrar convites de banca (orientacao = false)
-    const convitesBanca = convitesExistentes.filter(
-        (convite) => convite.orientacao === false
-    );
+    // Usar convitesExistentes diretamente (já filtrados pelo componente pai)
+    const convitesBanca = convitesExistentes || [];
 
     // Contar convites pendentes (sem data_feedback)
     const convitesPendentes = convitesBanca.filter(
@@ -104,7 +123,8 @@ export default function ConviteBancaModal({
     const podeEnviarMaisConvites = !deveBotaoEstarDesabilitado;
 
     // Calcular quantos convites ainda pode enviar
-    const convitesDisponiveis = 2 - convitesPendentes.length;
+    // Apenas convites aceitos ocupam vagas permanentemente, recusados liberam a vaga
+    const convitesDisponiveis = 2 - convitesAceitos.length;
 
     const handleEnviarConvites = async () => {
         if (orientadoresSelecionados.length === 0) {
@@ -112,9 +132,12 @@ export default function ConviteBancaModal({
             return;
         }
 
-        if (orientadoresSelecionados.length > convitesDisponiveis) {
+        // Verificar se ainda pode enviar baseado em aceitos + pendentes + nova seleção
+        const totalConvitesAposEnvio = convitesPendentes.length + convitesAceitos.length + orientadoresSelecionados.length;
+
+        if (totalConvitesAposEnvio > 2) {
             setError(
-                `Você só pode enviar mais ${convitesDisponiveis} convite(s). Você já tem ${convitesPendentes.length} convite(s) pendente(s).`
+                `Você só pode ter no máximo 2 convites simultâneos. Atualmente: ${convitesAceitos.length} aceito(s) + ${convitesPendentes.length} pendente(s). Máximo para enviar agora: ${2 - convitesPendentes.length - convitesAceitos.length}.`
             );
             return;
         }
@@ -136,6 +159,7 @@ export default function ConviteBancaModal({
                                 : "Trabalho Final"
                         }`,
                     orientacao: false, // Sempre false para convites de banca
+                    fase: tipoConvite === "banca_projeto" ? 1 : 2, // Fase 1 para projeto, Fase 2 para trabalho final
                 };
 
                 await axiosInstance.post("/convites", {
@@ -170,14 +194,17 @@ export default function ConviteBancaModal({
     const handleChangeOrientadores = (event) => {
         const value = event.target.value;
 
-        // Limitar a 2 seleções e verificar disponibilidade
-        if (value.length <= convitesDisponiveis) {
+        // Calcular limite de seleção baseado em convites simultâneos (aceitos + pendentes)
+        const limiteSelecao = 2 - convitesAceitos.length - convitesPendentes.length;
+
+        // Limitar seleção baseado no máximo de convites simultâneos
+        if (value.length <= limiteSelecao) {
             setOrientadoresSelecionados(
                 typeof value === "string" ? value.split(",") : value
             );
         } else {
             setError(
-                `Você só pode selecionar até ${convitesDisponiveis} orientador(es).`
+                `Você só pode selecionar até ${limiteSelecao} orientador(es). Atualmente tem ${convitesAceitos.length} aceito(s) + ${convitesPendentes.length} pendente(s).`
             );
         }
     };
@@ -261,10 +288,11 @@ export default function ConviteBancaModal({
                             )}
 
                             <Typography variant="body2" sx={{ mt: 1 }}>
-                                Você pode enviar até {convitesDisponiveis}{" "}
-                                convite(s) adicional(is).
+                                Você tem {convitesDisponiveis} vaga(s) disponível(is) na banca.
                                 {convitesAceitos.length === 2 &&
                                     " Você já tem 2 convites aceitos! 🎉"}
+                                {convitesPendentes.length > 0 &&
+                                    ` (${convitesPendentes.length} convite(s) aguardando resposta)`}
                             </Typography>
                         </Alert>
                     )}
@@ -304,7 +332,7 @@ export default function ConviteBancaModal({
                                     disabled={
                                         loadingOrientadores ||
                                         !idCurso ||
-                                        convitesDisponiveis === 0
+                                        (convitesAceitos.length + convitesPendentes.length >= 2)
                                     }
                                 >
                                     {loadingOrientadores ? (
@@ -328,20 +356,33 @@ export default function ConviteBancaModal({
                                                 conviteOrientacao.aceito ===
                                                     true;
 
-                                            // Verificar se o orientador já tem convite pendente ou aceito para banca
+                                            // Verificar se o orientador já tem convite pendente, aceito ou recusado para banca
                                             const jaConvidado =
                                                 convitesBanca.some(
                                                     (convite) =>
                                                         convite.codigo_docente ===
                                                             orientador.codigo &&
                                                         (!convite.data_feedback ||
-                                                            convite.aceito)
+                                                            convite.aceito ||
+                                                            // Para etapa 7 (banca final), também excluir docentes que recusaram
+                                                            (tipoConvite === "banca_trabalho" && convite.data_feedback && !convite.aceito))
                                                 );
+
+                                            // Verificar se foi especificamente recusado na fase atual
+                                            const foiRecusado = convitesBanca.some(
+                                                (convite) =>
+                                                    convite.codigo_docente === orientador.codigo &&
+                                                    convite.data_feedback &&
+                                                    !convite.aceito &&
+                                                    tipoConvite === "banca_trabalho"
+                                            );
 
                                             const isDisabled =
                                                 jaConvidado || ehOrientador;
                                             const secondaryText = ehOrientador
                                                 ? "Orientador do TCC"
+                                                : foiRecusado
+                                                ? "Recusou convite anterior"
                                                 : jaConvidado
                                                 ? "Já convidado"
                                                 : "";
@@ -381,7 +422,7 @@ export default function ConviteBancaModal({
                                 onChange={(e) => setMensagem(e.target.value)}
                                 placeholder="Escreva uma mensagem personalizada para os membros da banca..."
                                 sx={{ mb: 2 }}
-                                helperText={`Você pode selecionar até ${convitesDisponiveis} orientador(es) para enviar convites.`}
+                                helperText={`Você pode selecionar até ${2 - convitesAceitos.length - convitesPendentes.length} orientador(es) para enviar convites simultaneamente.`}
                             />
                         </>
                     ) : (
@@ -428,7 +469,7 @@ export default function ConviteBancaModal({
                         convitesPendentes.length === 2 ? "Aguardando Respostas" :
                         "Aguardando Confirmação"
                     ) : (
-                        `Enviar ${orientadoresSelecionados.length} Convite(s)`
+                        `Enviar ${convitesDisponiveis} Convite(s)`
                     )}
                 </Button>
             </DialogActions>
