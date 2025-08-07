@@ -45,24 +45,24 @@ export default function ModuloOrientador() {
                     onChange={handleTabChange}
                     aria-label="orientador tabs"
                 >
-                    <Tab label="Gerenciar Temas TCC" {...a11yProps(0)} />
-                    <Tab label="Convites Recebidos" {...a11yProps(1)} />
-                    <Tab label="Trabalhos Orientados" {...a11yProps(2)} />
+                    <Tab label="Trabalhos Orientados" {...a11yProps(0)} />
+                    <Tab label="Gerenciar Temas TCC" {...a11yProps(1)} />
+                    <Tab label="Convites Recebidos" {...a11yProps(2)} />
                     <Tab label="Disponibilidade Bancas" {...a11yProps(3)} />
                     <Tab label="Outras Funcionalidades" {...a11yProps(4)} />
                 </Tabs>
             </Box>
 
             <TabPanel value={tabValue} index={0}>
-                <GerenciarTemasOrientador />
+                <TrabalhosOrientador />
             </TabPanel>
 
             <TabPanel value={tabValue} index={1}>
-                <ConvitesRecebidosOrientador />
+                <GerenciarTemasOrientador />
             </TabPanel>
 
             <TabPanel value={tabValue} index={2}>
-                <TrabalhosOrientador />
+                <ConvitesRecebidosOrientador />
             </TabPanel>
 
             <TabPanel value={tabValue} index={3}>

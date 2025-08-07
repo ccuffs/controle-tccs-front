@@ -11,6 +11,10 @@ import {
     Stack,
     Typography,
     Chip,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
 } from "@mui/material";
 import PermissionContext from "../contexts/PermissionContext";
 import { Permissoes } from "../enums/permissoes";
@@ -18,9 +22,21 @@ import axiosInstance from "../auth/axios";
 import { useAuth } from "../contexts/AuthContext";
 import CustomDataGrid from "./CustomDataGrid";
 
+function getAnoSemestreAtual() {
+    const data = new Date();
+    const ano = data.getFullYear();
+    const semestre = data.getMonth() < 6 ? 1 : 2;
+    return { ano, semestre };
+}
+
 export default function ConvitesRecebidosOrientador() {
     const { usuario } = useAuth();
     const [convites, setConvites] = useState([]);
+    const [cursos, setCursos] = useState([]);
+    const [cursoSelecionado, setCursoSelecionado] = useState("");
+    const [ano, setAno] = useState(getAnoSemestreAtual().ano);
+    const [semestre, setSemestre] = useState(getAnoSemestreAtual().semestre);
+    const [fase, setFase] = useState("");
     const [openMessage, setOpenMessage] = useState(false);
     const [openDialog, setOpenDialog] = useState(false);
     const [messageText, setMessageText] = useState("");
@@ -30,9 +46,29 @@ export default function ConvitesRecebidosOrientador() {
 
     useEffect(() => {
         if (usuario?.id) {
-            getData();
+            getCursosOrientador();
         }
     }, [usuario]);
+
+    useEffect(() => {
+        if (usuario?.id) {
+            getData();
+        }
+    }, [usuario, cursoSelecionado, ano, semestre, fase]);
+
+    async function getCursosOrientador() {
+        try {
+            const codigoDocente = usuario.codigo || usuario.id;
+            const response = await axiosInstance.get(
+                `/orientadores/docente/${codigoDocente}`
+            );
+            const cursosOrientador = response.orientacoes || [];
+            setCursos(cursosOrientador.map((orientacao) => orientacao.curso));
+        } catch (error) {
+            console.log("Erro ao buscar cursos do orientador:", error);
+            setCursos([]);
+        }
+    }
 
     async function getData() {
         try {
@@ -42,7 +78,37 @@ export default function ConvitesRecebidosOrientador() {
                 const response = await axiosInstance.get(
                     `/convites/docente/${usuario.id}`
                 );
-                setConvites(response?.convites || []);
+                let convitesFiltrados = response?.convites || [];
+
+                // Aplicar filtros
+                if (cursoSelecionado) {
+                    convitesFiltrados = convitesFiltrados.filter(
+                        (convite) =>
+                            convite?.TrabalhoConclusao?.Curso?.id === parseInt(cursoSelecionado)
+                    );
+                }
+
+                if (ano) {
+                    convitesFiltrados = convitesFiltrados.filter(
+                        (convite) =>
+                            convite?.TrabalhoConclusao?.ano === parseInt(ano)
+                    );
+                }
+
+                if (semestre) {
+                    convitesFiltrados = convitesFiltrados.filter(
+                        (convite) =>
+                            convite?.TrabalhoConclusao?.semestre === parseInt(semestre)
+                    );
+                }
+
+                if (fase !== "") {
+                    convitesFiltrados = convitesFiltrados.filter(
+                        (convite) => convite?.fase === parseInt(fase)
+                    );
+                }
+
+                setConvites(convitesFiltrados);
             } else {
                 setConvites([]);
             }
@@ -76,10 +142,10 @@ export default function ConvitesRecebidosOrientador() {
 
     async function handleConfirmarResposta() {
         try {
-            const { id_tcc, codigo_docente, acao } = conviteSelecionado;
+            const { id_tcc, codigo_docente, fase, acao } = conviteSelecionado;
 
             const response = await axiosInstance.put(
-                `/convites/${id_tcc}/${codigo_docente}`,
+                `/convites/${id_tcc}/${codigo_docente}/${fase}`,
                 {
                     aceito: acao,
                 }
@@ -106,6 +172,22 @@ export default function ConvitesRecebidosOrientador() {
         setConviteSelecionado(null);
     }
 
+    function handleCursoChange(e) {
+        setCursoSelecionado(e.target.value);
+    }
+
+    function handleAnoChange(e) {
+        setAno(e.target.value);
+    }
+
+    function handleSemestreChange(e) {
+        setSemestre(e.target.value);
+    }
+
+    function handleFaseChange(e) {
+        setFase(e.target.value);
+    }
+
     // Preparar dados para o DataGrid seguindo o padrão do TemasDataGridDiscente
     const convitesParaGrid = convites
         .map((convite) => {
@@ -127,6 +209,8 @@ export default function ConvitesRecebidosOrientador() {
                     : null,
                 // Determinar se o convite foi respondido baseado na data_feedback
                 foiRespondido: !!convite?.data_feedback,
+                // Mapear fase para texto descritivo
+                faseDescricao: convite?.fase === 0 ? "Orientação" : convite?.fase === 1 ? "Projeto" : convite?.fase === 2 ? "TCC" : `Fase ${convite?.fase || 0}`,
             };
         })
         .sort((a, b) => {
@@ -209,9 +293,37 @@ export default function ConvitesRecebidosOrientador() {
             ),
         },
         {
+            field: "faseDescricao",
+            headerName: "Fase",
+            width: 100,
+            renderCell: (params) => (
+                <div
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        whiteSpace: "normal",
+                        wordWrap: "break-word",
+                        lineHeight: "1.2",
+                        width: "100%",
+                        padding: "4px 0",
+                    }}
+                >
+                    <Chip
+                        label={params.value}
+                        size="small"
+                        color={
+                            params.value === "Orientação" ? "secondary" :
+                            params.value === "Projeto" ? "info" : "primary"
+                        }
+                        variant="outlined"
+                    />
+                </div>
+            ),
+        },
+        {
             field: "mensagemEnvio",
             headerName: "Mensagem",
-            width: 500,
+            width: 380,
             renderCell: (params) => (
                 <div
                     style={{
@@ -327,6 +439,74 @@ export default function ConvitesRecebidosOrientador() {
             </Typography>
 
             <Stack spacing={2}>
+                <Stack direction="row" spacing={2} alignItems="center">
+                    <FormControl fullWidth size="small">
+                        <InputLabel>Curso</InputLabel>
+                        <Select
+                            value={cursoSelecionado}
+                            label="Curso"
+                            onChange={handleCursoChange}
+                        >
+                            <MenuItem value="">
+                                <em>Todos os cursos</em>
+                            </MenuItem>
+                            {cursos.map((curso) => (
+                                <MenuItem key={curso.id} value={curso.id}>
+                                    {curso.nome} - {curso.codigo} ({curso.turno})
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                    <FormControl sx={{ minWidth: 100 }} size="small">
+                        <InputLabel>Ano</InputLabel>
+                        <Select
+                            value={ano}
+                            label="Ano"
+                            onChange={handleAnoChange}
+                        >
+                            <MenuItem value="">
+                                <em>Todos</em>
+                            </MenuItem>
+                            {[ano - 1, ano, ano + 1].map((a) => (
+                                <MenuItem key={a} value={a}>
+                                    {a}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                    <FormControl sx={{ minWidth: 100 }} size="small">
+                        <InputLabel>Semestre</InputLabel>
+                        <Select
+                            value={semestre}
+                            label="Semestre"
+                            onChange={handleSemestreChange}
+                        >
+                            <MenuItem value="">
+                                <em>Todos</em>
+                            </MenuItem>
+                            {[1, 2].map((s) => (
+                                <MenuItem key={s} value={s}>
+                                    {s}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                    <FormControl sx={{ minWidth: 100 }} size="small">
+                        <InputLabel>Fase</InputLabel>
+                        <Select
+                            value={fase}
+                            label="Fase"
+                            onChange={handleFaseChange}
+                        >
+                            <MenuItem value="">
+                                <em>Todas</em>
+                            </MenuItem>
+                            <MenuItem value="0">Orientação</MenuItem>
+                            <MenuItem value="1">Projeto</MenuItem>
+                            <MenuItem value="2">TCC</MenuItem>
+                        </Select>
+                    </FormControl>
+                </Stack>
                 <Snackbar
                     open={openMessage}
                     autoHideDuration={6000}
@@ -425,40 +605,32 @@ export default function ConvitesRecebidosOrientador() {
                     ]}
                 >
                     <Box style={{ height: "500px" }}>
-                        {convitesParaGrid.length > 0 ? (
-                            <>
-                                <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                    gutterBottom
-                                >
-                                    Total de convites: {convitesParaGrid.length}
-                                </Typography>
-                                <CustomDataGrid
-                                    rows={convitesParaGrid}
-                                    columns={columns}
-                                    pageSize={5}
-                                    checkboxSelection={false}
-                                    disableSelectionOnClick
-                                    rowSpanning={false}
-                                    getRowId={(row) => {
-                                        return row.id_tcc;
-                                    }}
-                                    getRowHeight={() => "auto"}
-                                    loading={loading}
-                                    localeText={{
-                                        noRowsLabel:
-                                            "Nenhum convite encontrado",
-                                        loadingOverlay:
-                                            "Carregando convites...",
-                                    }}
-                                />
-                            </>
-                        ) : (
-                            <Typography variant="body1" color="text.secondary">
-                                Nenhum convite encontrado
-                            </Typography>
-                        )}
+                        <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            gutterBottom
+                        >
+                            Total de convites: {convitesParaGrid.length}
+                        </Typography>
+                        <CustomDataGrid
+                            rows={convitesParaGrid}
+                            columns={columns}
+                            pageSize={5}
+                            checkboxSelection={false}
+                            disableSelectionOnClick
+                            rowSpanning={false}
+                            getRowId={(row) => {
+                                return `${row.id_tcc}-${row.codigo_docente}-${row.fase}`;
+                            }}
+                            getRowHeight={() => "auto"}
+                            loading={loading}
+                            localeText={{
+                                noRowsLabel:
+                                    "Nenhum convite encontrado",
+                                loadingOverlay:
+                                    "Carregando convites...",
+                            }}
+                        />
                     </Box>
                 </PermissionContext>
             </Stack>
