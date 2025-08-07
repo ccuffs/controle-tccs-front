@@ -47,11 +47,12 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
     const [conviteExistente, setConviteExistente] = useState(null);
     const [convitesBanca, setConvitesBanca] = useState([]);
     const [openConviteBancaModal, setOpenConviteBancaModal] = useState(false);
-    const [openConviteBancaFinalModal, setOpenConviteBancaFinalModal] = useState(false);
+    const [openConviteBancaFinalModal, setOpenConviteBancaFinalModal] =
+        useState(false);
     const [tccAnterior, setTccAnterior] = useState(null);
     const [openImportModal, setOpenImportModal] = useState(false);
     const [showCompletedMessage, setShowCompletedMessage] = useState(false);
-    const [modalType, setModalType] = useState(''); // 'import', 'next_phase'
+    const [modalType, setModalType] = useState(""); // 'import', 'next_phase'
 
     useEffect(() => {
         if (usuario) {
@@ -86,8 +87,9 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 
                 if (responseTcc) {
                     // Verificar se o TCC é da oferta atual ou anterior
-                    const isTccOfertaAtual = responseTcc.ano === responseOferta.ano &&
-                                           responseTcc.semestre === responseOferta.semestre;
+                    const isTccOfertaAtual =
+                        responseTcc.ano === responseOferta.ano &&
+                        responseTcc.semestre === responseOferta.semestre;
 
                     if (!isTccOfertaAtual) {
                         // TCC é de oferta anterior - aplicar regras de importação
@@ -99,12 +101,12 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                             return;
                         } else if (responseTcc.aprovado_projeto) {
                             // 1.1 Projeto aprovado - perguntar se quer seguir com próxima fase
-                            setModalType('next_phase');
+                            setModalType("next_phase");
                             setOpenImportModal(true);
                             return;
                         } else {
                             // 1.2 Projeto não aprovado - perguntar se quer importar TCC anterior
-                            setModalType('import');
+                            setModalType("import");
                             setOpenImportModal(true);
                             return;
                         }
@@ -115,7 +117,8 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                             tema: responseTcc.tema || "",
                             titulo: responseTcc.titulo || "",
                             resumo: responseTcc.resumo || "",
-                            seminario_andamento: responseTcc.seminario_andamento || "",
+                            seminario_andamento:
+                                responseTcc.seminario_andamento || "",
                         });
 
                         // Usar a etapa do banco de dados
@@ -154,13 +157,19 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
     const carregarConvites = async (idTcc) => {
         try {
             const params = new URLSearchParams();
-            params.append('id_tcc', idTcc);
-            const response = await axiosInstance.get(`/convites?${params.toString()}`);
+            params.append("id_tcc", idTcc);
+            const response = await axiosInstance.get(
+                `/convites?${params.toString()}`
+            );
             const convites = response.data?.convites || response.convites || [];
 
             // Separar convites de orientação e banca
-            const conviteOrientacao = convites.find(convite => convite.orientacao === true);
-            const convitesBancaArray = convites.filter(convite => convite.orientacao === false);
+            const conviteOrientacao = convites.find(
+                (convite) => convite.orientacao === true
+            );
+            const convitesBancaArray = convites.filter(
+                (convite) => convite.orientacao === false
+            );
 
             if (conviteOrientacao) {
                 setConviteExistente(conviteOrientacao);
@@ -223,22 +232,26 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                 return formData.resumo && formData.resumo.trim().length > 0;
             case 4:
                 // Etapa 4 (convite para banca do projeto - fase 1) - precisa de 2 convites aceitos
-                const convitesAceitosFase1 = convitesBanca.filter(convite =>
-                    convite.aceito === true && convite.fase === 1
+                const convitesAceitosFase1 = convitesBanca.filter(
+                    (convite) => convite.aceito === true && convite.fase === 1
                 );
                 return convitesAceitosFase1.length >= 2;
             case 5:
                 // Etapa 5 (seminário de andamento) só é obrigatória para fase 2
                 if (trabalhoConclusao && trabalhoConclusao.fase === 2) {
-                    return formData.seminario_andamento && formData.seminario_andamento.trim().length > 0;
+                    return (
+                        formData.seminario_andamento &&
+                        formData.seminario_andamento.trim().length > 0
+                    );
                 }
                 return true; // Para fase 1, a etapa 5 não é obrigatória
             case 6:
                 // Etapa 6 (convite para banca do trabalho final - fase 2) - só existe na fase 2
                 if (trabalhoConclusao && trabalhoConclusao.fase === 2) {
                     // Para etapa 7, considerar apenas convites da fase 2 e aceitos
-                    const convitesAceitosFase2 = convitesBanca.filter(convite =>
-                        convite.aceito === true && convite.fase === 2
+                    const convitesAceitosFase2 = convitesBanca.filter(
+                        (convite) =>
+                            convite.aceito === true && convite.fase === 2
                     );
                     return convitesAceitosFase2.length >= 2;
                 }
@@ -450,9 +463,11 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 
         try {
             setLoading(true);
-            const responseDiscente = await axiosInstance.get(`/dicentes/usuario/${usuario.id}`);
+            const responseDiscente = await axiosInstance.get(
+                `/dicentes/usuario/${usuario.id}`
+            );
 
-            if (modalType === 'next_phase') {
+            if (modalType === "next_phase") {
                 // 1.1 Projeto aprovado - pergunta sobre próxima fase
                 if (opcaoSelecionada) {
                     // Sim: atualizar TCC existente para oferta atual (próxima fase)
@@ -475,7 +490,8 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                         tema: tccAtualizado.tema || "",
                         titulo: tccAtualizado.titulo || "",
                         resumo: tccAtualizado.resumo || "",
-                        seminario_andamento: tccAtualizado.seminario_andamento || "",
+                        seminario_andamento:
+                            tccAtualizado.seminario_andamento || "",
                     });
 
                     const etapaAtual = tccAnterior.etapa || 0;
@@ -486,17 +502,23 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 
                     await carregarConvites(tccAnterior.id);
 
-                    setMessageText(`TCC atualizado para ${ofertaAtual.ano}/${ofertaAtual.semestre}! Você está na fase TCC II.`);
+                    setMessageText(
+                        `TCC atualizado para ${ofertaAtual.ano}/${ofertaAtual.semestre}! Você está na fase TCC II.`
+                    );
                     setMessageSeverity("success");
                     setOpenMessage(true);
                 } else {
                     // Não: criar novo TCC em etapa 0
-                    await criarNovoTrabalhoConclusao(responseDiscente.matricula);
-                    setMessageText(`Novo TCC criado para ${ofertaAtual.ano}/${ofertaAtual.semestre}!`);
+                    await criarNovoTrabalhoConclusao(
+                        responseDiscente.matricula
+                    );
+                    setMessageText(
+                        `Novo TCC criado para ${ofertaAtual.ano}/${ofertaAtual.semestre}!`
+                    );
                     setMessageSeverity("success");
                     setOpenMessage(true);
                 }
-            } else if (modalType === 'import') {
+            } else if (modalType === "import") {
                 // 1.2 Projeto não aprovado - pergunta sobre importar
                 if (opcaoSelecionada) {
                     // Sim: criar novo TCC copiando valores do anterior
@@ -512,7 +534,10 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                         fase: ofertaAtual.fase,
                     };
 
-                    const response = await axiosInstance.post("/trabalho-conclusao", novoTcc);
+                    const response = await axiosInstance.post(
+                        "/trabalho-conclusao",
+                        novoTcc
+                    );
                     setTrabalhoConclusao(response);
                     setFormData({
                         tema: novoTcc.tema,
@@ -527,13 +552,19 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 
                     await carregarConvites(response.id);
 
-                    setMessageText(`TCC importado com sucesso para ${ofertaAtual.ano}/${ofertaAtual.semestre}!`);
+                    setMessageText(
+                        `TCC importado com sucesso para ${ofertaAtual.ano}/${ofertaAtual.semestre}!`
+                    );
                     setMessageSeverity("success");
                     setOpenMessage(true);
                 } else {
                     // Não: criar novo TCC em etapa 0
-                    await criarNovoTrabalhoConclusao(responseDiscente.matricula);
-                    setMessageText(`Novo TCC criado para ${ofertaAtual.ano}/${ofertaAtual.semestre}!`);
+                    await criarNovoTrabalhoConclusao(
+                        responseDiscente.matricula
+                    );
+                    setMessageText(
+                        `Novo TCC criado para ${ofertaAtual.ano}/${ofertaAtual.semestre}!`
+                    );
                     setMessageSeverity("success");
                     setOpenMessage(true);
                 }
@@ -547,8 +578,6 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
             setLoading(false);
         }
     };
-
-
 
     const handleCloseMessage = (_, reason) => {
         if (reason === "clickaway") {
@@ -572,20 +601,38 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                                 {conviteExistente ? (
                                     <Box>
                                         <Alert
-                                            severity={conviteExistente.aceito ? "success" : "warning"}
+                                            severity={
+                                                conviteExistente.aceito
+                                                    ? "success"
+                                                    : "warning"
+                                            }
                                             sx={{ mb: 2 }}
                                         >
                                             <Typography variant="body2">
-                                                <strong>Status do Convite:</strong> {conviteExistente.aceito ? "Aceito" : "Pendente"}
+                                                <strong>
+                                                    Status do Convite:
+                                                </strong>{" "}
+                                                {conviteExistente.aceito
+                                                    ? "Aceito"
+                                                    : "Pendente"}
                                             </Typography>
                                             {conviteExistente.data_envio && (
                                                 <Typography variant="body2">
-                                                    <strong>Enviado em:</strong> {new Date(conviteExistente.data_envio).toLocaleDateString('pt-BR')}
+                                                    <strong>Enviado em:</strong>{" "}
+                                                    {new Date(
+                                                        conviteExistente.data_envio
+                                                    ).toLocaleDateString(
+                                                        "pt-BR"
+                                                    )}
                                                 </Typography>
                                             )}
                                             {conviteExistente.Docente && (
                                                 <Typography variant="body2">
-                                                    <strong>Orientador:</strong> {conviteExistente.Docente.nome}
+                                                    <strong>Orientador:</strong>{" "}
+                                                    {
+                                                        conviteExistente.Docente
+                                                            .nome
+                                                    }
                                                 </Typography>
                                             )}
                                         </Alert>
@@ -595,33 +642,50 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                                             onClick={handleOpenConviteModal}
                                             disabled={conviteExistente.aceito}
                                         >
-                                            {conviteExistente.aceito ? "Convite Aceito" : "Ver Detalhes do Convite"}
+                                            {conviteExistente.aceito
+                                                ? "Convite Aceito"
+                                                : "Ver Detalhes do Convite"}
                                         </Button>
                                     </Box>
                                 ) : (
                                     <Box>
-                                        {conviteExistente && !conviteExistente.aceito ? (
-                                            <Alert severity="info" sx={{ mb: 2 }}>
+                                        {conviteExistente &&
+                                        !conviteExistente.aceito ? (
+                                            <Alert
+                                                severity="info"
+                                                sx={{ mb: 2 }}
+                                            >
                                                 <Typography variant="body2">
-                                                    Você já possui um convite pendente para um orientador.
-                                                    Aguarde a resposta antes de prosseguir com o TCC.
+                                                    Você já possui um convite
+                                                    pendente para um orientador.
+                                                    Aguarde a resposta antes de
+                                                    prosseguir com o TCC.
                                                 </Typography>
                                             </Alert>
                                         ) : (
-                                            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                                                Para prosseguir com o TCC, você precisa enviar um convite para um orientador.
+                                            <Typography
+                                                variant="body2"
+                                                color="text.secondary"
+                                                sx={{ mb: 2 }}
+                                            >
+                                                Para prosseguir com o TCC, você
+                                                precisa enviar um convite para
+                                                um orientador.
                                             </Typography>
                                         )}
 
                                         <Button
                                             variant="contained"
                                             onClick={handleOpenConviteModal}
-                                            disabled={conviteExistente && !conviteExistente.aceito}
-                                        >
-                                            {conviteExistente && !conviteExistente.aceito
-                                                ? "Convite Pendente"
-                                                : "Enviar Convite para Orientador"
+                                            disabled={
+                                                conviteExistente &&
+                                                !conviteExistente.aceito
                                             }
+                                        >
+                                            {conviteExistente &&
+                                            !conviteExistente.aceito
+                                                ? "Convite Pendente"
+                                                : "Enviar Convite para Orientador"}
                                         </Button>
                                     </Box>
                                 )}
@@ -704,17 +768,32 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 
                                 {/* Filtrar apenas convites da fase 1 (banca do projeto) */}
                                 {(() => {
-                                    const convitesBancaFase1 = convitesBanca.filter(c => c.fase === 1);
-                                    const convitesAceitosFase1 = convitesBancaFase1.filter(c => c.aceito === true);
+                                    const convitesBancaFase1 =
+                                        convitesBanca.filter(
+                                            (c) => c.fase === 1
+                                        );
+                                    const convitesAceitosFase1 =
+                                        convitesBancaFase1.filter(
+                                            (c) => c.aceito === true
+                                        );
 
                                     return (
                                         <>
                                             {/* Mostrar mensagem explicativa apenas se não há convites aceitos ainda */}
-                                            {convitesAceitosFase1.length === 0 && (
-                                                <Alert severity="info" sx={{ mb: 2 }}>
+                                            {convitesAceitosFase1.length ===
+                                                0 && (
+                                                <Alert
+                                                    severity="info"
+                                                    sx={{ mb: 2 }}
+                                                >
                                                     <Typography variant="body2">
-                                                        Para prosseguir, você precisa convidar 2 docentes para compor a banca de avaliação do seu projeto.
-                                                        Você pode enviar até 2 convites por vez.
+                                                        Para prosseguir, você
+                                                        precisa convidar 2
+                                                        docentes para compor a
+                                                        banca de avaliação do
+                                                        seu projeto. Você pode
+                                                        enviar até 2 convites
+                                                        por vez.
                                                     </Typography>
                                                 </Alert>
                                             )}
@@ -722,105 +801,221 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                                             {convitesBancaFase1.length > 0 ? (
                                                 <Box>
                                                     {/* Mostrar status detalhado dos convites da fase 1 */}
-                                                    <Typography variant="subtitle1" gutterBottom>
-                                                        Status dos Convites para Banca do Projeto:
+                                                    <Typography
+                                                        variant="subtitle1"
+                                                        gutterBottom
+                                                    >
+                                                        Status dos Convites para
+                                                        Banca do Projeto:
                                                     </Typography>
 
-                                                    {convitesBancaFase1.map((convite, index) => (
-                                            <Alert
-                                                key={index}
-                                                severity={
-                                                    convite.aceito === true ? "success" :
-                                                    convite.data_feedback && !convite.aceito ? "error" : "warning"
-                                                }
-                                                sx={{ mb: 2 }}
-                                            >
-                                                <Typography variant="body2">
-                                                    <strong>Docente:</strong> {convite.Docente?.nome || convite.codigo_docente}
-                                                </Typography>
-                                                <Typography variant="body2">
-                                                    <strong>Status:</strong> {
-                                                        convite.aceito === true ? "Aceito" :
-                                                        convite.data_feedback && !convite.aceito ? "Recusado" : "Pendente"
-                                                    }
-                                                </Typography>
-                                                {convite.data_envio && (
-                                                    <Typography variant="body2">
-                                                        <strong>Enviado em:</strong> {new Date(convite.data_envio).toLocaleDateString('pt-BR')}
-                                                    </Typography>
-                                                )}
-                                                {convite.data_feedback && (
-                                                    <Typography variant="body2">
-                                                        <strong>Respondido em:</strong> {new Date(convite.data_feedback).toLocaleDateString('pt-BR')}
-                                                    </Typography>
-                                                )}
-                                                {convite.mensagem_feedback && convite.data_feedback && (
-                                                    <Typography variant="body2">
-                                                        <strong>Mensagem do docente:</strong> {convite.mensagem_feedback}
-                                                    </Typography>
-                                                )}
-                                                {convite.mensagem_envio && (
-                                                    <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
-                                                        <strong>Sua mensagem:</strong> "{convite.mensagem_envio}"
-                                                    </Typography>
-                                                )}
-                                            </Alert>
-                                        ))}
+                                                    {convitesBancaFase1.map(
+                                                        (convite, index) => (
+                                                            <Alert
+                                                                key={index}
+                                                                severity={
+                                                                    convite.aceito ===
+                                                                    true
+                                                                        ? "success"
+                                                                        : convite.data_feedback &&
+                                                                          !convite.aceito
+                                                                        ? "error"
+                                                                        : "warning"
+                                                                }
+                                                                sx={{ mb: 2 }}
+                                                            >
+                                                                <Typography variant="body2">
+                                                                    <strong>
+                                                                        Docente:
+                                                                    </strong>{" "}
+                                                                    {convite
+                                                                        .Docente
+                                                                        ?.nome ||
+                                                                        convite.codigo_docente}
+                                                                </Typography>
+                                                                <Typography variant="body2">
+                                                                    <strong>
+                                                                        Status:
+                                                                    </strong>{" "}
+                                                                    {convite.aceito ===
+                                                                    true
+                                                                        ? "Aceito"
+                                                                        : convite.data_feedback &&
+                                                                          !convite.aceito
+                                                                        ? "Recusado"
+                                                                        : "Pendente"}
+                                                                </Typography>
+                                                                {convite.data_envio && (
+                                                                    <Typography variant="body2">
+                                                                        <strong>
+                                                                            Enviado
+                                                                            em:
+                                                                        </strong>{" "}
+                                                                        {new Date(
+                                                                            convite.data_envio
+                                                                        ).toLocaleDateString(
+                                                                            "pt-BR"
+                                                                        )}
+                                                                    </Typography>
+                                                                )}
+                                                                {convite.data_feedback && (
+                                                                    <Typography variant="body2">
+                                                                        <strong>
+                                                                            Respondido
+                                                                            em:
+                                                                        </strong>{" "}
+                                                                        {new Date(
+                                                                            convite.data_feedback
+                                                                        ).toLocaleDateString(
+                                                                            "pt-BR"
+                                                                        )}
+                                                                    </Typography>
+                                                                )}
+                                                                {convite.mensagem_feedback &&
+                                                                    convite.data_feedback && (
+                                                                        <Typography variant="body2">
+                                                                            <strong>
+                                                                                Mensagem
+                                                                                do
+                                                                                docente:
+                                                                            </strong>{" "}
+                                                                            {
+                                                                                convite.mensagem_feedback
+                                                                            }
+                                                                        </Typography>
+                                                                    )}
+                                                                {convite.mensagem_envio && (
+                                                                    <Typography
+                                                                        variant="body2"
+                                                                        sx={{
+                                                                            mt: 1,
+                                                                            fontStyle:
+                                                                                "italic",
+                                                                        }}
+                                                                    >
+                                                                        <strong>
+                                                                            Sua
+                                                                            mensagem:
+                                                                        </strong>{" "}
+                                                                        "
+                                                                        {
+                                                                            convite.mensagem_envio
+                                                                        }
+                                                                        "
+                                                                    </Typography>
+                                                                )}
+                                                            </Alert>
+                                                        )
+                                                    )}
 
                                                     {/* Resumo visual com chips para fase 1 */}
                                                     <Box sx={{ mb: 2 }}>
-                                                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                                                        <Typography
+                                                            variant="body2"
+                                                            color="text.secondary"
+                                                            gutterBottom
+                                                        >
                                                             Resumo:
                                                         </Typography>
-                                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                                        <Box
+                                                            sx={{
+                                                                display: "flex",
+                                                                flexWrap:
+                                                                    "wrap",
+                                                                gap: 1,
+                                                            }}
+                                                        >
                                                             <Chip
                                                                 label={`${convitesAceitosFase1.length} Aceito(s)`}
                                                                 color="success"
                                                                 size="small"
                                                             />
                                                             <Chip
-                                                                label={`${convitesBancaFase1.filter(c => !c.data_feedback).length} Pendente(s)`}
+                                                                label={`${
+                                                                    convitesBancaFase1.filter(
+                                                                        (c) =>
+                                                                            !c.data_feedback
+                                                                    ).length
+                                                                } Pendente(s)`}
                                                                 color="warning"
                                                                 size="small"
                                                             />
                                                             <Chip
-                                                                label={`${convitesBancaFase1.filter(c => c.data_feedback && !c.aceito).length} Recusado(s)`}
+                                                                label={`${
+                                                                    convitesBancaFase1.filter(
+                                                                        (c) =>
+                                                                            c.data_feedback &&
+                                                                            !c.aceito
+                                                                    ).length
+                                                                } Recusado(s)`}
                                                                 color="error"
                                                                 size="small"
                                                             />
                                                         </Box>
                                                     </Box>
 
-                                                    {convitesAceitosFase1.length === 2 ? (
-                                            <Alert severity="success" sx={{ mb: 2 }}>
-                                                <Typography variant="body2">
-                                                    🎉 Excelente! Sua banca de avaliação está completa com 2 membros confirmados.
-                                                    Agora você pode prosseguir para a próxima etapa.
-                                                </Typography>
-                                            </Alert>
+                                                    {convitesAceitosFase1.length ===
+                                                    2 ? (
+                                                        <Alert
+                                                            severity="success"
+                                                            sx={{ mb: 2 }}
+                                                        >
+                                                            <Typography variant="body2">
+                                                                🎉 Excelente!
+                                                                Sua banca de
+                                                                avaliação está
+                                                                completa com 2
+                                                                membros
+                                                                confirmados.
+                                                                Agora você pode
+                                                                prosseguir para
+                                                                a próxima etapa.
+                                                            </Typography>
+                                                        </Alert>
                                                     ) : (
                                                         <Button
                                                             variant="contained"
-                                                            onClick={handleOpenConviteBancaModal}
-                                                            disabled={convitesBancaFase1.filter(c => !c.data_feedback).length >= 2}
-                                                        >
-                                                            {convitesBancaFase1.filter(c => !c.data_feedback).length >= 2
-                                                                ? "Limite de Convites Atingido"
-                                                                : `Enviar ${2 - convitesAceitosFase1.length} Convite(s) para Banca do Projeto`
+                                                            onClick={
+                                                                handleOpenConviteBancaModal
                                                             }
+                                                            disabled={
+                                                                convitesBancaFase1.filter(
+                                                                    (c) =>
+                                                                        !c.data_feedback
+                                                                ).length >= 2
+                                                            }
+                                                        >
+                                                            {convitesBancaFase1.filter(
+                                                                (c) =>
+                                                                    !c.data_feedback
+                                                            ).length >= 2
+                                                                ? "Limite de Convites Atingido"
+                                                                : `Enviar ${
+                                                                      2 -
+                                                                      convitesAceitosFase1.length
+                                                                  } Convite(s) para Banca do Projeto`}
                                                         </Button>
                                                     )}
                                                 </Box>
                                             ) : (
                                                 <Box>
-                                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                                                        Você ainda não enviou convites para a banca de avaliação do projeto.
+                                                    <Typography
+                                                        variant="body2"
+                                                        color="text.secondary"
+                                                        sx={{ mb: 2 }}
+                                                    >
+                                                        Você ainda não enviou
+                                                        convites para a banca de
+                                                        avaliação do projeto.
                                                     </Typography>
                                                     <Button
                                                         variant="contained"
-                                                        onClick={handleOpenConviteBancaModal}
+                                                        onClick={
+                                                            handleOpenConviteBancaModal
+                                                        }
                                                     >
-                                                        Enviar 2 Convites para Banca do Projeto
+                                                        Enviar 2 Convites para
+                                                        Banca do Projeto
                                                     </Button>
                                                 </Box>
                                             )}
@@ -841,8 +1036,9 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                             </Typography>
                             <Alert severity="info" sx={{ mb: 2 }}>
                                 <Typography variant="body2">
-                                    Esta etapa é específica para estudantes na fase TCC II.
-                                    Descreva as atividades e progresso do seu seminário de andamento.
+                                    Esta etapa é específica para estudantes na
+                                    fase TCC II. Descreva as atividades e
+                                    progresso do seu seminário de andamento.
                                 </Typography>
                             </Alert>
                             <TextField
@@ -850,7 +1046,10 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                                 label="Seminário de Andamento *"
                                 value={formData.seminario_andamento}
                                 onChange={(e) =>
-                                    handleInputChange("seminario_andamento", e.target.value)
+                                    handleInputChange(
+                                        "seminario_andamento",
+                                        e.target.value
+                                    )
                                 }
                                 multiline
                                 rows={6}
@@ -868,8 +1067,10 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                                     Etapa Não Aplicável
                                 </Typography>
                                 <Typography variant="body2">
-                                    A etapa de Seminário de Andamento é específica para estudantes na fase TCC II.
-                                    Como você está na fase TCC I, esta etapa será automaticamente ignorada.
+                                    A etapa de Seminário de Andamento é
+                                    específica para estudantes na fase TCC II.
+                                    Como você está na fase TCC I, esta etapa
+                                    será automaticamente ignorada.
                                 </Typography>
                             </Alert>
                         </Box>
@@ -879,14 +1080,21 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                 // Etapa 7: Convite para Banca de Avaliação do Trabalho Final - apenas para fase 2
                 if (trabalhoConclusao && trabalhoConclusao.fase === 2) {
                     // Separar convites por fase
-                    const convitesFase1 = convitesBanca.filter(c => c.fase === 1); // Convites da etapa 5 (banca do projeto)
-                    const convitesFase2 = convitesBanca.filter(c => c.fase === 2); // Convites da etapa 7 (banca final)
-                    const convitesAceitosFase2 = convitesFase2.filter(c => c.aceito === true);
+                    const convitesFase1 = convitesBanca.filter(
+                        (c) => c.fase === 1
+                    ); // Convites da etapa 5 (banca do projeto)
+                    const convitesFase2 = convitesBanca.filter(
+                        (c) => c.fase === 2
+                    ); // Convites da etapa 7 (banca final)
+                    const convitesAceitosFase2 = convitesFase2.filter(
+                        (c) => c.aceito === true
+                    );
 
                     return (
                         <Box sx={{ mt: 2 }}>
                             <Typography variant="h6" gutterBottom>
-                                Etapa 7: Convite para Banca de Avaliação do Trabalho Final
+                                Etapa 7: Convite para Banca de Avaliação do
+                                Trabalho Final
                             </Typography>
 
                             <Paper sx={{ p: 3, mb: 3 }}>
@@ -896,77 +1104,148 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 
                                 <Alert severity="info" sx={{ mb: 2 }}>
                                     <Typography variant="body2">
-                                        <strong>Nova Etapa:</strong> Para a avaliação final do seu trabalho, você precisa convidar 2 docentes para uma nova banca.
-                                        Os docentes que participaram da banca do projeto (etapa 5) vêm pré-selecionados como sugestão.
+                                        <strong>Nova Etapa:</strong> Para a
+                                        avaliação final do seu trabalho, você
+                                        precisa convidar 2 docentes para uma
+                                        nova banca. Os docentes que participaram
+                                        da banca do projeto (etapa 5) vêm
+                                        pré-selecionados como sugestão.
                                     </Typography>
                                 </Alert>
 
                                 {/* Histórico de convites da fase 1 (etapa 5) */}
                                 {convitesFase1.length > 0 && (
                                     <Box sx={{ mb: 3 }}>
-                                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                                            📚 Histórico - Banca do Projeto (Etapa 5):
+                                        <Typography
+                                            variant="subtitle2"
+                                            color="text.secondary"
+                                            gutterBottom
+                                        >
+                                            📚 Histórico - Banca do Projeto
+                                            (Etapa 5):
                                         </Typography>
                                         {convitesFase1.map((convite, index) => (
                                             <Alert
                                                 key={`fase1-${index}`}
-                                                severity={convite.aceito ? "success" : "info"}
+                                                severity={
+                                                    convite.aceito
+                                                        ? "success"
+                                                        : "info"
+                                                }
                                                 sx={{ mb: 1, opacity: 0.7 }}
                                             >
                                                 <Typography variant="caption">
-                                                    <strong>{convite.Docente?.nome || convite.codigo_docente}</strong> - {
-                                                        convite.aceito ? "Participou da banca do projeto" :
-                                                        convite.data_feedback ? "Recusou participar" : "Convite pendente"
-                                                    } {convite.data_feedback && `em ${new Date(convite.data_feedback).toLocaleDateString('pt-BR')}`}
+                                                    <strong>
+                                                        {convite.Docente
+                                                            ?.nome ||
+                                                            convite.codigo_docente}
+                                                    </strong>{" "}
+                                                    -{" "}
+                                                    {convite.aceito
+                                                        ? "Participou da banca do projeto"
+                                                        : convite.data_feedback
+                                                        ? "Recusou participar"
+                                                        : "Convite pendente"}{" "}
+                                                    {convite.data_feedback &&
+                                                        `em ${new Date(
+                                                            convite.data_feedback
+                                                        ).toLocaleDateString(
+                                                            "pt-BR"
+                                                        )}`}
                                                 </Typography>
                                             </Alert>
                                         ))}
                                     </Box>
                                 )}
 
-                                                                {/* Convites da fase 2 para banca final */}
+                                {/* Convites da fase 2 para banca final */}
                                 {convitesFase2.length > 0 ? (
                                     <Box>
-                                        <Typography variant="subtitle1" gutterBottom>
-                                            📋 Convites para Banca de Avaliação Final:
+                                        <Typography
+                                            variant="subtitle1"
+                                            gutterBottom
+                                        >
+                                            📋 Convites para Banca de Avaliação
+                                            Final:
                                         </Typography>
 
                                         {convitesFase2.map((convite, index) => (
                                             <Alert
                                                 key={`fase2-${index}`}
                                                 severity={
-                                                    convite.aceito === true ? "success" :
-                                                    convite.data_feedback && !convite.aceito ? "error" : "warning"
+                                                    convite.aceito === true
+                                                        ? "success"
+                                                        : convite.data_feedback &&
+                                                          !convite.aceito
+                                                        ? "error"
+                                                        : "warning"
                                                 }
                                                 sx={{ mb: 2 }}
                                             >
                                                 <Typography variant="body2">
-                                                    <strong>Docente:</strong> {convite.Docente?.nome || convite.codigo_docente}
+                                                    <strong>Docente:</strong>{" "}
+                                                    {convite.Docente?.nome ||
+                                                        convite.codigo_docente}
                                                 </Typography>
                                                 <Typography variant="body2">
-                                                    <strong>Status:</strong> {
-                                                        convite.aceito === true ? "Aceito" :
-                                                        convite.data_feedback && !convite.aceito ? "Recusado" : "Pendente"
-                                                    }
+                                                    <strong>Status:</strong>{" "}
+                                                    {convite.aceito === true
+                                                        ? "Aceito"
+                                                        : convite.data_feedback &&
+                                                          !convite.aceito
+                                                        ? "Recusado"
+                                                        : "Pendente"}
                                                 </Typography>
                                                 {convite.data_envio && (
                                                     <Typography variant="body2">
-                                                        <strong>Enviado em:</strong> {new Date(convite.data_envio).toLocaleDateString('pt-BR')}
+                                                        <strong>
+                                                            Enviado em:
+                                                        </strong>{" "}
+                                                        {new Date(
+                                                            convite.data_envio
+                                                        ).toLocaleDateString(
+                                                            "pt-BR"
+                                                        )}
                                                     </Typography>
                                                 )}
                                                 {convite.data_feedback && (
                                                     <Typography variant="body2">
-                                                        <strong>Respondido em:</strong> {new Date(convite.data_feedback).toLocaleDateString('pt-BR')}
+                                                        <strong>
+                                                            Respondido em:
+                                                        </strong>{" "}
+                                                        {new Date(
+                                                            convite.data_feedback
+                                                        ).toLocaleDateString(
+                                                            "pt-BR"
+                                                        )}
                                                     </Typography>
                                                 )}
-                                                {convite.mensagem_feedback && convite.data_feedback && (
-                                                    <Typography variant="body2">
-                                                        <strong>Mensagem do docente:</strong> {convite.mensagem_feedback}
-                                                    </Typography>
-                                                )}
+                                                {convite.mensagem_feedback &&
+                                                    convite.data_feedback && (
+                                                        <Typography variant="body2">
+                                                            <strong>
+                                                                Mensagem do
+                                                                docente:
+                                                            </strong>{" "}
+                                                            {
+                                                                convite.mensagem_feedback
+                                                            }
+                                                        </Typography>
+                                                    )}
                                                 {convite.mensagem_envio && (
-                                                    <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
-                                                        <strong>Sua mensagem:</strong> "{convite.mensagem_envio}"
+                                                    <Typography
+                                                        variant="body2"
+                                                        sx={{
+                                                            mt: 1,
+                                                            fontStyle: "italic",
+                                                        }}
+                                                    >
+                                                        <strong>
+                                                            Sua mensagem:
+                                                        </strong>{" "}
+                                                        "
+                                                        {convite.mensagem_envio}
+                                                        "
                                                     </Typography>
                                                 )}
                                             </Alert>
@@ -974,22 +1253,43 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 
                                         {/* Resumo dos convites da fase 2 */}
                                         <Box sx={{ mb: 2 }}>
-                                            <Typography variant="body2" color="text.secondary" gutterBottom>
+                                            <Typography
+                                                variant="body2"
+                                                color="text.secondary"
+                                                gutterBottom
+                                            >
                                                 Status da Banca Final:
                                             </Typography>
-                                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                            <Box
+                                                sx={{
+                                                    display: "flex",
+                                                    flexWrap: "wrap",
+                                                    gap: 1,
+                                                }}
+                                            >
                                                 <Chip
                                                     label={`${convitesAceitosFase2.length} Aceito(s)`}
                                                     color="success"
                                                     size="small"
                                                 />
                                                 <Chip
-                                                    label={`${convitesFase2.filter(c => !c.data_feedback).length} Pendente(s)`}
+                                                    label={`${
+                                                        convitesFase2.filter(
+                                                            (c) =>
+                                                                !c.data_feedback
+                                                        ).length
+                                                    } Pendente(s)`}
                                                     color="warning"
                                                     size="small"
                                                 />
                                                 <Chip
-                                                    label={`${convitesFase2.filter(c => c.data_feedback && !c.aceito).length} Recusado(s)`}
+                                                    label={`${
+                                                        convitesFase2.filter(
+                                                            (c) =>
+                                                                c.data_feedback &&
+                                                                !c.aceito
+                                                        ).length
+                                                    } Recusado(s)`}
                                                     color="error"
                                                     size="small"
                                                 />
@@ -997,33 +1297,56 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                                         </Box>
 
                                         {convitesAceitosFase2.length === 2 ? (
-                                            <Alert severity="success" sx={{ mb: 2 }}>
+                                            <Alert
+                                                severity="success"
+                                                sx={{ mb: 2 }}
+                                            >
                                                 <Typography variant="body2">
-                                                    🎉 Excelente! Sua banca de avaliação final está completa com 2 membros confirmados.
-                                                    Agora você pode finalizar seu TCC.
+                                                    🎉 Excelente! Sua banca de
+                                                    avaliação final está
+                                                    completa com 2 membros
+                                                    confirmados. Agora você pode
+                                                    finalizar seu TCC.
                                                 </Typography>
                                             </Alert>
                                         ) : (
                                             <Button
                                                 variant="contained"
-                                                onClick={handleOpenConviteBancaFinalModal}
-                                                disabled={convitesFase2.filter(c => !c.data_feedback).length >= 2}
-                                            >
-                                                                                                            {convitesFase2.filter(c => !c.data_feedback).length >= 2
-                                                    ? "Aguardando Respostas"
-                                                    : `Enviar ${2 - convitesAceitosFase2.length} Convite(s) para Banca Final`
+                                                onClick={
+                                                    handleOpenConviteBancaFinalModal
                                                 }
+                                                disabled={
+                                                    convitesFase2.filter(
+                                                        (c) => !c.data_feedback
+                                                    ).length >= 2
+                                                }
+                                            >
+                                                {convitesFase2.filter(
+                                                    (c) => !c.data_feedback
+                                                ).length >= 2
+                                                    ? "Aguardando Respostas"
+                                                    : `Enviar ${
+                                                          2 -
+                                                          convitesAceitosFase2.length
+                                                      } Convite(s) para Banca Final`}
                                             </Button>
                                         )}
                                     </Box>
                                 ) : (
                                     <Box>
-                                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                                            Inicie o processo de convites para a banca de avaliação final.
+                                        <Typography
+                                            variant="body2"
+                                            color="text.secondary"
+                                            sx={{ mb: 2 }}
+                                        >
+                                            Inicie o processo de convites para a
+                                            banca de avaliação final.
                                         </Typography>
                                         <Button
                                             variant="contained"
-                                            onClick={handleOpenConviteBancaFinalModal}
+                                            onClick={
+                                                handleOpenConviteBancaFinalModal
+                                            }
                                         >
                                             Enviar 2 Convites para Banca Final
                                         </Button>
@@ -1041,8 +1364,10 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                                     Etapa Não Aplicável
                                 </Typography>
                                 <Typography variant="body2">
-                                    A etapa de Convite para Banca Final é específica para estudantes na fase TCC II.
-                                    Como você está na fase TCC I, esta etapa não está disponível.
+                                    A etapa de Convite para Banca Final é
+                                    específica para estudantes na fase TCC II.
+                                    Como você está na fase TCC I, esta etapa não
+                                    está disponível.
                                 </Typography>
                             </Alert>
                         </Box>
@@ -1072,30 +1397,48 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                     TCC Concluído
                 </Typography>
 
-                <Paper sx={{ p: 3, textAlign: 'center' }}>
+                <Paper sx={{ p: 3, textAlign: "center" }}>
                     <Alert severity="success" sx={{ mb: 3 }}>
                         <Typography variant="h6" gutterBottom>
                             🎉 Parabéns! Seu TCC foi concluído com sucesso!
                         </Typography>
                         <Typography variant="body1">
-                            Você já concluiu seu Trabalho de Conclusão de Curso no período de {tccAnterior.ano}/{tccAnterior.semestre}.
+                            Você já concluiu seu Trabalho de Conclusão de Curso
+                            no período de {tccAnterior.ano}/
+                            {tccAnterior.semestre}.
                         </Typography>
                     </Alert>
 
-                    <Paper sx={{ p: 2, bgcolor: 'grey.50', mb: 3 }}>
+                    <Paper sx={{ p: 2, bgcolor: "grey.50", mb: 3 }}>
                         <Typography variant="subtitle1" gutterBottom>
                             Dados do seu TCC:
                         </Typography>
 
-                        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mb: 2 }}>
+                        <Box
+                            sx={{
+                                display: "flex",
+                                justifyContent: "center",
+                                gap: 1,
+                                mb: 2,
+                            }}
+                        >
                             <Chip label="TCC Aprovado" color="success" />
-                            <Chip label={`${tccAnterior.ano}/${tccAnterior.semestre}`} color="info" />
-                            <Chip label={`Fase ${tccAnterior.fase}`} color="primary" />
+                            <Chip
+                                label={`${tccAnterior.ano}/${tccAnterior.semestre}`}
+                                color="info"
+                            />
+                            <Chip
+                                label={`Fase ${tccAnterior.fase}`}
+                                color="primary"
+                            />
                         </Box>
 
                         {tccAnterior.titulo && (
                             <Box sx={{ mb: 2 }}>
-                                <Typography variant="body2" color="text.secondary">
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                >
                                     Título:
                                 </Typography>
                                 <Typography variant="body1" fontWeight="medium">
@@ -1106,7 +1449,10 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 
                         {tccAnterior.tema && (
                             <Box sx={{ mb: 2 }}>
-                                <Typography variant="body2" color="text.secondary">
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                >
                                     Tema:
                                 </Typography>
                                 <Typography variant="body2">
@@ -1117,8 +1463,9 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                     </Paper>
 
                     <Typography variant="body2" color="text.secondary">
-                        Como você já concluiu seu TCC, não é necessário realizar novamente o processo.
-                        Entre em contato com a coordenação caso tenha dúvidas.
+                        Como você já concluiu seu TCC, não é necessário realizar
+                        novamente o processo. Entre em contato com a coordenação
+                        caso tenha dúvidas.
                     </Typography>
                 </Paper>
 
@@ -1127,7 +1474,10 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                     autoHideDuration={6000}
                     onClose={handleCloseMessage}
                 >
-                    <Alert severity={messageSeverity} onClose={handleCloseMessage}>
+                    <Alert
+                        severity={messageSeverity}
+                        onClose={handleCloseMessage}
+                    >
                         {messageText}
                     </Alert>
                 </Snackbar>
@@ -1243,26 +1593,44 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                                     );
                                 case 4:
                                     // Etapa 4 (convite para banca do projeto - fase 1) - precisa de 2 convites aceitos
-                                    const convitesAceitosBancaFase1 = convitesBanca.filter(convite =>
-                                        convite.aceito === true && convite.fase === 1
+                                    const convitesAceitosBancaFase1 =
+                                        convitesBanca.filter(
+                                            (convite) =>
+                                                convite.aceito === true &&
+                                                convite.fase === 1
+                                        );
+                                    return (
+                                        convitesAceitosBancaFase1.length >= 2
                                     );
-                                    return convitesAceitosBancaFase1.length >= 2;
                                 case 5:
                                     // Etapa 5 (seminário) só é obrigatória para fase 2
-                                    if (trabalhoConclusao && trabalhoConclusao.fase === 2) {
+                                    if (
+                                        trabalhoConclusao &&
+                                        trabalhoConclusao.fase === 2
+                                    ) {
                                         return (
                                             formData.seminario_andamento &&
-                                            formData.seminario_andamento.trim().length > 0
+                                            formData.seminario_andamento.trim()
+                                                .length > 0
                                         );
                                     }
                                     return true; // Para fase 1, considera completa
                                 case 6:
                                     // Etapa 6 (convite para banca final - fase 2) - só existe na fase 2
-                                    if (trabalhoConclusao && trabalhoConclusao.fase === 2) {
-                                        const convitesAceitosBancaFase2 = convitesBanca.filter(convite =>
-                                            convite.aceito === true && convite.fase === 2
+                                    if (
+                                        trabalhoConclusao &&
+                                        trabalhoConclusao.fase === 2
+                                    ) {
+                                        const convitesAceitosBancaFase2 =
+                                            convitesBanca.filter(
+                                                (convite) =>
+                                                    convite.aceito === true &&
+                                                    convite.fase === 2
+                                            );
+                                        return (
+                                            convitesAceitosBancaFase2.length >=
+                                            2
                                         );
-                                        return convitesAceitosBancaFase2.length >= 2;
                                     }
                                     return true; // Para fase 1, não existe
                                 default:
@@ -1375,35 +1743,68 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                         {activeStep === 0 && !validarEtapaAtual() && (
                             <Alert severity="info" sx={{ mt: 2 }}>
                                 <Typography variant="body2">
-                                    Para prosseguir, você precisa ter um convite aceito por um orientador.
+                                    Para prosseguir, você precisa ter um convite
+                                    aceito por um orientador.
                                 </Typography>
                             </Alert>
                         )}
 
-                                                {/* Mensagem de ajuda para etapa 4 (banca) */}
-                        {activeStep === 4 && !validarEtapaAtual() && convitesBanca.length > 0 && (
-                            <Alert severity="warning" sx={{ mt: 2 }}>
-                                <Typography variant="body2">
-                                    <strong>Aguardando confirmação da banca:</strong> Para prosseguir, você precisa ter 2 convites aceitos.
-                                    {convitesBanca.filter(c => c.aceito === true).length > 0 ?
-                                        ` Você já tem ${convitesBanca.filter(c => c.aceito === true).length} convite(s) aceito(s), falta(m) ${2 - convitesBanca.filter(c => c.aceito === true).length}.` :
-                                        " Ainda não há convites aceitos."
-                                    }
-                                </Typography>
-                            </Alert>
-                        )}
+                        {/* Mensagem de ajuda para etapa 4 (banca) */}
+                        {activeStep === 4 &&
+                            !validarEtapaAtual() &&
+                            convitesBanca.length > 0 && (
+                                <Alert severity="warning" sx={{ mt: 2 }}>
+                                    <Typography variant="body2">
+                                        <strong>
+                                            Aguardando confirmação da banca:
+                                        </strong>{" "}
+                                        Para prosseguir, você precisa ter 2
+                                        convites aceitos.
+                                        {convitesBanca.filter(
+                                            (c) => c.aceito === true
+                                        ).length > 0
+                                            ? ` Você já tem ${
+                                                  convitesBanca.filter(
+                                                      (c) => c.aceito === true
+                                                  ).length
+                                              } convite(s) aceito(s), falta(m) ${
+                                                  2 -
+                                                  convitesBanca.filter(
+                                                      (c) => c.aceito === true
+                                                  ).length
+                                              }.`
+                                            : " Ainda não há convites aceitos."}
+                                    </Typography>
+                                </Alert>
+                            )}
 
                         {/* Mensagem de ajuda para etapa 6 (banca final) */}
                         {activeStep === 6 && !validarEtapaAtual() && (
                             <Alert severity="warning" sx={{ mt: 2 }}>
                                 <Typography variant="body2">
-                                    <strong>Aguardando confirmação da banca final:</strong> Para finalizar seu TCC, você precisa ter 2 convites aceitos para a banca de avaliação final.
+                                    <strong>
+                                        Aguardando confirmação da banca final:
+                                    </strong>{" "}
+                                    Para finalizar seu TCC, você precisa ter 2
+                                    convites aceitos para a banca de avaliação
+                                    final.
                                     {(() => {
-                                        const convitesFase2Atuais = convitesBanca.filter(c => c.fase === 2);
-                                        const convitesAceitosFase2 = convitesFase2Atuais.filter(c => c.aceito === true);
-                                        return convitesAceitosFase2.length > 0 ?
-                                            ` Você já tem ${convitesAceitosFase2.length} convite(s) aceito(s) para a banca final, falta(m) ${2 - convitesAceitosFase2.length}.` :
-                                            " Ainda não há convites aceitos para a banca final.";
+                                        const convitesFase2Atuais =
+                                            convitesBanca.filter(
+                                                (c) => c.fase === 2
+                                            );
+                                        const convitesAceitosFase2 =
+                                            convitesFase2Atuais.filter(
+                                                (c) => c.aceito === true
+                                            );
+                                        return convitesAceitosFase2.length > 0
+                                            ? ` Você já tem ${
+                                                  convitesAceitosFase2.length
+                                              } convite(s) aceito(s) para a banca final, falta(m) ${
+                                                  2 -
+                                                  convitesAceitosFase2.length
+                                              }.`
+                                            : " Ainda não há convites aceitos para a banca final.";
                                     })()}
                                 </Typography>
                             </Alert>
@@ -1442,7 +1843,9 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                     idTcc={trabalhoConclusao.id}
                     idCurso={trabalhoConclusao.id_curso}
                     onConviteEnviado={handleConviteBancaEnviado}
-                    convitesExistentes={convitesBanca.filter(c => c.fase === 1)} // Apenas convites da fase 1 (banca do projeto)
+                    convitesExistentes={convitesBanca.filter(
+                        (c) => c.fase === 1
+                    )} // Apenas convites da fase 1 (banca do projeto)
                     conviteOrientacao={conviteExistente}
                     tipoConvite="banca_projeto"
                     docentesPreSelecionados={[]} // Etapa 5 não tem pré-seleção
@@ -1457,10 +1860,14 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                     idTcc={trabalhoConclusao.id}
                     idCurso={trabalhoConclusao.id_curso}
                     onConviteEnviado={handleConviteBancaEnviado}
-                    convitesExistentes={convitesBanca.filter(c => c.fase === 2)} // Apenas convites da fase 2 (banca final)
+                    convitesExistentes={convitesBanca.filter(
+                        (c) => c.fase === 2
+                    )} // Apenas convites da fase 2 (banca final)
                     conviteOrientacao={conviteExistente}
                     tipoConvite="banca_trabalho"
-                    docentesPreSelecionados={convitesBanca.filter(c => c.fase === 1 && c.aceito === true).map(c => c.codigo_docente)} // Docentes aceitos na fase 1
+                    docentesPreSelecionados={convitesBanca
+                        .filter((c) => c.fase === 1 && c.aceito === true)
+                        .map((c) => c.codigo_docente)} // Docentes aceitos na fase 1
                 />
             )}
 
@@ -1472,38 +1879,64 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                 fullWidth
             >
                 <DialogTitle>
-                    {modalType === 'next_phase' ? 'Projeto Aprovado Encontrado' : 'TCC Anterior Encontrado'}
+                    {modalType === "next_phase"
+                        ? "Projeto Aprovado Encontrado"
+                        : "TCC Anterior Encontrado"}
                 </DialogTitle>
                 <DialogContent>
                     {tccAnterior && (
                         <Box>
                             <DialogContentText sx={{ mb: 2 }}>
-                                {modalType === 'next_phase' ? (
+                                {modalType === "next_phase" ? (
                                     <>
-                                        Seu projeto de TCC foi aprovado em {tccAnterior.ano}/{tccAnterior.semestre}.
-                                        Deseja continuar para a próxima fase (TCC II) na oferta atual {ofertaAtual?.ano}/{ofertaAtual?.semestre}?
+                                        Seu projeto de TCC foi aprovado em{" "}
+                                        {tccAnterior.ano}/{tccAnterior.semestre}
+                                        . Deseja continuar para a próxima fase
+                                        (TCC II) na oferta atual{" "}
+                                        {ofertaAtual?.ano}/
+                                        {ofertaAtual?.semestre}?
                                     </>
                                 ) : (
                                     <>
-                                        Encontramos um TCC seu de {tccAnterior.ano}/{tccAnterior.semestre}.
-                                        Deseja importar os dados deste TCC para a oferta atual {ofertaAtual?.ano}/{ofertaAtual?.semestre}?
+                                        Encontramos um TCC seu de{" "}
+                                        {tccAnterior.ano}/{tccAnterior.semestre}
+                                        . Deseja importar os dados deste TCC
+                                        para a oferta atual {ofertaAtual?.ano}/
+                                        {ofertaAtual?.semestre}?
                                     </>
                                 )}
                             </DialogContentText>
 
-                            <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
+                            <Paper sx={{ p: 2, bgcolor: "grey.50" }}>
                                 <Typography variant="subtitle2" gutterBottom>
                                     Dados do TCC Anterior:
                                 </Typography>
 
                                 <Box sx={{ mb: 1 }}>
-                                    <Typography variant="body2" color="text.secondary">
+                                    <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                    >
                                         Status:
                                     </Typography>
-                                    <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
+                                    <Box
+                                        sx={{
+                                            display: "flex",
+                                            gap: 1,
+                                            mt: 0.5,
+                                        }}
+                                    >
                                         <Chip
-                                            label={tccAnterior.aprovado_projeto ? "Projeto Aprovado" : "Projeto Não Aprovado"}
-                                            color={tccAnterior.aprovado_projeto ? "success" : "default"}
+                                            label={
+                                                tccAnterior.aprovado_projeto
+                                                    ? "Projeto Aprovado"
+                                                    : "Projeto Não Aprovado"
+                                            }
+                                            color={
+                                                tccAnterior.aprovado_projeto
+                                                    ? "success"
+                                                    : "default"
+                                            }
                                             size="small"
                                         />
                                         <Chip
@@ -1516,7 +1949,10 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 
                                 {tccAnterior.tema && (
                                     <Box sx={{ mb: 1 }}>
-                                        <Typography variant="body2" color="text.secondary">
+                                        <Typography
+                                            variant="body2"
+                                            color="text.secondary"
+                                        >
                                             Tema:
                                         </Typography>
                                         <Typography variant="body2">
@@ -1527,7 +1963,10 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 
                                 {tccAnterior.titulo && (
                                     <Box sx={{ mb: 1 }}>
-                                        <Typography variant="body2" color="text.secondary">
+                                        <Typography
+                                            variant="body2"
+                                            color="text.secondary"
+                                        >
                                             Título:
                                         </Typography>
                                         <Typography variant="body2">
@@ -1537,18 +1976,21 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                                 )}
                             </Paper>
 
-                            {modalType === 'next_phase' && (
+                            {modalType === "next_phase" && (
                                 <Alert severity="success" sx={{ mt: 2 }}>
                                     <Typography variant="body2">
-                                        Ao continuar, você será direcionado para a fase TCC II mantendo seus dados anteriores.
+                                        Ao continuar, você será direcionado para
+                                        a fase TCC II mantendo seus dados
+                                        anteriores.
                                     </Typography>
                                 </Alert>
                             )}
 
-                            {modalType === 'import' && (
+                            {modalType === "import" && (
                                 <Alert severity="info" sx={{ mt: 2 }}>
                                     <Typography variant="body2">
-                                        Ao importar, um novo TCC será criado com os dados do TCC anterior.
+                                        Ao importar, um novo TCC será criado com
+                                        os dados do TCC anterior.
                                     </Typography>
                                 </Alert>
                             )}
@@ -1556,15 +1998,22 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                     )}
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => handleImportData(false)} color="inherit">
-                        {modalType === 'next_phase' ? 'Criar Novo TCC' : 'Não Importar'}
+                    <Button
+                        onClick={() => handleImportData(false)}
+                        color="inherit"
+                    >
+                        {modalType === "next_phase"
+                            ? "Criar Novo TCC"
+                            : "Não Importar"}
                     </Button>
                     <Button
                         onClick={() => handleImportData(true)}
                         variant="contained"
                         color="primary"
                     >
-                        {modalType === 'next_phase' ? 'Continuar TCC II' : 'Importar Dados'}
+                        {modalType === "next_phase"
+                            ? "Continuar TCC II"
+                            : "Importar Dados"}
                     </Button>
                 </DialogActions>
             </Dialog>

@@ -84,7 +84,8 @@ export default function ConvitesRecebidosOrientador() {
                 if (cursoSelecionado) {
                     convitesFiltrados = convitesFiltrados.filter(
                         (convite) =>
-                            convite?.TrabalhoConclusao?.Curso?.id === parseInt(cursoSelecionado)
+                            convite?.TrabalhoConclusao?.Curso?.id ===
+                            parseInt(cursoSelecionado)
                     );
                 }
 
@@ -98,7 +99,8 @@ export default function ConvitesRecebidosOrientador() {
                 if (semestre) {
                     convitesFiltrados = convitesFiltrados.filter(
                         (convite) =>
-                            convite?.TrabalhoConclusao?.semestre === parseInt(semestre)
+                            convite?.TrabalhoConclusao?.semestre ===
+                            parseInt(semestre)
                     );
                 }
 
@@ -210,7 +212,14 @@ export default function ConvitesRecebidosOrientador() {
                 // Determinar se o convite foi respondido baseado na data_feedback
                 foiRespondido: !!convite?.data_feedback,
                 // Mapear fase para texto descritivo
-                faseDescricao: convite?.fase === 0 ? "Orientação" : convite?.fase === 1 ? "Projeto" : convite?.fase === 2 ? "TCC" : `Fase ${convite?.fase || 0}`,
+                faseDescricao:
+                    convite?.fase === 0
+                        ? "Orientação"
+                        : convite?.fase === 1
+                        ? "Projeto"
+                        : convite?.fase === 2
+                        ? "TCC"
+                        : `Fase ${convite?.fase || 0}`,
             };
         })
         .sort((a, b) => {
@@ -312,8 +321,11 @@ export default function ConvitesRecebidosOrientador() {
                         label={params.value}
                         size="small"
                         color={
-                            params.value === "Orientação" ? "secondary" :
-                            params.value === "Projeto" ? "info" : "primary"
+                            params.value === "Orientação"
+                                ? "secondary"
+                                : params.value === "Projeto"
+                                ? "info"
+                                : "primary"
                         }
                         variant="outlined"
                     />
@@ -452,7 +464,8 @@ export default function ConvitesRecebidosOrientador() {
                             </MenuItem>
                             {cursos.map((curso) => (
                                 <MenuItem key={curso.id} value={curso.id}>
-                                    {curso.nome} - {curso.codigo} ({curso.turno})
+                                    {curso.nome} - {curso.codigo} ({curso.turno}
+                                    )
                                 </MenuItem>
                             ))}
                         </Select>
@@ -625,10 +638,8 @@ export default function ConvitesRecebidosOrientador() {
                             getRowHeight={() => "auto"}
                             loading={loading}
                             localeText={{
-                                noRowsLabel:
-                                    "Nenhum convite encontrado",
-                                loadingOverlay:
-                                    "Carregando convites...",
+                                noRowsLabel: "Nenhum convite encontrado",
+                                loadingOverlay: "Carregando convites...",
                             }}
                         />
                     </Box>

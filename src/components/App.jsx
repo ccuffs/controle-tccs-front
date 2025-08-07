@@ -101,16 +101,10 @@ function AppContent() {
                             : "100%",
                     },
                     transition: (theme) =>
-                        theme.transitions.create(
-                            ["width", "margin"],
-                            {
-                                easing: theme.transitions.easing
-                                    .sharp,
-                                duration:
-                                    theme.transitions.duration
-                                        .leavingScreen,
-                            }
-                        ),
+                        theme.transitions.create(["width", "margin"], {
+                            easing: theme.transitions.easing.sharp,
+                            duration: theme.transitions.duration.leavingScreen,
+                        }),
                 }}
             >
                 <Toolbar /> {/* Spacing for AppBar */}

@@ -23,7 +23,7 @@ export default function ConviteOrientadorModal({
     idTcc,
     idCurso,
     onConviteEnviado,
-    conviteExistente = null
+    conviteExistente = null,
 }) {
     const [orientadores, setOrientadores] = useState([]);
     const [orientadorSelecionado, setOrientadorSelecionado] = useState("");
@@ -45,11 +45,16 @@ export default function ConviteOrientadorModal({
     const carregarOrientadores = async () => {
         try {
             setLoadingOrientadores(true);
-            const response = await axiosInstance.get(`/orientadores/curso/${idCurso}`);
+            const response = await axiosInstance.get(
+                `/orientadores/curso/${idCurso}`
+            );
 
             // Extrair os docentes das orientações
-            const orientacoes = response.data?.orientacoes || response.orientacoes || [];
-            const docentes = orientacoes.map(orientacao => orientacao.docente).filter(Boolean);
+            const orientacoes =
+                response.data?.orientacoes || response.orientacoes || [];
+            const docentes = orientacoes
+                .map((orientacao) => orientacao.docente)
+                .filter(Boolean);
 
             setOrientadores(docentes);
         } catch (error) {
@@ -76,8 +81,8 @@ export default function ConviteOrientadorModal({
                 mensagem_envio: mensagem || "Convite para orientação de TCC",
             };
 
-            await axiosInstance.post('/convites', {
-                formData: dadosConvite
+            await axiosInstance.post("/convites", {
+                formData: dadosConvite,
             });
 
             if (onConviteEnviado) {
@@ -107,13 +112,16 @@ export default function ConviteOrientadorModal({
     return (
         <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
             <DialogTitle>
-                {conviteExistente ? "Convite de Orientador" : "Enviar Convite para Orientador"}
+                {conviteExistente
+                    ? "Convite de Orientador"
+                    : "Enviar Convite para Orientador"}
             </DialogTitle>
             <DialogContent>
                 <Box sx={{ mt: 2 }}>
                     {!idCurso && (
                         <Alert severity="warning" sx={{ mb: 2 }}>
-                            Não foi possível identificar o curso. Entre em contato com o suporte.
+                            Não foi possível identificar o curso. Entre em
+                            contato com o suporte.
                         </Alert>
                     )}
 
@@ -127,17 +135,32 @@ export default function ConviteOrientadorModal({
                         <InputLabel>Selecione o Orientador</InputLabel>
                         <Select
                             value={orientadorSelecionado}
-                            onChange={(e) => setOrientadorSelecionado(e.target.value)}
-                            disabled={loadingOrientadores || !!conviteExistente || !idCurso}
+                            onChange={(e) =>
+                                setOrientadorSelecionado(e.target.value)
+                            }
+                            disabled={
+                                loadingOrientadores ||
+                                !!conviteExistente ||
+                                !idCurso
+                            }
                         >
                             {loadingOrientadores ? (
                                 <MenuItem disabled>
-                                    <CircularProgress size={20} sx={{ mr: 1 }} />
+                                    <CircularProgress
+                                        size={20}
+                                        sx={{ mr: 1 }}
+                                    />
                                     Carregando orientadores...
                                 </MenuItem>
                             ) : (
-                                (Array.isArray(orientadores) ? orientadores : []).map((orientador) => (
-                                    <MenuItem key={orientador.codigo} value={orientador.codigo}>
+                                (Array.isArray(orientadores)
+                                    ? orientadores
+                                    : []
+                                ).map((orientador) => (
+                                    <MenuItem
+                                        key={orientador.codigo}
+                                        value={orientador.codigo}
+                                    >
                                         {orientador.nome} - {orientador.codigo}
                                     </MenuItem>
                                 ))
@@ -160,11 +183,17 @@ export default function ConviteOrientadorModal({
                     {conviteExistente && (
                         <Alert severity="info" sx={{ mb: 2 }}>
                             <Typography variant="body2">
-                                <strong>Status:</strong> {conviteExistente.aceito ? "Aceito" : "Pendente"}
+                                <strong>Status:</strong>{" "}
+                                {conviteExistente.aceito
+                                    ? "Aceito"
+                                    : "Pendente"}
                             </Typography>
                             {conviteExistente.data_envio && (
                                 <Typography variant="body2">
-                                    <strong>Enviado em:</strong> {new Date(conviteExistente.data_envio).toLocaleDateString('pt-BR')}
+                                    <strong>Enviado em:</strong>{" "}
+                                    {new Date(
+                                        conviteExistente.data_envio
+                                    ).toLocaleDateString("pt-BR")}
                                 </Typography>
                             )}
                         </Alert>
@@ -181,7 +210,11 @@ export default function ConviteOrientadorModal({
                         variant="contained"
                         disabled={loading || !orientadorSelecionado}
                     >
-                        {loading ? <CircularProgress size={20} /> : "Enviar Convite"}
+                        {loading ? (
+                            <CircularProgress size={20} />
+                        ) : (
+                            "Enviar Convite"
+                        )}
                     </Button>
                 )}
             </DialogActions>

@@ -47,20 +47,28 @@ export default function ConviteBancaModal({
         }
     }, [open, idCurso]);
 
-        useEffect(() => {
+    useEffect(() => {
         if (open) {
             // Lógica de pré-seleção inteligente
             let selecionadosIniciais = [];
 
-            if (tipoConvite === "banca_trabalho" && docentesPreSelecionados.length > 0 && convitesExistentes) {
+            if (
+                tipoConvite === "banca_trabalho" &&
+                docentesPreSelecionados.length > 0 &&
+                convitesExistentes
+            ) {
                 // Para etapa 7 (banca final), verificar se já há convites respondidos na fase 2
-                const convitesRespondidosFase2 = convitesExistentes.filter(c => c.data_feedback);
+                const convitesRespondidosFase2 = convitesExistentes.filter(
+                    (c) => c.data_feedback
+                );
 
                 if (convitesRespondidosFase2.length === 0) {
                     // Se não há convites respondidos, manter pré-seleção apenas para docentes não convidados na fase 2
-                    const docentesJaConvidadosFase2 = convitesExistentes.map(c => c.codigo_docente);
+                    const docentesJaConvidadosFase2 = convitesExistentes.map(
+                        (c) => c.codigo_docente
+                    );
                     selecionadosIniciais = docentesPreSelecionados.filter(
-                        codigo => !docentesJaConvidadosFase2.includes(codigo)
+                        (codigo) => !docentesJaConvidadosFase2.includes(codigo)
                     );
                 }
                 // Se há convites respondidos, não pré-selecionar ninguém (selecionadosIniciais = [])
@@ -113,11 +121,10 @@ export default function ConviteBancaModal({
     );
 
     // Determinar se o botão deve estar desabilitado
-    const deveBotaoEstarDesabilitado = (
-        convitesPendentes.length === 2 ||  // 2 pendentes
-        convitesAceitos.length === 2 ||    // 2 aceitos
-        (convitesAceitos.length === 1 && convitesPendentes.length === 1) // 1 aceito + 1 pendente
-    );
+    const deveBotaoEstarDesabilitado =
+        convitesPendentes.length === 2 || // 2 pendentes
+        convitesAceitos.length === 2 || // 2 aceitos
+        (convitesAceitos.length === 1 && convitesPendentes.length === 1); // 1 aceito + 1 pendente
 
     // Para o formulário, só mostrar se ainda pode enviar convites
     const podeEnviarMaisConvites = !deveBotaoEstarDesabilitado;
@@ -133,11 +140,20 @@ export default function ConviteBancaModal({
         }
 
         // Verificar se ainda pode enviar baseado em aceitos + pendentes + nova seleção
-        const totalConvitesAposEnvio = convitesPendentes.length + convitesAceitos.length + orientadoresSelecionados.length;
+        const totalConvitesAposEnvio =
+            convitesPendentes.length +
+            convitesAceitos.length +
+            orientadoresSelecionados.length;
 
         if (totalConvitesAposEnvio > 2) {
             setError(
-                `Você só pode ter no máximo 2 convites simultâneos. Atualmente: ${convitesAceitos.length} aceito(s) + ${convitesPendentes.length} pendente(s). Máximo para enviar agora: ${2 - convitesPendentes.length - convitesAceitos.length}.`
+                `Você só pode ter no máximo 2 convites simultâneos. Atualmente: ${
+                    convitesAceitos.length
+                } aceito(s) + ${
+                    convitesPendentes.length
+                } pendente(s). Máximo para enviar agora: ${
+                    2 - convitesPendentes.length - convitesAceitos.length
+                }.`
             );
             return;
         }
@@ -195,7 +211,8 @@ export default function ConviteBancaModal({
         const value = event.target.value;
 
         // Calcular limite de seleção baseado em convites simultâneos (aceitos + pendentes)
-        const limiteSelecao = 2 - convitesAceitos.length - convitesPendentes.length;
+        const limiteSelecao =
+            2 - convitesAceitos.length - convitesPendentes.length;
 
         // Limitar seleção baseado no máximo de convites simultâneos
         if (value.length <= limiteSelecao) {
@@ -288,7 +305,8 @@ export default function ConviteBancaModal({
                             )}
 
                             <Typography variant="body2" sx={{ mt: 1 }}>
-                                Você tem {convitesDisponiveis} vaga(s) disponível(is) na banca.
+                                Você tem {convitesDisponiveis} vaga(s)
+                                disponível(is) na banca.
                                 {convitesAceitos.length === 2 &&
                                     " Você já tem 2 convites aceitos! 🎉"}
                                 {convitesPendentes.length > 0 &&
@@ -332,7 +350,9 @@ export default function ConviteBancaModal({
                                     disabled={
                                         loadingOrientadores ||
                                         !idCurso ||
-                                        (convitesAceitos.length + convitesPendentes.length >= 2)
+                                        convitesAceitos.length +
+                                            convitesPendentes.length >=
+                                            2
                                     }
                                 >
                                     {loadingOrientadores ? (
@@ -365,17 +385,23 @@ export default function ConviteBancaModal({
                                                         (!convite.data_feedback ||
                                                             convite.aceito ||
                                                             // Para etapa 7 (banca final), também excluir docentes que recusaram
-                                                            (tipoConvite === "banca_trabalho" && convite.data_feedback && !convite.aceito))
+                                                            (tipoConvite ===
+                                                                "banca_trabalho" &&
+                                                                convite.data_feedback &&
+                                                                !convite.aceito))
                                                 );
 
                                             // Verificar se foi especificamente recusado na fase atual
-                                            const foiRecusado = convitesBanca.some(
-                                                (convite) =>
-                                                    convite.codigo_docente === orientador.codigo &&
-                                                    convite.data_feedback &&
-                                                    !convite.aceito &&
-                                                    tipoConvite === "banca_trabalho"
-                                            );
+                                            const foiRecusado =
+                                                convitesBanca.some(
+                                                    (convite) =>
+                                                        convite.codigo_docente ===
+                                                            orientador.codigo &&
+                                                        convite.data_feedback &&
+                                                        !convite.aceito &&
+                                                        tipoConvite ===
+                                                            "banca_trabalho"
+                                                );
 
                                             const isDisabled =
                                                 jaConvidado || ehOrientador;
@@ -422,7 +448,11 @@ export default function ConviteBancaModal({
                                 onChange={(e) => setMensagem(e.target.value)}
                                 placeholder="Escreva uma mensagem personalizada para os membros da banca..."
                                 sx={{ mb: 2 }}
-                                helperText={`Você pode selecionar até ${2 - convitesAceitos.length - convitesPendentes.length} orientador(es) para enviar convites simultaneamente.`}
+                                helperText={`Você pode selecionar até ${
+                                    2 -
+                                    convitesAceitos.length -
+                                    convitesPendentes.length
+                                } orientador(es) para enviar convites simultaneamente.`}
                             />
                         </>
                     ) : (
@@ -432,8 +462,7 @@ export default function ConviteBancaModal({
                                     ? "Sua banca está completa com 2 membros confirmados!"
                                     : convitesPendentes.length === 2
                                     ? "Você tem 2 convites pendentes. Aguarde as respostas antes de enviar novos convites."
-                                    : "Você tem 1 convite aceito e 1 pendente. Aguarde a resposta do convite pendente."
-                                }
+                                    : "Você tem 1 convite aceito e 1 pendente. Aguarde a resposta do convite pendente."}
                             </Typography>
                         </Alert>
                     )}
@@ -465,9 +494,13 @@ export default function ConviteBancaModal({
                     {loading ? (
                         <CircularProgress size={20} />
                     ) : deveBotaoEstarDesabilitado ? (
-                        convitesAceitos.length === 2 ? "Banca Completa" :
-                        convitesPendentes.length === 2 ? "Aguardando Respostas" :
-                        "Aguardando Confirmação"
+                        convitesAceitos.length === 2 ? (
+                            "Banca Completa"
+                        ) : convitesPendentes.length === 2 ? (
+                            "Aguardando Respostas"
+                        ) : (
+                            "Aguardando Confirmação"
+                        )
                     ) : (
                         `Enviar ${convitesDisponiveis} Convite(s)`
                     )}

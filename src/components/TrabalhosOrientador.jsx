@@ -75,7 +75,8 @@ export default function TrabalhosOrientador() {
                 .filter(
                     (o) =>
                         o.TrabalhoConclusao &&
-                        o.TrabalhoConclusao.Curso?.id === parseInt(cursoSelecionado) &&
+                        o.TrabalhoConclusao.Curso?.id ===
+                            parseInt(cursoSelecionado) &&
                         o.TrabalhoConclusao.ano === parseInt(ano) &&
                         o.TrabalhoConclusao.semestre === parseInt(semestre)
                 )
