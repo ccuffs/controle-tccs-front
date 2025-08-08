@@ -24,8 +24,9 @@ import { AuthContext } from "../contexts/AuthContext";
 import VisualizarTemasTCC from "./VisualizarTemasTCC";
 import ConviteOrientadorModal from "./ConviteOrientadorModal";
 import ConviteBancaModal from "./ConviteBancaModal";
+import SelecionarHorarioBanca from "./SelecionarHorarioBanca";
 
-const steps = ["1", "2", "3", "4", "5", "6", "7"];
+const steps = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
 export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
     const { usuario } = useContext(AuthContext);
@@ -53,6 +54,11 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
     const [openImportModal, setOpenImportModal] = useState(false);
     const [showCompletedMessage, setShowCompletedMessage] = useState(false);
     const [modalType, setModalType] = useState(""); // 'import', 'next_phase'
+    const [selectedHorarioBancaFase1, setSelectedHorarioBancaFase1] = useState(null);
+    const [selectedHorarioBancaFase2, setSelectedHorarioBancaFase2] = useState(null);
+    const [defesasFase1, setDefesasFase1] = useState([]);
+    const [defesasFase2, setDefesasFase2] = useState([]);
+    const [bloquearAtualizacaoEtapa, setBloquearAtualizacaoEtapa] = useState(false);
 
     useEffect(() => {
         if (usuario) {
@@ -63,6 +69,39 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
     useEffect(() => {
         setActiveStep(etapaInicial);
     }, [etapaInicial]);
+
+    const isEtapaFinalBloqueada = (tcc) => {
+        if (!tcc) return false;
+        const etapaNum = typeof tcc.etapa === "number" ? tcc.etapa : 0;
+        return (
+            (tcc.fase === 1 && etapaNum >= 6) ||
+            (tcc.fase === 2 && etapaNum >= 9)
+        );
+    };
+
+    // Ao navegar para a etapa 6 (index 5) na fase 2, recarregar as defesas para mostrar o resumo (horário e notas)
+    useEffect(() => {
+        if (activeStep === 5 && trabalhoConclusao && trabalhoConclusao.fase === 2) {
+            carregarDefesas(trabalhoConclusao.id);
+        }
+    }, [activeStep, trabalhoConclusao]);
+
+    // Ao navegar para a etapa 9 (index 8) na fase 2, recarregar as defesas para mostrar o resumo (horário e notas)
+    useEffect(() => {
+        if (activeStep === 8 && trabalhoConclusao && trabalhoConclusao.fase === 2) {
+            carregarDefesas(trabalhoConclusao.id);
+        }
+    }, [activeStep, trabalhoConclusao]);
+
+    // Ao carregar diretamente na etapa final (índice igual ao total de etapas válidas) na fase 2, recarregar as defesas
+    useEffect(() => {
+        if (trabalhoConclusao && trabalhoConclusao.fase === 2) {
+            const etapasValidas = getEtapasValidas();
+            if (activeStep === etapasValidas.length) {
+                carregarDefesas(trabalhoConclusao.id);
+            }
+        }
+    }, [activeStep, trabalhoConclusao]);
 
     const carregarTrabalhoConclusao = async () => {
         try {
@@ -113,6 +152,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                     } else {
                         // TCC da oferta atual - carregar normalmente
                         setTrabalhoConclusao(responseTcc);
+                        setBloquearAtualizacaoEtapa(isEtapaFinalBloqueada(responseTcc));
                         setFormData({
                             tema: responseTcc.tema || "",
                             titulo: responseTcc.titulo || "",
@@ -180,6 +220,20 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
         }
     };
 
+    const carregarDefesas = async (idTcc) => {
+        try {
+            const resp = await axiosInstance.get(`/defesas/tcc/${idTcc}`);
+            const lista = resp.data?.defesas || resp.defesas || [];
+            const defesasF1 = lista.filter((d) => d.fase === 1);
+            const defesasF2 = lista.filter((d) => d.fase === 2);
+            setDefesasFase1(defesasF1);
+            setDefesasFase2(defesasF2);
+        } catch (e) {
+            setDefesasFase1([]);
+            setDefesasFase2([]);
+        }
+    };
+
     const criarNovoTrabalhoConclusao = async (matricula) => {
         try {
             const novoTcc = {
@@ -196,6 +250,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                 novoTcc
             );
             setTrabalhoConclusao(response);
+            setBloquearAtualizacaoEtapa(false);
             setActiveStep(0);
             if (onEtapaChange) {
                 onEtapaChange(0);
@@ -214,9 +269,9 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
     // Função para determinar quais etapas são válidas baseado na fase do TCC
     const getEtapasValidas = () => {
         if (trabalhoConclusao && trabalhoConclusao.fase === 1) {
-            return steps.slice(0, 5); // Etapas 1-5 para fase 1 (TCC I) - incluindo banca projeto
+            return steps.slice(0, 6); // Fase 1 agora vai até a etapa 6 (seleção de horário da banca do projeto)
         }
-        return steps; // Todas as etapas para fase 2 (TCC II) - incluindo banca trabalho
+        return steps; // Fase 2 percorre todas as etapas
     };
 
     const validarEtapaAtual = () => {
@@ -237,25 +292,42 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                 );
                 return convitesAceitosFase1.length >= 2;
             case 5:
-                // Etapa 5 (seminário de andamento) só é obrigatória para fase 2
+                // Etapa 6 (nova): Seleção de horário da banca do projeto (fase 1) ou Resumo (fase 2)
+                if (trabalhoConclusao && trabalhoConclusao.fase === 1) {
+                    return (
+                        selectedHorarioBancaFase1 &&
+                        selectedHorarioBancaFase1.data &&
+                        selectedHorarioBancaFase1.hora
+                    );
+                }
+                // Para fase 2, a etapa 6 é apenas informativa
+                if (trabalhoConclusao && trabalhoConclusao.fase === 2) return true;
+                return true;
+            case 6:
+                // Etapa 7 (fase 2): Seminário de Andamento obrigatório
                 if (trabalhoConclusao && trabalhoConclusao.fase === 2) {
                     return (
                         formData.seminario_andamento &&
                         formData.seminario_andamento.trim().length > 0
                     );
                 }
-                return true; // Para fase 1, a etapa 5 não é obrigatória
-            case 6:
-                // Etapa 6 (convite para banca do trabalho final - fase 2) - só existe na fase 2
+                return true; // Para fase 1, não existe esta etapa
+            case 7:
+                // Etapa 8 (fase 2): precisa de 2 convites aceitos para banca final
                 if (trabalhoConclusao && trabalhoConclusao.fase === 2) {
-                    // Para etapa 7, considerar apenas convites da fase 2 e aceitos
                     const convitesAceitosFase2 = convitesBanca.filter(
-                        (convite) =>
-                            convite.aceito === true && convite.fase === 2
+                        (convite) => convite.aceito === true && convite.fase === 2
                     );
                     return convitesAceitosFase2.length >= 2;
                 }
-                return true; // Para fase 1, não existe esta etapa
+                return true;
+            case 8:
+                // Etapa 9 (fase 2): seleção de horário comum entre orientador e 2 membros aceitos
+                return (
+                    selectedHorarioBancaFase2 &&
+                    selectedHorarioBancaFase2.data &&
+                    selectedHorarioBancaFase2.hora
+                );
             default:
                 return true;
         }
@@ -327,6 +399,10 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
         }
 
         try {
+            if (bloquearAtualizacaoEtapa) {
+                // Não persistir nada no banco quando bloqueado
+                return true;
+            }
             setSaving(true);
             const novaEtapa = activeStep + 1;
             const dadosAtualizados = {
@@ -340,6 +416,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                 dadosAtualizados
             );
             setTrabalhoConclusao(dadosAtualizados);
+            setBloquearAtualizacaoEtapa(isEtapaFinalBloqueada(dadosAtualizados));
 
             setMessageText("Etapa salva com sucesso!");
             setMessageSeverity("success");
@@ -368,6 +445,10 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
         }
 
         try {
+            if (bloquearAtualizacaoEtapa) {
+                // Não persistir nada no banco quando bloqueado
+                return true;
+            }
             setSaving(true);
             const etapasValidas = getEtapasValidas();
             const dadosAtualizados = {
@@ -376,11 +457,55 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                 etapa: etapasValidas.length,
             };
 
+            // Se houver horário selecionado (fase 1 ou fase 2), agendar defesa antes de finalizar
+            const horarioEscolhido =
+                trabalhoConclusao.fase === 1
+                    ? selectedHorarioBancaFase1
+                    : selectedHorarioBancaFase2;
+            if (horarioEscolhido && trabalhoConclusao) {
+                try {
+                    const codigoOrientador = conviteExistente?.aceito
+                        ? conviteExistente.codigo_docente
+                        : null;
+                    const membrosAceitosFase = convitesBanca
+                        .filter((c) => c.aceito === true && !!c.data_feedback)
+                        .filter((c) =>
+                            trabalhoConclusao.fase === 2 ? c.fase === 2 : c.fase === 1
+                        )
+                        .map((c) => c.codigo_docente);
+
+                    if (codigoOrientador && membrosAceitosFase.length === 2) {
+                        await axiosInstance.post("/defesas/agendar", {
+                            id_tcc: trabalhoConclusao.id,
+                            fase: trabalhoConclusao.fase,
+                            data: horarioEscolhido.data,
+                            hora: horarioEscolhido.hora,
+                            codigo_orientador: codigoOrientador,
+                            membros_banca: membrosAceitosFase,
+                        });
+                        // Recarregar defesas e refletir horário escolhido no estado local
+                        await carregarDefesas(trabalhoConclusao.id);
+                        if (trabalhoConclusao.fase === 2) {
+                            setSelectedHorarioBancaFase2(horarioEscolhido);
+                        } else {
+                            setSelectedHorarioBancaFase1(horarioEscolhido);
+                        }
+                    }
+                } catch (e) {
+                    console.error("Erro ao agendar defesa:", e);
+                    setMessageText("Erro ao agendar defesa. Tente novamente.");
+                    setMessageSeverity("error");
+                    setOpenMessage(true);
+                    return false;
+                }
+            }
+
             await axiosInstance.put(
                 `/trabalho-conclusao/${trabalhoConclusao.id}`,
                 dadosAtualizados
             );
             setTrabalhoConclusao(dadosAtualizados);
+            setBloquearAtualizacaoEtapa(isEtapaFinalBloqueada(dadosAtualizados));
 
             // Notificar componente pai sobre mudança de etapa
             if (onEtapaChange) {
@@ -486,6 +611,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 
                     const tccAtualizado = response.trabalho;
                     setTrabalhoConclusao(tccAtualizado);
+                    setBloquearAtualizacaoEtapa(isEtapaFinalBloqueada(tccAtualizado));
                     setFormData({
                         tema: tccAtualizado.tema || "",
                         titulo: tccAtualizado.titulo || "",
@@ -539,6 +665,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                         novoTcc
                     );
                     setTrabalhoConclusao(response);
+                    setBloquearAtualizacaoEtapa(isEtapaFinalBloqueada(response));
                     setFormData({
                         tema: novoTcc.tema,
                         titulo: novoTcc.titulo,
@@ -1027,18 +1154,133 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                     </Box>
                 );
             case 5:
-                // Etapa 6: Seminário de Andamento - apenas para fase 2
+                // Etapa 6: Selecionar horário da banca do Projeto (Fase 1)
+                if (!trabalhoConclusao) return null;
+                if (trabalhoConclusao.fase === 1) {
+                    const codigoOrientadorF1 = conviteExistente?.aceito
+                        ? conviteExistente.codigo_docente
+                        : null;
+                    const membrosAceitosFase1 = convitesBanca
+                        .filter((c) => c.aceito === true && !!c.data_feedback && c.fase === 1)
+                        .map((c) => c.codigo_docente);
+
+                    return (
+                        <Box sx={{ mt: 2 }}>
+                            <Typography variant="h6" gutterBottom>
+                                Etapa 6: Selecionar Horário da Banca do Projeto
+                            </Typography>
+                            {!codigoOrientadorF1 && (
+                                <Alert severity="warning" sx={{ mb: 2 }}>
+                                    O convite ao orientador ainda não foi aceito.
+                                </Alert>
+                            )}
+                            {membrosAceitosFase1.length !== 2 && (
+                                <Alert severity="warning" sx={{ mb: 2 }}>
+                                    É necessário ter 2 docentes convidados com convite aceito para a banca do projeto.
+                                </Alert>
+                            )}
+                            {codigoOrientadorF1 && membrosAceitosFase1.length === 2 && (
+                                <SelecionarHorarioBanca
+                                    oferta={{
+                                        ano: trabalhoConclusao.ano,
+                                        semestre: trabalhoConclusao.semestre,
+                                        id_curso: trabalhoConclusao.id_curso,
+                                        fase: 1,
+                                    }}
+                                    codigoOrientador={codigoOrientadorF1}
+                                    codigosMembrosBanca={membrosAceitosFase1}
+                                    selectedSlot={selectedHorarioBancaFase1}
+                                    onChange={setSelectedHorarioBancaFase1}
+                                />
+                            )}
+                        </Box>
+                    );
+                }
+                // Fase 2: nesta etapa, exibir DADOS DA FASE 1 (banca do projeto)
+                // Preferir o horário selecionado localmente da fase 1; se não houver, usar o registro de defesa agendada da fase 1
+                let dataStr = null;
+                let horaStr = null;
+                if (selectedHorarioBancaFase1 && selectedHorarioBancaFase1.data && selectedHorarioBancaFase1.hora) {
+                    dataStr = new Date(selectedHorarioBancaFase1.data).toLocaleDateString("pt-BR");
+                    horaStr = selectedHorarioBancaFase1.hora;
+                } else {
+                    const defesaAgendada = defesasFase1 && defesasFase1.length > 0
+                        ? defesasFase1.find((d) => !!d.data_defesa) || defesasFase1[0]
+                        : null;
+                    const dataHoraFormatada = defesaAgendada && defesaAgendada.data_defesa
+                        ? new Date(defesaAgendada.data_defesa)
+                        : null;
+                    dataStr = dataHoraFormatada
+                        ? dataHoraFormatada.toLocaleDateString("pt-BR")
+                        : null;
+                    horaStr = dataHoraFormatada
+                        ? dataHoraFormatada.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+                        : null;
+                }
+
+                // Notas da banca de FASE 1
+                const notasBanca = defesasFase1 || [];
+
+                return (
+                    <Box sx={{ mt: 2 }}>
+                        <Typography variant="h6" gutterBottom>
+                            Etapa 6: Resumo da Banca do Projeto (Fase 1)
+                        </Typography>
+                        <Paper sx={{ p: 3 }}>
+                            <Typography variant="subtitle1" gutterBottom>
+                                Horário Selecionado
+                            </Typography>
+                            {dataStr && horaStr ? (
+                                <Alert severity="success" sx={{ mb: 2 }}>
+                                    <Typography variant="body2">
+                                        Defesa agendada para <strong>{dataStr}</strong> às <strong>{horaStr}</strong>.
+                                    </Typography>
+                                </Alert>
+                            ) : (
+                                <Alert severity="warning" sx={{ mb: 2 }}>
+                                    <Typography variant="body2">
+                                        Nenhum horário de fase 1 encontrado.
+                                    </Typography>
+                                </Alert>
+                            )}
+
+                            <Typography variant="subtitle1" gutterBottom>
+                                Notas da Banca
+                            </Typography>
+                            {notasBanca.length > 0 ? (
+                                <Box>
+                                    {notasBanca.map((d, idx) => (
+                                        <Alert key={idx} severity={d.avaliacao != null ? "info" : "warning"} sx={{ mb: 1 }}>
+                                            <Typography variant="body2">
+                                                <strong>Docente:</strong> {d.membroBanca?.nome || d.membro_banca}
+                                            </Typography>
+                                            <Typography variant="body2">
+                                                <strong>Nota:</strong> {d.avaliacao != null ? Number(d.avaliacao).toFixed(1) : "Sem Nota"}
+                                            </Typography>
+                                        </Alert>
+                                    ))}
+                                </Box>
+                            ) : (
+                                <Alert severity="info">
+                                    <Typography variant="body2">
+                                        Ainda não há registros de notas para a banca.
+                                    </Typography>
+                                </Alert>
+                            )}
+                        </Paper>
+                    </Box>
+                );
+            case 6:
+                // Etapa 7: Seminário de Andamento (Fase 2)
                 if (trabalhoConclusao && trabalhoConclusao.fase === 2) {
                     return (
                         <Box sx={{ mt: 2 }}>
                             <Typography variant="h6" gutterBottom>
-                                Etapa 6: Seminário de Andamento
+                                Etapa 7: Seminário de Andamento
                             </Typography>
                             <Alert severity="info" sx={{ mb: 2 }}>
                                 <Typography variant="body2">
-                                    Esta etapa é específica para estudantes na
-                                    fase TCC II. Descreva as atividades e
-                                    progresso do seu seminário de andamento.
+                                    Descreva as atividades, progresso e resultados do seminário de andamento.
                                 </Typography>
                             </Alert>
                             <TextField
@@ -1059,7 +1301,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                         </Box>
                     );
                 } else {
-                    // Para fase 1, pular esta etapa
+                    // Para fase 1, esta etapa não existe
                     return (
                         <Box sx={{ mt: 2 }}>
                             <Alert severity="info" sx={{ mb: 2 }}>
@@ -1067,17 +1309,14 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                                     Etapa Não Aplicável
                                 </Typography>
                                 <Typography variant="body2">
-                                    A etapa de Seminário de Andamento é
-                                    específica para estudantes na fase TCC II.
-                                    Como você está na fase TCC I, esta etapa
-                                    será automaticamente ignorada.
+                                    Esta etapa é específica para estudantes na fase TCC II.
                                 </Typography>
                             </Alert>
                         </Box>
                     );
                 }
-            case 6:
-                // Etapa 7: Convite para Banca de Avaliação do Trabalho Final - apenas para fase 2
+            case 7:
+                // Etapa 8: Convite para Banca de Avaliação do Trabalho Final - apenas para fase 2 (foi movida)
                 if (trabalhoConclusao && trabalhoConclusao.fase === 2) {
                     // Separar convites por fase
                     const convitesFase1 = convitesBanca.filter(
@@ -1085,7 +1324,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                     ); // Convites da etapa 5 (banca do projeto)
                     const convitesFase2 = convitesBanca.filter(
                         (c) => c.fase === 2
-                    ); // Convites da etapa 7 (banca final)
+                    ); // Convites da etapa 8 (banca final)
                     const convitesAceitosFase2 = convitesFase2.filter(
                         (c) => c.aceito === true
                     );
@@ -1093,7 +1332,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                     return (
                         <Box sx={{ mt: 2 }}>
                             <Typography variant="h6" gutterBottom>
-                                Etapa 7: Convite para Banca de Avaliação do
+                                Etapa 8: Convite para Banca de Avaliação do
                                 Trabalho Final
                             </Typography>
 
@@ -1373,6 +1612,142 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                         </Box>
                     );
                 }
+            case 8:
+                // Etapa 9: Selecionar horário de banca comum a orientador + 2 membros aceitos
+                if (!trabalhoConclusao) {
+                    return null;
+                }
+                // Recuperar orientador aceito (conviteOrientacao) e 2 membros aceitos da fase correta
+                const codigoOrientador = conviteExistente?.aceito
+                    ? conviteExistente.codigo_docente
+                    : null;
+                const membrosAceitosFase = convitesBanca
+                    .filter((c) => c.aceito === true && !!c.data_feedback)
+                    .filter((c) =>
+                        trabalhoConclusao.fase === 2 ? c.fase === 2 : c.fase === 1
+                    )
+                    .map((c) => c.codigo_docente);
+                const hasDefesasFase2 = (defesasFase2 && defesasFase2.length > 0);
+
+                return (
+                    <Box sx={{ mt: 2 }}>
+                        <Typography variant="h6" gutterBottom>
+                            Etapa 9: Selecionar Horário da Banca Final
+                        </Typography>
+                        {!codigoOrientador && (
+                            <Alert severity="warning" sx={{ mb: 2 }}>
+                                O convite ao orientador ainda não foi aceito.
+                            </Alert>
+                        )}
+                        {membrosAceitosFase.length !== 2 && (
+                            <Alert severity="warning" sx={{ mb: 2 }}>
+                                É necessário ter 2 docentes convidados com convite aceito.
+                            </Alert>
+                        )}
+                        {!hasDefesasFase2 && codigoOrientador && membrosAceitosFase.length === 2 && (
+                            <SelecionarHorarioBanca
+                                oferta={{
+                                    ano: trabalhoConclusao.ano,
+                                    semestre: trabalhoConclusao.semestre,
+                                    id_curso: trabalhoConclusao.id_curso,
+                                    fase: trabalhoConclusao.fase,
+                                }}
+                                codigoOrientador={codigoOrientador}
+                                codigosMembrosBanca={membrosAceitosFase}
+                                selectedSlot={selectedHorarioBancaFase2}
+                                onChange={setSelectedHorarioBancaFase2}
+                            />
+                        )}
+
+                        {/* Resumo (se houver registros) como na etapa 6 */}
+                        {trabalhoConclusao?.fase === 2 && (
+                            <Paper sx={{ p: 3, mt: 3 }}>
+                                {(() => {
+                                    // Mostrar data/hora da defesa final
+                                    let dataStr = null;
+                                    let horaStr = null;
+                                    if (
+                                        selectedHorarioBancaFase2 &&
+                                        selectedHorarioBancaFase2.data &&
+                                        selectedHorarioBancaFase2.hora
+                                    ) {
+                                        dataStr = new Date(
+                                            selectedHorarioBancaFase2.data
+                                        ).toLocaleDateString("pt-BR");
+                                        horaStr = selectedHorarioBancaFase2.hora;
+                                    } else {
+                                        const defesaAgendada =
+                                            defesasFase2 && defesasFase2.length > 0
+                                                ? defesasFase2.find((d) => !!d.data_defesa) || defesasFase2[0]
+                                                : null;
+                                        const dataHoraFormatada =
+                                            defesaAgendada && defesaAgendada.data_defesa
+                                                ? new Date(defesaAgendada.data_defesa)
+                                                : null;
+                                        dataStr = dataHoraFormatada
+                                            ? dataHoraFormatada.toLocaleDateString("pt-BR")
+                                            : null;
+                                        horaStr = dataHoraFormatada
+                                            ? dataHoraFormatada.toLocaleTimeString("pt-BR", {
+                                                  hour: "2-digit",
+                                                  minute: "2-digit",
+                                              })
+                                            : null;
+                                    }
+
+                                    return (
+                                        <>
+                                            <Typography variant="subtitle1" gutterBottom>
+                                                Horário Selecionado
+                                            </Typography>
+                                            {dataStr && horaStr ? (
+                                                <Alert severity="success" sx={{ mb: 2 }}>
+                                                    <Typography variant="body2">
+                                                        Defesa agendada para <strong>{dataStr}</strong> às <strong>{horaStr}</strong>.
+                                                    </Typography>
+                                                </Alert>
+                                            ) : (
+                                                <Alert severity="warning" sx={{ mb: 2 }}>
+                                                    <Typography variant="body2">
+                                                        Nenhum horário encontrado.
+                                                    </Typography>
+                                                </Alert>
+                                            )}
+
+                                            <Typography variant="subtitle1" gutterBottom>
+                                                Notas da Banca
+                                            </Typography>
+                                            {(defesasFase2 || []).length > 0 ? (
+                                                <Box>
+                                                    {(defesasFase2 || []).map((d, idx) => (
+                                                        <Alert
+                                                            key={idx}
+                                                            severity={d.avaliacao != null ? "info" : "warning"}
+                                                            sx={{ mb: 1 }}
+                                                        >
+                                                            <Typography variant="body2">
+                                                                <strong>Docente:</strong> {d.membroBanca?.nome || d.membro_banca}
+                                                            </Typography>
+                                                            <Typography variant="body2">
+                                                                <strong>Nota:</strong> {d.avaliacao != null ? Number(d.avaliacao).toFixed(1) : "Sem Nota"}
+                                                            </Typography>
+                                                        </Alert>
+                                                    ))}
+                                                </Box>
+                                            ) : (
+                                                <Alert severity="info">
+                                                    <Typography variant="body2">
+                                                        Ainda não há registros de notas para a banca final.
+                                                    </Typography>
+                                                </Alert>
+                                            )}
+                                        </>
+                                    );
+                                })()}
+                            </Paper>
+                        )}
+                    </Box>
+                );
             default:
                 return "Etapa desconhecida";
         }
@@ -1603,18 +1978,21 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                                         convitesAceitosBancaFase1.length >= 2
                                     );
                                 case 5:
-                                    // Etapa 5 (seminário) só é obrigatória para fase 2
-                                    if (
-                                        trabalhoConclusao &&
-                                        trabalhoConclusao.fase === 2
-                                    ) {
+                                    // Etapa 6: Fase 1 requer horário selecionado; Fase 2 requer seminário preenchido
+                                    if (trabalhoConclusao?.fase === 1) {
                                         return (
-                                            formData.seminario_andamento &&
-                                            formData.seminario_andamento.trim()
-                                                .length > 0
+                                            selectedHorarioBancaFase1 &&
+                                            selectedHorarioBancaFase1.data &&
+                                            selectedHorarioBancaFase1.hora
                                         );
                                     }
-                                    return true; // Para fase 1, considera completa
+                                    if (trabalhoConclusao?.fase === 2) {
+                                        return (
+                                            formData.seminario_andamento &&
+                                            formData.seminario_andamento.trim().length > 0
+                                        );
+                                    }
+                                    return true;
                                 case 6:
                                     // Etapa 6 (convite para banca final - fase 2) - só existe na fase 2
                                     if (
@@ -1633,6 +2011,13 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                                         );
                                     }
                                     return true; // Para fase 1, não existe
+                                case 7:
+                                    // Etapa 8 (fase 2): requer horário selecionado
+                                    return (
+                                        selectedHorarioBancaFase2 &&
+                                        selectedHorarioBancaFase2.data &&
+                                        selectedHorarioBancaFase2.hora
+                                    );
                                 default:
                                     return false;
                             }
@@ -1715,12 +2100,107 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 
                 {activeStep === getEtapasValidas().length ? (
                     <Box>
-                        <Typography sx={{ mt: 2, mb: 1 }}>
-                            Todas as etapas foram concluídas!
-                        </Typography>
-                        <Button onClick={() => setActiveStep(0)}>
-                            Reiniciar
-                        </Button>
+                        {trabalhoConclusao?.fase === 2 ? (
+                            <>
+                                <Typography variant="h6" sx={{ mt: 1, mb: 2 }}>
+                                    Banca Final Agendada
+                                </Typography>
+                                <Paper sx={{ p: 3, mb: 2 }}>
+                                    {(() => {
+                                        // Mostrar data/hora da defesa final
+                                        let dataStr = null;
+                                        let horaStr = null;
+                                        if (
+                                            selectedHorarioBancaFase2 &&
+                                            selectedHorarioBancaFase2.data &&
+                                            selectedHorarioBancaFase2.hora
+                                        ) {
+                                            dataStr = new Date(
+                                                selectedHorarioBancaFase2.data
+                                            ).toLocaleDateString("pt-BR");
+                                            horaStr = selectedHorarioBancaFase2.hora;
+                                        } else {
+                                            const defesaAgendada =
+                                                defesasFase2 && defesasFase2.length > 0
+                                                    ? defesasFase2.find((d) => !!d.data_defesa) || defesasFase2[0]
+                                                    : null;
+                                            const dataHoraFormatada =
+                                                defesaAgendada && defesaAgendada.data_defesa
+                                                    ? new Date(defesaAgendada.data_defesa)
+                                                    : null;
+                                            dataStr = dataHoraFormatada
+                                                ? dataHoraFormatada.toLocaleDateString("pt-BR")
+                                                : null;
+                                            horaStr = dataHoraFormatada
+                                                ? dataHoraFormatada.toLocaleTimeString("pt-BR", {
+                                                      hour: "2-digit",
+                                                      minute: "2-digit",
+                                                  })
+                                                : null;
+                                        }
+
+                                        return (
+                                            <>
+                                                <Typography variant="subtitle1" gutterBottom>
+                                                    Horário Selecionado
+                                                </Typography>
+                                                {dataStr && horaStr ? (
+                                                    <Alert severity="success" sx={{ mb: 2 }}>
+                                                        <Typography variant="body2">
+                                                            Defesa agendada para <strong>{dataStr}</strong> às <strong>{horaStr}</strong>.
+                                                        </Typography>
+                                                    </Alert>
+                                                ) : (
+                                                    <Alert severity="warning" sx={{ mb: 2 }}>
+                                                        <Typography variant="body2">
+                                                            Nenhum horário encontrado.
+                                                        </Typography>
+                                                    </Alert>
+                                                )}
+
+                                                <Typography variant="subtitle1" gutterBottom>
+                                                    Notas da Banca
+                                                </Typography>
+                                                {(defesasFase2 || []).length > 0 ? (
+                                                    <Box>
+                                                        {(defesasFase2 || []).map((d, idx) => (
+                                                            <Alert
+                                                                key={idx}
+                                                                severity={d.avaliacao != null ? "info" : "warning"}
+                                                                sx={{ mb: 1 }}
+                                                            >
+                                                                <Typography variant="body2">
+                                                                    <strong>Docente:</strong> {d.membroBanca?.nome || d.membro_banca}
+                                                                </Typography>
+                                                                <Typography variant="body2">
+                                                                    <strong>Nota:</strong> {d.avaliacao != null ? Number(d.avaliacao).toFixed(1) : "Sem Nota"}
+                                                                </Typography>
+                                                            </Alert>
+                                                        ))}
+                                                    </Box>
+                                                ) : (
+                                                    <Alert severity="info">
+                                                        <Typography variant="body2">
+                                                            Ainda não há registros de notas para a banca final.
+                                                        </Typography>
+                                                    </Alert>
+                                                )}
+                                            </>
+                                        );
+                                    })()}
+                                </Paper>
+                                <Button onClick={() => setActiveStep(0)}>Reiniciar</Button>
+                            </>
+                        ) : (
+                            <>
+                                <Typography sx={{ mt: 2, mb: 1 }}>
+                                    Todas as etapas foram concluídas!
+                                </Typography>
+                                <Button onClick={() => setActiveStep(0)}>
+                                    Reiniciar
+                                </Button>
+                            </>
+                        )}
                     </Box>
                 ) : (
                     <Box>
@@ -1778,8 +2258,16 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
                                 </Alert>
                             )}
 
-                        {/* Mensagem de ajuda para etapa 6 (banca final) */}
-                        {activeStep === 6 && !validarEtapaAtual() && (
+                        {/* Mensagem de ajuda para etapa 6 (fase 1) ou 8 (fase 2) */}
+                        {activeStep === 5 && trabalhoConclusao?.fase === 1 && !validarEtapaAtual() && (
+                            <Alert severity="warning" sx={{ mt: 2 }}>
+                                <Typography variant="body2">
+                                    <strong>Seleção de horário obrigatória:</strong> escolha um horário comum entre orientador e os 2 membros aceitos da banca do projeto.
+                                </Typography>
+                            </Alert>
+                        )}
+
+                        {activeStep === 7 && trabalhoConclusao?.fase === 2 && !validarEtapaAtual() && (
                             <Alert severity="warning" sx={{ mt: 2 }}>
                                 <Typography variant="body2">
                                     <strong>
