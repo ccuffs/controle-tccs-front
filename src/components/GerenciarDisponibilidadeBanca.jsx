@@ -28,8 +28,8 @@ const GerenciarDisponibilidadeBanca = () => {
     const [fase, setFase] = useState(1);
     const [grade, setGrade] = useState(null);
     const [disponibilidades, setDisponibilidades] = useState({});
-    // Conjunto de slots ("YYYY-MM-DD-HH:mm:ss") bloqueados por já haver defesa agendada
-    const [bloqueados, setBloqueados] = useState(new Set());
+    // Mapa de slots ("YYYY-MM-DD-HH:mm:ss") bloqueados -> tipo ("banca" | "indisp")
+    const [bloqueados, setBloqueados] = useState(new Map());
     const [rows, setRows] = useState([]);
 
     function getAnoSemestreAtual() {
@@ -163,14 +163,18 @@ const GerenciarDisponibilidadeBanca = () => {
                             return `${h2}:${m2}:${s2}`;
                         };
 
-                        const novosBloqueados = new Set();
+                        const novosBloqueados = new Map();
                         lista.forEach((def) => {
                             if (String(def.membro_banca) === String(codigoDocente) && def.data_defesa) {
                                 const { data, hora } = toDateKey(def.data_defesa);
                                 const keyAtual = `${data}-${hora}`;
                                 const keySeguinte = `${data}-${addMinutesToTime(hora, 30)}`;
-                                novosBloqueados.add(keyAtual);
-                                novosBloqueados.add(keySeguinte);
+                                const keyAnterior = `${data}-${addMinutesToTime(hora, -30)}`;
+                                // Defesa e imediatamente seguinte
+                                novosBloqueados.set(keyAtual, "banca");
+                                novosBloqueados.set(keySeguinte, "banca");
+                                // Imediatamente anterior
+                                novosBloqueados.set(keyAnterior, "indisp");
                             }
                         });
                         setBloqueados(novosBloqueados);
@@ -202,7 +206,7 @@ const GerenciarDisponibilidadeBanca = () => {
                         }
                     } catch (e) {
                         // Se falhar o carregamento das defesas, apenas não bloqueia
-                        setBloqueados(new Set());
+            setBloqueados(new Map());
                     }
                 }
             } else {
@@ -215,7 +219,7 @@ const GerenciarDisponibilidadeBanca = () => {
             console.error("Erro ao buscar grade de disponibilidade:", error);
             setError("Erro ao carregar grade de disponibilidade");
             setGrade(null);
-            setBloqueados(new Set());
+            setBloqueados(new Map());
         } finally {
             setLoading(false);
         }
@@ -361,10 +365,23 @@ const GerenciarDisponibilidadeBanca = () => {
         return hora.substring(0, 5); // Remove os segundos
     };
 
+    // Utilitários para lidar com Set/Map em 'bloqueados' de forma segura
+    const isSlotBloqueado = (key) => {
+        if (!bloqueados) return false;
+        if (typeof bloqueados.has === "function") return bloqueados.has(key);
+        return false;
+    };
+
+    const tipoBloqueio = (key) => {
+        // Quando for Map, retorna "banca" | "indisp"; caso contrário, undefined
+        if (bloqueados instanceof Map) return bloqueados.get(key);
+        return undefined;
+    };
+
     const isDisponivel = (data, hora) => {
         const key = `${data}-${hora}`;
         // Se houver defesa agendada, o slot é tratado como indisponível
-        if (bloqueados.has(key)) return false;
+        if (isSlotBloqueado(key)) return false;
         return disponibilidades[key] || false;
     };
 
@@ -372,7 +389,7 @@ const GerenciarDisponibilidadeBanca = () => {
         if (!grade || !grade.horarios) return false;
 
         const todosHorarios = grade.horarios.map((hora) => `${data}-${hora}`);
-        const elegiveis = todosHorarios.filter((k) => !bloqueados.has(k));
+        const elegiveis = todosHorarios.filter((k) => !isSlotBloqueado(k));
         const horariosSelecionados = elegiveis.filter((key) => disponibilidades[key]);
 
         return horariosSelecionados.length === elegiveis.length && elegiveis.length > 0;
@@ -382,7 +399,7 @@ const GerenciarDisponibilidadeBanca = () => {
         if (!grade || !grade.horarios) return false;
 
         const todosHorarios = grade.horarios.map((hora) => `${data}-${hora}`);
-        const elegiveis = todosHorarios.filter((k) => !bloqueados.has(k));
+        const elegiveis = todosHorarios.filter((k) => !isSlotBloqueado(k));
         const horariosSelecionados = elegiveis.filter((key) => disponibilidades[key]);
 
         return horariosSelecionados.length > 0 && horariosSelecionados.length < elegiveis.length;
@@ -438,13 +455,13 @@ const GerenciarDisponibilidadeBanca = () => {
                 const cellData = params.value;
                 if (!cellData) return null;
                 const key = `${cellData.data}-${cellData.hora}`;
-                const isBlocked = bloqueados.has(key);
+                const isBlocked = isSlotBloqueado(key);
 
                 if (isBlocked) {
                     return (
                         <Box sx={{ display: "flex", justifyContent: "center", opacity: 0.6 }}>
                             <Typography variant="caption" color="text.secondary">
-                                Banca de TCC
+                                {tipoBloqueio(key) === "indisp" ? "Horário Indisponível" : "Banca de TCC"}
                             </Typography>
                         </Box>
                     );
@@ -551,15 +568,15 @@ const GerenciarDisponibilidadeBanca = () => {
                     </Select>
                 </FormControl>
                 <FormControl sx={{ minWidth: 80 }} size="small">
-                    <InputLabel>TCC</InputLabel>
+                    <InputLabel>Fase</InputLabel>
                     <Select
                         value={fase}
-                        label="TCC"
+                        label="Fase"
                         onChange={handleFaseChange}
                     >
                         {[1, 2].map((f) => (
                             <MenuItem key={f} value={f}>
-                                {f}
+                                {f == 1 ? "Projeto" : "TCC"}
                             </MenuItem>
                         ))}
                     </Select>
@@ -592,12 +609,6 @@ const GerenciarDisponibilidadeBanca = () => {
                     getRowId={(row) => row.id}
                     getRowHeight={() => "auto"}
                     sx={{
-                        "& .MuiDataGrid-cell": {
-                            border: "1px solid #e0e0e0",
-                        },
-                        "& .MuiDataGrid-columnHeader": {
-                            border: "1px solid #e0e0e0",
-                        },
                         "& .header-padrao": {
                             backgroundColor: "info.light",
                             color: "primary.contrastText",
@@ -659,6 +670,22 @@ const GerenciarDisponibilidadeBanca = () => {
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
+                        },
+                        "& .MuiCheckbox-root": {
+                            "& .MuiSvgIcon-root": {
+                                fontSize: "1.2rem",
+                            },
+                        },
+                        "& .MuiCheckbox-root.Mui-checked": {
+                            "& .MuiSvgIcon-root": {
+                                fontSize: "1.2rem",
+                            },
+                        },
+                        "& .MuiDataGrid-cell": {
+                            border: "0.5px solid #f0f0f0",
+                        },
+                        "& .MuiDataGrid-columnHeader": {
+                            border: "0.5px solid #f0f0f0",
                         },
                     }}
                 />
