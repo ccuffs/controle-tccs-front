@@ -28,6 +28,8 @@ const GerenciarDisponibilidadeBanca = () => {
     const [fase, setFase] = useState(1);
     const [grade, setGrade] = useState(null);
     const [disponibilidades, setDisponibilidades] = useState({});
+    // Conjunto de slots ("YYYY-MM-DD-HH:mm:ss") bloqueados por já haver defesa agendada
+    const [bloqueados, setBloqueados] = useState(new Set());
     const [rows, setRows] = useState([]);
 
     function getAnoSemestreAtual() {
@@ -52,7 +54,7 @@ const GerenciarDisponibilidadeBanca = () => {
         }
     }, [cursoSelecionado, ano, semestre, fase]);
 
-    // Gerar linhas para o DataGrid quando a grade mudar
+    // Gerar linhas para o DataGrid quando a grade, disponibilidades ou bloqueios mudarem
     useEffect(() => {
         if (grade && grade.horarios && grade.datas) {
             const novasRows = grade.horarios.map((hora, index) => {
@@ -74,7 +76,7 @@ const GerenciarDisponibilidadeBanca = () => {
         } else {
             setRows([]);
         }
-    }, [grade, disponibilidades]);
+    }, [grade, disponibilidades, bloqueados]);
 
     async function getCursosOrientador() {
         try {
@@ -129,6 +131,79 @@ const GerenciarDisponibilidadeBanca = () => {
                         disponibilidadesMap[key] = disp.disponivel;
                     });
                     setDisponibilidades(disponibilidadesMap);
+
+                    // Buscar defesas do semestre e marcar slots bloqueados para este docente
+                    try {
+                        const respDefesas = await axiosInstance.get("/defesas", {
+                            params: { ano: oferta.ano, semestre: oferta.semestre },
+                        });
+                        const lista = respDefesas.defesas || respDefesas.data?.defesas || [];
+
+                        const toTwo = (n) => String(n).padStart(2, "0");
+                        const toDateKey = (iso) => {
+                            const dt = new Date(iso);
+                            const y = dt.getFullYear();
+                            const m = toTwo(dt.getMonth() + 1);
+                            const d = toTwo(dt.getDate());
+                            const hh = toTwo(dt.getHours());
+                            const mm = toTwo(dt.getMinutes());
+                            const ss = toTwo(dt.getSeconds());
+                            return {
+                                data: `${y}-${m}-${d}`,
+                                hora: `${hh}:${mm}:${ss}`,
+                            };
+                        };
+                        const addMinutesToTime = (timeStr, minutesToAdd) => {
+                            const [hh, mm, ss] = timeStr.split(":").map((v) => parseInt(v, 10));
+                            const base = new Date(2000, 0, 1, hh, mm, ss || 0);
+                            base.setMinutes(base.getMinutes() + minutesToAdd);
+                            const h2 = toTwo(base.getHours());
+                            const m2 = toTwo(base.getMinutes());
+                            const s2 = toTwo(base.getSeconds());
+                            return `${h2}:${m2}:${s2}`;
+                        };
+
+                        const novosBloqueados = new Set();
+                        lista.forEach((def) => {
+                            if (String(def.membro_banca) === String(codigoDocente) && def.data_defesa) {
+                                const { data, hora } = toDateKey(def.data_defesa);
+                                const keyAtual = `${data}-${hora}`;
+                                const keySeguinte = `${data}-${addMinutesToTime(hora, 30)}`;
+                                novosBloqueados.add(keyAtual);
+                                novosBloqueados.add(keySeguinte);
+                            }
+                        });
+                        setBloqueados(novosBloqueados);
+
+                        // Remover do banco quaisquer disponibilidades já salvas que coincidam com slots bloqueados (inclui o segundo horário)
+                        try {
+                            const existentesBloqueados = (response.grade.disponibilidades || []).filter(
+                                (d) => novosBloqueados.has(`${d.data_defesa}-${d.hora_defesa}`)
+                            );
+                            if (existentesBloqueados.length > 0) {
+                                await Promise.allSettled(
+                                    existentesBloqueados.map((d) =>
+                                        axiosInstance.delete(
+                                            `/disponibilidade-banca/${oferta.ano}/${oferta.semestre}/${oferta.id_curso}/${oferta.fase}/${codigoDocente}/${d.data_defesa}/${d.hora_defesa}`
+                                        )
+                                    )
+                                );
+                                // Reflete localmente como indisponível
+                                setDisponibilidades((prev) => {
+                                    const copia = { ...prev };
+                                    existentesBloqueados.forEach((d) => {
+                                        copia[`${d.data_defesa}-${d.hora_defesa}`] = false;
+                                    });
+                                    return copia;
+                                });
+                            }
+                        } catch (eDel) {
+                            // Ignora falhas de limpeza
+                        }
+                    } catch (e) {
+                        // Se falhar o carregamento das defesas, apenas não bloqueia
+                        setBloqueados(new Set());
+                    }
                 }
             } else {
                 setGrade(null);
@@ -140,6 +215,7 @@ const GerenciarDisponibilidadeBanca = () => {
             console.error("Erro ao buscar grade de disponibilidade:", error);
             setError("Erro ao carregar grade de disponibilidade");
             setGrade(null);
+            setBloqueados(new Set());
         } finally {
             setLoading(false);
         }
@@ -163,6 +239,9 @@ const GerenciarDisponibilidadeBanca = () => {
 
     const handleCheckboxChange = async (data, hora, checked) => {
         if (!cursoSelecionado) return;
+        // Impedir alteração em slots bloqueados por defesa
+        const keyBloq = `${data}-${hora}`;
+        if (bloqueados.has(keyBloq)) return;
 
         // Atualizar estado local imediatamente para feedback visual
         const key = `${data}-${hora}`;
@@ -180,19 +259,22 @@ const GerenciarDisponibilidadeBanca = () => {
 
         // Verificar se todos os horários da data estão selecionados
         const todosHorarios = grade.horarios.map((hora) => `${data}-${hora}`);
-        const horariosSelecionados = todosHorarios.filter(
-            (key) => disponibilidades[key]
-        );
+        const horariosSelecionados = todosHorarios
+            .filter((key) => !bloqueados.has(key))
+            .filter((key) => disponibilidades[key]);
 
         // Se todos estão selecionados, desselecionar todos; senão, selecionar todos
         const todosSelecionados =
-            horariosSelecionados.length === todosHorarios.length;
+            horariosSelecionados.length ===
+            todosHorarios.filter((k) => !bloqueados.has(k)).length;
         const novoValor = !todosSelecionados;
 
         // Atualizar todos os horários da data
         const novasDisponibilidades = { ...disponibilidades };
         todosHorarios.forEach((key) => {
-            novasDisponibilidades[key] = novoValor;
+            if (!bloqueados.has(key)) {
+                novasDisponibilidades[key] = novoValor;
+            }
         });
 
         setDisponibilidades(novasDisponibilidades);
@@ -232,7 +314,9 @@ const GerenciarDisponibilidadeBanca = () => {
                     grade.horarios.forEach((hora) => {
                         grade.datas.forEach((data) => {
                             const key = `${data}-${hora}`;
-                            const disponivel = disponibilidades[key] || false;
+                            const disponivel = bloqueados.has(key)
+                                ? false
+                                : Boolean(disponibilidades[key]);
 
                             disponibilidadesParaEnviar.push({
                                 ano: parseInt(ano),
@@ -279,6 +363,8 @@ const GerenciarDisponibilidadeBanca = () => {
 
     const isDisponivel = (data, hora) => {
         const key = `${data}-${hora}`;
+        // Se houver defesa agendada, o slot é tratado como indisponível
+        if (bloqueados.has(key)) return false;
         return disponibilidades[key] || false;
     };
 
@@ -286,25 +372,20 @@ const GerenciarDisponibilidadeBanca = () => {
         if (!grade || !grade.horarios) return false;
 
         const todosHorarios = grade.horarios.map((hora) => `${data}-${hora}`);
-        const horariosSelecionados = todosHorarios.filter(
-            (key) => disponibilidades[key]
-        );
+        const elegiveis = todosHorarios.filter((k) => !bloqueados.has(k));
+        const horariosSelecionados = elegiveis.filter((key) => disponibilidades[key]);
 
-        return horariosSelecionados.length === todosHorarios.length;
+        return horariosSelecionados.length === elegiveis.length && elegiveis.length > 0;
     };
 
     const isDataParcial = (data) => {
         if (!grade || !grade.horarios) return false;
 
         const todosHorarios = grade.horarios.map((hora) => `${data}-${hora}`);
-        const horariosSelecionados = todosHorarios.filter(
-            (key) => disponibilidades[key]
-        );
+        const elegiveis = todosHorarios.filter((k) => !bloqueados.has(k));
+        const horariosSelecionados = elegiveis.filter((key) => disponibilidades[key]);
 
-        return (
-            horariosSelecionados.length > 0 &&
-            horariosSelecionados.length < todosHorarios.length
-        );
+        return horariosSelecionados.length > 0 && horariosSelecionados.length < elegiveis.length;
     };
 
     // Gerar colunas dinamicamente baseadas nas datas da grade
@@ -356,6 +437,18 @@ const GerenciarDisponibilidadeBanca = () => {
             renderCell: (params) => {
                 const cellData = params.value;
                 if (!cellData) return null;
+                const key = `${cellData.data}-${cellData.hora}`;
+                const isBlocked = bloqueados.has(key);
+
+                if (isBlocked) {
+                    return (
+                        <Box sx={{ display: "flex", justifyContent: "center", opacity: 0.6 }}>
+                            <Typography variant="caption" color="text.secondary">
+                                Banca de TCC
+                            </Typography>
+                        </Box>
+                    );
+                }
 
                 return (
                     <Box sx={{ display: "flex", justifyContent: "center" }}>
