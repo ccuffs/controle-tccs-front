@@ -4,7 +4,6 @@ import CustomDataGrid from "./CustomDataGrid";
 
 export default function TemasDataGridDiscente({ temas }) {
 	// Preparar dados para o DataGrid sem agrupamento
-	console.log(temas);
 	const temasParaGrid = temas
 		.map((tema) => ({
 			...tema,
@@ -34,7 +33,6 @@ export default function TemasDataGridDiscente({ temas }) {
 	// Função para determinar se uma linha deve ter borda inferior
 	const getRowClassName = (params) => {
 		const currentDocente = params.row.docenteNome;
-		console.log(params);
 
 		// Encontrar o índice da linha atual no array temasParaGrid
 		const currentIndex = temasParaGrid.findIndex(
