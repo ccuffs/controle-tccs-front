@@ -3,52 +3,52 @@ import { Box } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 
 export default function CustomDataGrid({
-    rows,
-    columns,
-    pageSize = 10,
-    checkboxSelection = false,
-    disableSelectionOnClick = true,
-    rowSpanning = true,
-    getRowId = (row) => row.id,
-    getRowClassName,
-    getRowHeight = () => "auto",
-    columnVisibilityModel = {},
-    sx = {},
-    ...otherProps
+	rows,
+	columns,
+	pageSize = 10,
+	checkboxSelection = false,
+	disableSelectionOnClick = true,
+	rowSpanning = true,
+	getRowId = (row) => row.id,
+	getRowClassName,
+	getRowHeight = () => "auto",
+	columnVisibilityModel = {},
+	sx = {},
+	...otherProps
 }) {
-    const defaultSx = {
-        "& .MuiDataGrid-cell": {
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "flex-start",
-            padding: "8px",
-            minHeight: "auto",
-            height: "auto",
-        },
-        "& .MuiDataGrid-columnHeader": {
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "flex-start",
-        },
-        ...sx,
-    };
+	const defaultSx = {
+		"& .MuiDataGrid-cell": {
+			display: "flex",
+			alignItems: "center",
+			justifyContent: "flex-start",
+			padding: "8px",
+			minHeight: "auto",
+			height: "auto",
+		},
+		"& .MuiDataGrid-columnHeader": {
+			display: "flex",
+			alignItems: "center",
+			justifyContent: "flex-start",
+		},
+		...sx,
+	};
 
-    return (
-        <Box style={{ display: "flex", flexDirection: "column" }}>
-            <DataGrid
-                rows={rows}
-                columns={columns}
-                pageSize={pageSize}
-                checkboxSelection={checkboxSelection}
-                disableSelectionOnClick={disableSelectionOnClick}
-                rowSpanning={rowSpanning}
-                getRowId={getRowId}
-                getRowClassName={getRowClassName}
-                getRowHeight={getRowHeight}
-                columnVisibilityModel={columnVisibilityModel}
-                sx={defaultSx}
-                {...otherProps}
-            />
-        </Box>
-    );
+	return (
+		<Box style={{ display: "flex", flexDirection: "column" }}>
+			<DataGrid
+				rows={rows}
+				columns={columns}
+				pageSize={pageSize}
+				checkboxSelection={checkboxSelection}
+				disableSelectionOnClick={disableSelectionOnClick}
+				rowSpanning={rowSpanning}
+				getRowId={getRowId}
+				getRowClassName={getRowClassName}
+				getRowHeight={getRowHeight}
+				columnVisibilityModel={columnVisibilityModel}
+				sx={defaultSx}
+				{...otherProps}
+			/>
+		</Box>
+	);
 }

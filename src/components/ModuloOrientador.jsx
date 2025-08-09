@@ -4,80 +4,86 @@ import GerenciarTemasOrientador from "./GerenciarTemasOrientador";
 import ConvitesRecebidosOrientador from "./ConvitesRecebidosOrientador";
 import TrabalhosOrientador from "./TrabalhosOrientador";
 import GerenciarDisponibilidadeBanca from "./GerenciarDisponibilidadeBanca";
+import AvaliarDefesasOrientador from "./AvaliarDefesasOrientador";
 
 function TabPanel({ children, value, index, ...other }) {
-    return (
-        <div
-            role="tabpanel"
-            hidden={value !== index}
-            id={`orientador-tabpanel-${index}`}
-            aria-labelledby={`orientador-tab-${index}`}
-            {...other}
-        >
-            {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
-        </div>
-    );
+	return (
+		<div
+			role="tabpanel"
+			hidden={value !== index}
+			id={`orientador-tabpanel-${index}`}
+			aria-labelledby={`orientador-tab-${index}`}
+			{...other}
+		>
+			{value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+		</div>
+	);
 }
 
 function a11yProps(index) {
-    return {
-        id: `orientador-tab-${index}`,
-        "aria-controls": `orientador-tabpanel-${index}`,
-    };
+	return {
+		id: `orientador-tab-${index}`,
+		"aria-controls": `orientador-tabpanel-${index}`,
+	};
 }
 
 export default function ModuloOrientador() {
-    const [tabValue, setTabValue] = useState(0);
+	const [tabValue, setTabValue] = useState(0);
 
-    const handleTabChange = (event, newValue) => {
-        setTabValue(newValue);
-    };
+	const handleTabChange = (event, newValue) => {
+		setTabValue(newValue);
+	};
 
-    return (
-        <Box>
-            <Typography variant="h4" component="h1" gutterBottom>
-                Módulo do Orientador
-            </Typography>
+	return (
+		<Box>
+			<Typography variant="h4" component="h1" gutterBottom>
+				Módulo do Orientador
+			</Typography>
 
-            <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-                <Tabs
-                    value={tabValue}
-                    onChange={handleTabChange}
-                    aria-label="orientador tabs"
-                >
-                    <Tab label="Trabalhos Orientados" {...a11yProps(0)} />
-                    <Tab label="Gerenciar Temas TCC" {...a11yProps(1)} />
-                    <Tab label="Convites Recebidos" {...a11yProps(2)} />
-                    <Tab label="Disponibilidade Bancas" {...a11yProps(3)} />
-                    <Tab label="Outras Funcionalidades" {...a11yProps(4)} />
-                </Tabs>
-            </Box>
+			<Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+				<Tabs
+					value={tabValue}
+					onChange={handleTabChange}
+					aria-label="orientador tabs"
+				>
+					<Tab label="Trabalhos Orientados" {...a11yProps(0)} />
+					<Tab label="Gerenciar Temas TCC" {...a11yProps(1)} />
+					<Tab label="Convites Recebidos" {...a11yProps(2)} />
+					<Tab label="Disponibilidade Bancas" {...a11yProps(3)} />
+					<Tab label="Avaliar Defesas" {...a11yProps(4)} />
+					<Tab label="Outras Funcionalidades" {...a11yProps(5)} />
+				</Tabs>
+			</Box>
 
-            <TabPanel value={tabValue} index={0}>
-                <TrabalhosOrientador />
-            </TabPanel>
+			<TabPanel value={tabValue} index={0}>
+				<TrabalhosOrientador />
+			</TabPanel>
 
-            <TabPanel value={tabValue} index={1}>
-                <GerenciarTemasOrientador />
-            </TabPanel>
+			<TabPanel value={tabValue} index={1}>
+				<GerenciarTemasOrientador />
+			</TabPanel>
 
-            <TabPanel value={tabValue} index={2}>
-                <ConvitesRecebidosOrientador />
-            </TabPanel>
+			<TabPanel value={tabValue} index={2}>
+				<ConvitesRecebidosOrientador />
+			</TabPanel>
 
-            <TabPanel value={tabValue} index={3}>
-                <GerenciarDisponibilidadeBanca />
-            </TabPanel>
+			<TabPanel value={tabValue} index={3}>
+				<GerenciarDisponibilidadeBanca />
+			</TabPanel>
 
-            <TabPanel value={tabValue} index={4}>
-                <Typography variant="h6" component="h2">
-                    Outras Funcionalidades do Orientador
-                </Typography>
-                <Typography variant="body1" color="text.secondary">
-                    Aqui serão adicionadas outras funcionalidades específicas
-                    para orientadores.
-                </Typography>
-            </TabPanel>
-        </Box>
-    );
+			<TabPanel value={tabValue} index={4}>
+				<AvaliarDefesasOrientador />
+			</TabPanel>
+
+			<TabPanel value={tabValue} index={5}>
+				<Typography variant="h6" component="h2">
+					Outras Funcionalidades do Orientador
+				</Typography>
+				<Typography variant="body1" color="text.secondary">
+					Aqui serão adicionadas outras funcionalidades específicas
+					para orientadores.
+				</Typography>
+			</TabPanel>
+		</Box>
+	);
 }
