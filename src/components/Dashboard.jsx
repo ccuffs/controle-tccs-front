@@ -5,9 +5,14 @@ import {
 	CardContent,
 	Grid,
 	MenuItem,
-	TextField,
 	Typography,
+	Stack,
+	FormControl,
+	InputLabel,
+	Select,
 } from "@mui/material";
+import MuiTooltip from "@mui/material/Tooltip";
+import CustomDataGrid from "./CustomDataGrid";
 import { useTheme } from "@mui/material/styles";
 import {
 	ResponsiveContainer,
@@ -58,6 +63,7 @@ export default function Dashboard() {
 	const [dadosConvites, setDadosConvites] = useState([]);
 	const [dadosDocentes, setDadosDocentes] = useState([]);
 	const [dadosDefesasDocentes, setDadosDefesasDocentes] = useState([]);
+	const [defesasAgendadas, setDefesasAgendadas] = useState([]);
 
 	const alturaDocentes = useMemo(() => {
 		const n = Array.isArray(dadosDocentes) ? dadosDocentes.length : 0;
@@ -156,6 +162,13 @@ export default function Dashboard() {
 				}));
 				setDadosEtapas(lista);
 
+				// Buscar defesas agendadas (tabela)
+				const defesas = await axios.get(
+					`/dashboard/defesas-agendadas?${params.toString()}`,
+				);
+				if (!ativo) return;
+				setDefesasAgendadas(defesas.itens || []);
+
 				// Buscar série temporal de convites por período (linha)
 				const convites = await axios.get(
 					`/dashboard/convites-por-periodo?${params.toString()}`,
@@ -246,10 +259,11 @@ export default function Dashboard() {
 		[anosSemestres, filtroAno],
 	);
 
-	const faseLabel = useMemo(
-		() => (String(filtroFase) === "1" ? "Projeto" : "TCC"),
-		[filtroFase],
-	);
+	const faseLabel = useMemo(() => {
+		const v = String(filtroFase || "");
+		if (!v) return "Todas";
+		return v === "1" ? "Projeto" : "TCC";
+	}, [filtroFase]);
 
 	// Ticks do eixo X: 2 por mês (dias 1 e 15) dentro do intervalo de dados
 	const ticksConvites = useMemo(() => {
@@ -293,82 +307,106 @@ export default function Dashboard() {
 			</Typography>
 
 			{/* Filtros globais */}
-			<Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 2 }}>
-				<TextField
-					select
-					label="Ano"
-					size="small"
-					value={filtroAno}
-					onChange={(e) => setFiltroAno(e.target.value)}
-					disabled={loadingFiltros}
-					sx={{ minWidth: 140 }}
-				>
-					{anosUnicos.map((ano) => (
-						<MenuItem key={ano} value={String(ano)}>
-							{ano}
-						</MenuItem>
-					))}
-				</TextField>
+			<Stack spacing={2} sx={{ width: 1450 }}>
+				<Stack direction="row" spacing={2} alignItems="center">
+					{(isAdmin ||
+						(isProfessor && cursosUsuario?.length > 0)) && (
+						<FormControl
+							fullWidth
+							size="small"
+							disabled={loadingFiltros}
+						>
+							<InputLabel>Curso</InputLabel>
+							<Select
+								value={filtroCurso}
+								label="Curso"
+								onChange={(e) => setFiltroCurso(e.target.value)}
+							>
+								{isAdmin && (
+									<MenuItem value="">
+										<em>Todos os cursos</em>
+									</MenuItem>
+								)}
+								{(isAdmin ? todosCursos : cursosUsuario).map(
+									(c) => (
+										<MenuItem
+											key={c.id}
+											value={String(c.id)}
+										>
+											{c.nome}
+										</MenuItem>
+									),
+								)}
+							</Select>
+						</FormControl>
+					)}
 
-				<TextField
-					select
-					label="Semestre"
-					size="small"
-					value={filtroSemestre}
-					onChange={(e) => setFiltroSemestre(e.target.value)}
-					disabled={loadingFiltros}
-					sx={{ minWidth: 160 }}
-				>
-					{semestresDisponiveis.map((s) => (
-						<MenuItem key={s} value={String(s)}>
-							{s}
-						</MenuItem>
-					))}
-				</TextField>
-
-				{(isAdmin || isProfessor) && (
-					<TextField
-						select
-						label="Fase"
+					<FormControl
+						sx={{ minWidth: 100 }}
 						size="small"
-						value={filtroFase}
-						onChange={(e) => setFiltroFase(e.target.value)}
 						disabled={loadingFiltros}
-						sx={{ minWidth: 160 }}
 					>
-						<MenuItem value="">Todas</MenuItem>
-						<MenuItem value="1">Projeto</MenuItem>
-						<MenuItem value="2">TCC</MenuItem>
-					</TextField>
-				)}
-
-				{/* Filtro de curso: obrigatório mostrar para ADMIN; opcional para PROFESSOR se houver múltiplos cursos */}
-				{(isAdmin || (isProfessor && cursosUsuario?.length > 0)) && (
-					<TextField
-						select
-						label={"Curso"}
-						size="small"
-						value={filtroCurso}
-						onChange={(e) => setFiltroCurso(e.target.value)}
-						disabled={loadingFiltros}
-						sx={{ minWidth: 260 }}
-					>
-						{isAdmin && <MenuItem value="">Todos</MenuItem>}
-						{(isAdmin ? todosCursos : cursosUsuario).length > 0 &&
-							(isAdmin ? todosCursos : cursosUsuario).map((c) => (
-								<MenuItem key={c.id} value={String(c.id)}>
-									{c.nome}
+						<InputLabel>Ano</InputLabel>
+						<Select
+							value={filtroAno}
+							label="Ano"
+							onChange={(e) => setFiltroAno(e.target.value)}
+						>
+							{anosUnicos.map((ano) => (
+								<MenuItem key={ano} value={String(ano)}>
+									{ano}
 								</MenuItem>
 							))}
-					</TextField>
-				)}
-			</Box>
+						</Select>
+					</FormControl>
+
+					<FormControl
+						sx={{ minWidth: 100 }}
+						size="small"
+						disabled={loadingFiltros}
+					>
+						<InputLabel>Semestre</InputLabel>
+						<Select
+							value={filtroSemestre}
+							label="Semestre"
+							onChange={(e) => setFiltroSemestre(e.target.value)}
+						>
+							{semestresDisponiveis.map((s) => (
+								<MenuItem key={s} value={String(s)}>
+									{s}
+								</MenuItem>
+							))}
+						</Select>
+					</FormControl>
+
+					{(isAdmin || isProfessor) && (
+						<FormControl
+							sx={{ minWidth: 100 }}
+							size="small"
+							disabled={loadingFiltros}
+						>
+							<InputLabel>Fase</InputLabel>
+							<Select
+								value={filtroFase}
+								label="Fase"
+								onChange={(e) => setFiltroFase(e.target.value)}
+							>
+								<MenuItem value="">
+									<em>Todas</em>
+								</MenuItem>
+								<MenuItem value="1">Projeto</MenuItem>
+								<MenuItem value="2">TCC</MenuItem>
+							</Select>
+						</FormControl>
+					)}
+				</Stack>
+			</Stack>
 
 			<Grid container spacing={2}>
 				{/* Gráfico 1: Estudantes com orientador definido na oferta e Donut por etapa, lado a lado */}
 				{(isAdmin || isProfessor) && (
 					<>
-						<Grid item xs={12} md={6} lg={6}>
+						<Grid item xs={12} md={4} lg={4}>
 							<Card
 								sx={{
 									backgroundColor:
@@ -376,7 +414,7 @@ export default function Dashboard() {
 									height: "100%",
 									display: "flex",
 									flexDirection: "column",
-									width: { xs: "100%", md: 520 },
+									width: { xs: "100%", md: 420 },
 								}}
 							>
 								<CardContent
@@ -500,7 +538,7 @@ export default function Dashboard() {
 							</Card>
 						</Grid>
 						{/* Donut por etapa ao lado */}
-						<Grid item xs={12} md={6} lg={6}>
+						<Grid item xs={12} md={4} lg={4}>
 							<Card
 								sx={{
 									backgroundColor:
@@ -508,7 +546,7 @@ export default function Dashboard() {
 									height: "100%",
 									display: "flex",
 									flexDirection: "column",
-									width: { xs: "100%", md: 520 },
+									width: { xs: "100%", md: 420 },
 								}}
 							>
 								<CardContent
@@ -612,14 +650,329 @@ export default function Dashboard() {
 								</CardContent>
 							</Card>
 						</Grid>
+						{/* Tabela de Defesas agendadas ao lado */}
+						<Grid item xs={12} md={4} lg={4}>
+							<Card
+								sx={{
+									backgroundColor:
+										theme.palette.background.default,
+									height: "100%",
+									display: "flex",
+									flexDirection: "column",
+									width: { xs: "100%", md: 580 },
+								}}
+							>
+								<CardContent
+									sx={{
+										display: "flex",
+										flexDirection: "column",
+										flexGrow: 1,
+									}}
+								>
+									<Typography
+										variant="subtitle1"
+										gutterBottom
+									>
+										Defesas agendadas
+									</Typography>
+
+									{(defesasAgendadas || []).length === 0 ? (
+										<Typography
+											variant="body2"
+											color="text.secondary"
+											sx={{ mt: 1 }}
+										>
+											Sem defesas agendadas
+										</Typography>
+									) : (
+										<Box sx={{ mt: 1, flexGrow: 1 }}>
+											<CustomDataGrid
+												rows={defesasAgendadas}
+												columns={[
+													{
+														field: "data",
+														headerName: "Data",
+														width: 110,
+														renderCell: (
+															params,
+														) => {
+															const [y, m, d] =
+																String(
+																	params.value ||
+																		"",
+																).split("-");
+															const title = (
+																<Box>
+																	<Typography variant="subtitle2">
+																		{params
+																			.row
+																			?.titulo ||
+																			"Sem título"}
+																	</Typography>
+																	<Typography variant="body2">
+																		Orientador:{" "}
+																		{params
+																			.row
+																			?.orientador ||
+																			"-"}
+																	</Typography>
+																	<Typography variant="body2">
+																		Banca:{" "}
+																		{(
+																			params
+																				.row
+																				?.banca ||
+																			[]
+																		).join(
+																			", ",
+																		) ||
+																			"-"}
+																	</Typography>
+																</Box>
+															);
+															return (
+																<MuiTooltip
+																	title={
+																		title
+																	}
+																	arrow
+																	placement="top-start"
+																>
+																	<div
+																		style={{
+																			display:
+																				"flex",
+																			alignItems:
+																				"center",
+																			whiteSpace:
+																				"nowrap",
+																		}}
+																	>
+																		{params.value
+																			? `${d}/${m}/${y}`
+																			: ""}
+																	</div>
+																</MuiTooltip>
+															);
+														},
+													},
+													{
+														field: "hora",
+														headerName: "Hora",
+														width: 90,
+														renderCell: (
+															params,
+														) => {
+															const title = (
+																<Box>
+																	<Typography variant="subtitle2">
+																		{params
+																			.row
+																			?.titulo ||
+																			"Sem título"}
+																	</Typography>
+																	<Typography variant="body2">
+																		Orientador:{" "}
+																		{params
+																			.row
+																			?.orientador ||
+																			"-"}
+																	</Typography>
+																	<Typography variant="body2">
+																		Banca:{" "}
+																		{(
+																			params
+																				.row
+																				?.banca ||
+																			[]
+																		).join(
+																			", ",
+																		) ||
+																			"-"}
+																	</Typography>
+																</Box>
+															);
+															return (
+																<MuiTooltip
+																	title={
+																		title
+																	}
+																	arrow
+																	placement="top-start"
+																>
+																	<div
+																		style={{
+																			display:
+																				"flex",
+																			alignItems:
+																				"center",
+																		}}
+																	>
+																		{params.value ||
+																			""}
+																	</div>
+																</MuiTooltip>
+															);
+														},
+													},
+													{
+														field: "fase_label",
+														headerName: "Fase",
+														width: 120,
+														renderCell: (
+															params,
+														) => {
+															const title = (
+																<Box>
+																	<Typography variant="subtitle2">
+																		{params
+																			.row
+																			?.titulo ||
+																			"Sem título"}
+																	</Typography>
+																	<Typography variant="body2">
+																		Orientador:{" "}
+																		{params
+																			.row
+																			?.orientador ||
+																			"-"}
+																	</Typography>
+																	<Typography variant="body2">
+																		Banca:{" "}
+																		{(
+																			params
+																				.row
+																				?.banca ||
+																			[]
+																		).join(
+																			", ",
+																		) ||
+																			"-"}
+																	</Typography>
+																</Box>
+															);
+															return (
+																<MuiTooltip
+																	title={
+																		title
+																	}
+																	arrow
+																	placement="top-start"
+																>
+																	<div
+																		style={{
+																			display:
+																				"flex",
+																			alignItems:
+																				"center",
+																		}}
+																	>
+																		{params.value ||
+																			(params
+																				.row
+																				?.fase ===
+																			1
+																				? "Projeto"
+																				: "TCC")}
+																	</div>
+																</MuiTooltip>
+															);
+														},
+													},
+													{
+														field: "estudante",
+														headerName: "Estudante",
+														width: 220,
+														renderCell: (
+															params,
+														) => {
+															const title = (
+																<Box>
+																	<Typography variant="subtitle2">
+																		{params
+																			.row
+																			?.titulo ||
+																			"Sem título"}
+																	</Typography>
+																	<Typography variant="body2">
+																		Orientador:{" "}
+																		{params
+																			.row
+																			?.orientador ||
+																			"-"}
+																	</Typography>
+																	<Typography variant="body2">
+																		Banca:{" "}
+																		{(
+																			params
+																				.row
+																				?.banca ||
+																			[]
+																		).join(
+																			", ",
+																		) ||
+																			"-"}
+																	</Typography>
+																</Box>
+															);
+															return (
+																<MuiTooltip
+																	title={
+																		title
+																	}
+																	arrow
+																	placement="top-start"
+																>
+																	<div
+																		style={{
+																			display:
+																				"flex",
+																			alignItems:
+																				"center",
+																			whiteSpace:
+																				"normal",
+																			wordWrap:
+																				"break-word",
+																			lineHeight: 1.2,
+																			width: "100%",
+																			padding:
+																				"4px 0",
+																		}}
+																	>
+																		{
+																			params.value
+																		}
+																	</div>
+																</MuiTooltip>
+															);
+														},
+													},
+												]}
+												pageSize={5}
+												autoHeight
+												checkboxSelection={false}
+												disableSelectionOnClick
+												rowSpanning={false}
+												getRowId={(row) =>
+													`${row.data}-${row.hora}-${row.estudante}`
+												}
+												getRowHeight={() => "auto"}
+												columnVisibilityModel={{}}
+											/>
+										</Box>
+									)}
+								</CardContent>
+							</Card>
+						</Grid>
 					</>
 				)}
 			</Grid>
 
-			{/* Gráfico 2: Barras horizontais - Orientandos por docente */}
+			{/* Gráficos 2 e 3: Orientandos por docente e Defesas aceitas por docente lado a lado */}
 			{(isAdmin || isProfessor) && (
 				<Grid container spacing={2} sx={{ mt: 0 }}>
-					<Grid item xs={12}>
+					{/* Gráfico 2: Barras horizontais - Orientandos por docente */}
+					<Grid item xs={12} md={6} lg={6}>
 						<Card
 							sx={{
 								backgroundColor:
@@ -627,14 +980,14 @@ export default function Dashboard() {
 								height: "100%",
 								display: "flex",
 								flexDirection: "column",
-								width: { xs: "100%", md: 520 * 2 + 15 },
+								width: { xs: "100%", md: 720 },
 							}}
 						>
 							<CardContent>
 								<Typography variant="subtitle1" gutterBottom>
 									Orientandos por docente ({faseLabel})
 								</Typography>
-								<Box sx={{ minHeight: 320 }}>
+								<Box sx={{ minHeight: 400 }}>
 									<ResponsiveContainer
 										width="100%"
 										height={alturaDocentes}
@@ -651,8 +1004,13 @@ export default function Dashboard() {
 													),
 											)}
 											layout="vertical"
-											margin={{ top: 8, right: 16, left: 4, bottom: 8 }}
-											barCategoryGap="8%"
+											margin={{
+												top: 8,
+												right: 8,
+												left: 2,
+												bottom: 8,
+											}}
+											barCategoryGap="12%"
 											barGap={-2}
 										>
 											<CartesianGrid
@@ -665,6 +1023,7 @@ export default function Dashboard() {
 												tick={{
 													fill: theme.palette.text
 														.secondary,
+													fontSize: 11,
 												}}
 												axisLine={{
 													stroke: theme.palette
@@ -675,13 +1034,14 @@ export default function Dashboard() {
 														.divider,
 												}}
 											/>
-										<YAxis
+											<YAxis
 												type="category"
 												dataKey="docente"
-											width={320}
+												width={160}
 												tick={{
 													fill: theme.palette.text
 														.secondary,
+													fontSize: 11,
 												}}
 												axisLine={{
 													stroke: theme.palette
@@ -726,72 +1086,116 @@ export default function Dashboard() {
 							</CardContent>
 						</Card>
 					</Grid>
-				</Grid>
-			)}
 
-			{/* Gráfico 3: Barras horizontais - Defesas aceitas por docente */}
-			{(isAdmin || isProfessor) && (
-				<Grid container spacing={2} sx={{ mt: 0 }}>
-					<Grid item xs={12}>
+					{/* Gráfico 3: Barras horizontais - Defesas aceitas por docente */}
+					<Grid item xs={12} md={6} lg={6}>
 						<Card
 							sx={{
-								backgroundColor: theme.palette.background.default,
+								backgroundColor:
+									theme.palette.background.default,
 								height: "100%",
 								display: "flex",
 								flexDirection: "column",
-								width: { xs: "100%", md: 520 * 2 + 15 },
+								width: { xs: "100%", md: 720 },
 							}}
 						>
 							<CardContent>
 								<Typography variant="subtitle1" gutterBottom>
 									Defesas aceitas por docente ({faseLabel})
 								</Typography>
-								<Box sx={{ minHeight: 320 }}>
+								<Box sx={{ minHeight: 400 }}>
 									<ResponsiveContainer
 										width="100%"
 										height={alturaDefesas}
 									>
 										<BarChart
-											data={[...dadosDefesasDocentes].sort((a, b) =>
-												String(a.docente).localeCompare(String(b.docente), "pt", {
-													sensitivity: "base",
-												}),
+											data={[
+												...dadosDefesasDocentes,
+											].sort((a, b) =>
+												String(a.docente).localeCompare(
+													String(b.docente),
+													"pt",
+													{
+														sensitivity: "base",
+													},
+												),
 											)}
 											layout="vertical"
-											margin={{ top: 8, right: 16, left: 4, bottom: 8 }}
-											barCategoryGap="8%"
+											margin={{
+												top: 8,
+												right: 8,
+												left: 2,
+												bottom: 8,
+											}}
+											barCategoryGap="12%"
 											barGap={-2}
 										>
-											<CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+											<CartesianGrid
+												strokeDasharray="3 3"
+												stroke={theme.palette.divider}
+											/>
 											<XAxis
 												type="number"
 												allowDecimals={false}
-												tick={{ fill: theme.palette.text.secondary }}
-												axisLine={{ stroke: theme.palette.divider }}
-												tickLine={{ stroke: theme.palette.divider }}
+												tick={{
+													fill: theme.palette.text
+														.secondary,
+													fontSize: 11,
+												}}
+												axisLine={{
+													stroke: theme.palette
+														.divider,
+												}}
+												tickLine={{
+													stroke: theme.palette
+														.divider,
+												}}
 											/>
 											<YAxis
 												type="category"
 												dataKey="docente"
-												width={320}
-												tick={{ fill: theme.palette.text.secondary }}
-												axisLine={{ stroke: theme.palette.divider }}
-												tickLine={{ stroke: theme.palette.divider }}
+												width={160}
+												tick={{
+													fill: theme.palette.text
+														.secondary,
+													fontSize: 11,
+												}}
+												axisLine={{
+													stroke: theme.palette
+														.divider,
+												}}
+												tickLine={{
+													stroke: theme.palette
+														.divider,
+												}}
 											/>
 											<Tooltip
-												wrapperStyle={{ outline: "none" }}
-												contentStyle={{
-													backgroundColor: theme.palette.background.paper,
-													border: `1px solid ${theme.palette.divider}`,
-													color: theme.palette.text.primary,
+												wrapperStyle={{
+													outline: "none",
 												}}
-												labelStyle={{ color: theme.palette.text.secondary }}
-												itemStyle={{ color: theme.palette.text.primary }}
+												contentStyle={{
+													backgroundColor:
+														theme.palette.background
+															.paper,
+													border: `1px solid ${theme.palette.divider}`,
+													color: theme.palette.text
+														.primary,
+												}}
+												labelStyle={{
+													color: theme.palette.text
+														.secondary,
+												}}
+												itemStyle={{
+													color: theme.palette.text
+														.primary,
+												}}
 											/>
 											<Bar
 												dataKey="quantidade"
 												radius={[0, 4, 4, 0]}
-												fill={theme.palette.secondary.main}
+												fill={
+													theme.palette.secondary.main
+												}
 											/>
 										</BarChart>
 									</ResponsiveContainer>
@@ -806,7 +1210,6 @@ export default function Dashboard() {
 			{(isAdmin || isProfessor) && (
 				<Grid container spacing={2} sx={{ mt: 0 }}>
 					<Grid item xs={12}>
-						{/* <Card sx={{ backgroundColor: theme.palette.background.default }}> */}
 						<Card
 							sx={{
 								backgroundColor:
@@ -814,7 +1217,7 @@ export default function Dashboard() {
 								height: "100%",
 								display: "flex",
 								flexDirection: "column",
-								width: { xs: "100%", md: 520 * 2 + 15 },
+								width: { xs: "100%", md: 720 },
 							}}
 						>
 							<CardContent>
@@ -845,6 +1248,7 @@ export default function Dashboard() {
 												tick={{
 													fill: theme.palette.text
 														.secondary,
+													fontSize: 11,
 												}}
 												axisLine={{
 													stroke: theme.palette
@@ -867,6 +1271,7 @@ export default function Dashboard() {
 												tick={{
 													fill: theme.palette.text
 														.secondary,
+													fontSize: 11,
 												}}
 												axisLine={{
 													stroke: theme.palette
