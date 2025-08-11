@@ -61,7 +61,17 @@ export default function Dashboard() {
 	const [loadingGrafico, setLoadingGrafico] = useState(false);
 	const [dadosEtapas, setDadosEtapas] = useState([]);
 	const [dadosConvites, setDadosConvites] = useState([]);
+	const [convitesOrientacaoStatus, setConvitesOrientacaoStatus] = useState({
+		respondidos: 0,
+		pendentes: 0,
+		total: 0,
+	});
 	const [dadosDocentes, setDadosDocentes] = useState([]);
+	const [convitesBancaStatus, setConvitesBancaStatus] = useState({
+		respondidos: 0,
+		pendentes: 0,
+		total: 0,
+	});
 	const [dadosDefesasDocentes, setDadosDefesasDocentes] = useState([]);
 	const [defesasAgendadas, setDefesasAgendadas] = useState([]);
 
@@ -176,6 +186,28 @@ export default function Dashboard() {
 				if (!ativo) return;
 				setDadosConvites(convites.pontos || []);
 
+				// Buscar status de convites de orientação (donut)
+				const convitesStatus = await axios.get(
+					`/dashboard/convites-orientacao-status?${params.toString()}`,
+				);
+				if (!ativo) return;
+				setConvitesOrientacaoStatus({
+					respondidos: convitesStatus.respondidos || 0,
+					pendentes: convitesStatus.pendentes || 0,
+					total: convitesStatus.total || 0,
+				});
+
+				// Buscar status de convites de banca (donut)
+				const convitesBanca = await axios.get(
+					`/dashboard/convites-banca-status?${params.toString()}`,
+				);
+				if (!ativo) return;
+				setConvitesBancaStatus({
+					respondidos: convitesBanca.respondidos || 0,
+					pendentes: convitesBanca.pendentes || 0,
+					total: convitesBanca.total || 0,
+				});
+
 				// Buscar orientandos por docente (barras horizontais)
 				// Mostrar TODOS os docentes: não enviar id_curso neste endpoint
 				const paramsDocentes = new URLSearchParams();
@@ -261,8 +293,8 @@ export default function Dashboard() {
 
 	const faseLabel = useMemo(() => {
 		const v = String(filtroFase || "");
-		if (!v) return "Todas";
-		return v === "1" ? "Projeto" : "TCC";
+		if (!v) return "";
+		return v === "1" ? "(Projeto)" : "(TCC)";
 	}, [filtroFase]);
 
 	// Ticks do eixo X: 2 por mês (dias 1 e 15) dentro do intervalo de dados
@@ -299,6 +331,23 @@ export default function Dashboard() {
 		}
 		return ticks;
 	}, [dadosConvites]);
+
+	const dadosConvitesDonut = useMemo(() => {
+		return [
+			{
+				name: "Respondidos",
+				value: convitesOrientacaoStatus.respondidos,
+			},
+			{ name: "Pendentes", value: convitesOrientacaoStatus.pendentes },
+		];
+	}, [convitesOrientacaoStatus]);
+
+	const dadosConvitesBancaDonut = useMemo(() => {
+		return [
+			{ name: "Respondidos", value: convitesBancaStatus.respondidos },
+			{ name: "Pendentes", value: convitesBancaStatus.pendentes },
+		];
+	}, [convitesBancaStatus]);
 
 	return (
 		<Box>
@@ -428,8 +477,8 @@ export default function Dashboard() {
 										variant="subtitle1"
 										gutterBottom
 									>
-										Estudantes com orientador definido (
-										{faseLabel})
+										Estudantes com orientador definido
+										{faseLabel}
 									</Typography>
 									<Box sx={{ minHeight: 260, flexGrow: 1 }}>
 										<ResponsiveContainer
@@ -560,7 +609,7 @@ export default function Dashboard() {
 										variant="subtitle1"
 										gutterBottom
 									>
-										Distribuição por etapa ({faseLabel})
+										Distribuição por etapa {faseLabel}
 									</Typography>
 									<Box sx={{ minHeight: 260, flexGrow: 1 }}>
 										<ResponsiveContainer
@@ -985,7 +1034,7 @@ export default function Dashboard() {
 						>
 							<CardContent>
 								<Typography variant="subtitle1" gutterBottom>
-									Orientandos por docente ({faseLabel})
+									Orientandos por docente {faseLabel}
 								</Typography>
 								<Box sx={{ minHeight: 400 }}>
 									<ResponsiveContainer
@@ -1101,7 +1150,7 @@ export default function Dashboard() {
 						>
 							<CardContent>
 								<Typography variant="subtitle1" gutterBottom>
-									Defesas aceitas por docente ({faseLabel})
+									Bancas aceitas por docente {faseLabel}
 								</Typography>
 								<Box sx={{ minHeight: 400 }}>
 									<ResponsiveContainer
@@ -1209,7 +1258,7 @@ export default function Dashboard() {
 			{/* Gráfico 4: Linha - Convites enviados no período (por tipo) */}
 			{(isAdmin || isProfessor) && (
 				<Grid container spacing={2} sx={{ mt: 0 }}>
-					<Grid item xs={12}>
+					<Grid item xs={12} md={8}>
 						<Card
 							sx={{
 								backgroundColor:
@@ -1217,12 +1266,12 @@ export default function Dashboard() {
 								height: "100%",
 								display: "flex",
 								flexDirection: "column",
-								width: { xs: "100%", md: 720 },
+								width: { xs: "100%", md: 580 },
 							}}
 						>
 							<CardContent>
 								<Typography variant="subtitle1" gutterBottom>
-									Convites enviados no período ({faseLabel})
+									Convites enviados no período {faseLabel}
 								</Typography>
 								<Box sx={{ minHeight: 300 }}>
 									<ResponsiveContainer
@@ -1340,6 +1389,182 @@ export default function Dashboard() {
 										</LineChart>
 									</ResponsiveContainer>
 								</Box>
+							</CardContent>
+						</Card>
+					</Grid>
+					{/* Donut: Convites de orientação (respondidos x pendentes) ao lado */}
+					<Grid item xs={12} md={4} lg={4}>
+						<Card
+							sx={{
+								backgroundColor:
+									theme.palette.background.default,
+								height: "100%",
+								display: "flex",
+								flexDirection: "column",
+								width: { xs: "100%", md: 420 },
+							}}
+						>
+							<CardContent>
+								<Typography variant="subtitle1" gutterBottom>
+									Convites para orientação {faseLabel}
+								</Typography>
+								<Box sx={{ minHeight: 260 }}>
+									<ResponsiveContainer
+										width="100%"
+										height={260}
+									>
+										<PieChart>
+											<Tooltip
+												wrapperStyle={{
+													outline: "none",
+												}}
+												contentStyle={{
+													backgroundColor:
+														theme.palette.background
+															.paper,
+													border: `1px solid ${theme.palette.divider}`,
+													color: theme.palette.text
+														.primary,
+												}}
+												labelStyle={{
+													color: theme.palette.text
+														.secondary,
+												}}
+												itemStyle={{
+													color: theme.palette.text
+														.primary,
+												}}
+											/>
+											<Legend
+												verticalAlign="bottom"
+												height={24}
+											/>
+											<Pie
+												data={dadosConvitesDonut}
+												dataKey="value"
+												nameKey="name"
+												cx="50%"
+												cy="45%"
+												innerRadius={50}
+												outerRadius={80}
+												paddingAngle={2}
+											>
+												{dadosConvitesDonut.map(
+													(entry, index) => (
+														<Cell
+															key={`slice-status-${index}`}
+															fill={
+																index === 0
+																	? theme
+																			.palette
+																			.primary
+																			.main
+																	: theme
+																			.palette
+																			.warning
+																			.main
+															}
+														/>
+													),
+												)}
+											</Pie>
+										</PieChart>
+									</ResponsiveContainer>
+								</Box>
+								<Typography
+									variant="caption"
+									color="text.secondary"
+								>
+									Total: {convitesOrientacaoStatus.total}
+								</Typography>
+							</CardContent>
+						</Card>
+					</Grid>
+					{/* Donut: Convites de banca (respondidos x pendentes) */}
+					<Grid item xs={12} md={4} lg={4}>
+						<Card
+							sx={{
+								backgroundColor:
+									theme.palette.background.default,
+								height: "100%",
+								display: "flex",
+								flexDirection: "column",
+								width: { xs: "100%", md: 420 },
+							}}
+						>
+							<CardContent>
+								<Typography variant="subtitle1" gutterBottom>
+									Convites de banca {faseLabel}
+								</Typography>
+								<Box sx={{ minHeight: 260 }}>
+									<ResponsiveContainer
+										width="100%"
+										height={260}
+									>
+										<PieChart>
+											<Tooltip
+												wrapperStyle={{
+													outline: "none",
+												}}
+												contentStyle={{
+													backgroundColor:
+														theme.palette.background
+															.paper,
+													border: `1px solid ${theme.palette.divider}`,
+													color: theme.palette.text
+														.primary,
+												}}
+												labelStyle={{
+													color: theme.palette.text
+														.secondary,
+												}}
+												itemStyle={{
+													color: theme.palette.text
+														.primary,
+												}}
+											/>
+											<Legend
+												verticalAlign="bottom"
+												height={24}
+											/>
+											<Pie
+												data={dadosConvitesBancaDonut}
+												dataKey="value"
+												nameKey="name"
+												cx="50%"
+												cy="45%"
+												innerRadius={50}
+												outerRadius={80}
+												paddingAngle={2}
+											>
+												{dadosConvitesBancaDonut.map(
+													(entry, index) => (
+														<Cell
+															key={`slice-banca-status-${index}`}
+															fill={
+																index === 0
+																	? theme
+																			.palette
+																			.primary
+																			.main
+																	: theme
+																			.palette
+																			.warning
+																			.main
+															}
+														/>
+													),
+												)}
+											</Pie>
+										</PieChart>
+									</ResponsiveContainer>
+								</Box>
+								<Typography
+									variant="caption"
+									color="text.secondary"
+								>
+									Total: {convitesBancaStatus.total}
+								</Typography>
 							</CardContent>
 						</Card>
 					</Grid>
