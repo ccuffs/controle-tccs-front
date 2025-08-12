@@ -372,13 +372,13 @@ export default function Orientacao() {
 	];
 
 	return (
-		<Box>
-			<Stack spacing={2}>
+		<Box sx={{ width: 1400 }}>
+			<Stack spacing={2} sx={{ width: "100%" }}>
 				<Typography variant="h5" component="h2">
 					Gerenciamento de Orientações
 				</Typography>
 
-				<Stack direction="row" spacing={2} flexWrap="wrap">
+				<Stack direction="row" spacing={2} flexWrap="wrap" sx={{ width: "100%" }}>
 					<FormControl
 						sx={{
 							minWidth: { xs: "100%", sm: 300 },

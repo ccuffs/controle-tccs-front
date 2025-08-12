@@ -302,7 +302,7 @@ export default function Orientadores() {
 
 	return (
 		<Box>
-			<Stack spacing={2}>
+			<Stack spacing={2} sx={{ width: 1400 }}>
 				<Typography variant="h5" component="h2">
 					Orientadores por Curso
 				</Typography>

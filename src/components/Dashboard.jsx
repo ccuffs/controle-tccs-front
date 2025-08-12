@@ -406,7 +406,7 @@ export default function Dashboard({ forceOrientador = false }) {
 			</Typography>
 
 			{/* Filtros globais */}
-			<Stack spacing={2} sx={{ width: 1450 }}>
+			<Stack spacing={2} sx={{ width: 1400 }}>
 				<Stack direction="row" spacing={2} alignItems="center">
 					{(isAdmin ||
 						(isProfessor && cursosUsuario?.length > 0)) && (
@@ -513,7 +513,7 @@ export default function Dashboard({ forceOrientador = false }) {
 									height: "100%",
 									display: "flex",
 									flexDirection: "column",
-									width: { xs: "100%", md: 420 },
+                                    width: { xs: "100%", md: 406 },
 								}}
 							>
 								<CardContent
@@ -645,7 +645,7 @@ export default function Dashboard({ forceOrientador = false }) {
 									height: "100%",
 									display: "flex",
 									flexDirection: "column",
-									width: { xs: "100%", md: 420 },
+                                    width: { xs: "100%", md: 406 },
 								}}
 							>
 								<CardContent
@@ -758,7 +758,7 @@ export default function Dashboard({ forceOrientador = false }) {
 									height: "100%",
 									display: "flex",
 									flexDirection: "column",
-									width: { xs: "100%", md: 580 },
+                                    width: { xs: "100%", md: 560 },
 								}}
 							>
 								<CardContent
@@ -1081,7 +1081,7 @@ export default function Dashboard({ forceOrientador = false }) {
                   height: "100%",
                   display: "flex",
                   flexDirection: "column",
-                  width: { xs: "100%", md: 420 },
+                  width: { xs: "100%", md: 406 },
                 }}
               >
                 <CardContent
@@ -1146,7 +1146,7 @@ export default function Dashboard({ forceOrientador = false }) {
                   height: "100%",
                   display: "flex",
                   flexDirection: "column",
-                  width: { xs: "100%", md: 420 },
+                  width: { xs: "100%", md: 406 },
                 }}
               >
                 <CardContent>
@@ -1209,7 +1209,7 @@ export default function Dashboard({ forceOrientador = false }) {
                   height: "100%",
                   display: "flex",
                   flexDirection: "column",
-                  width: { xs: "100%", md: 420 },
+                  width: { xs: "100%", md: 406 },
                 }}
               >
                 <CardContent>
@@ -1275,7 +1275,7 @@ export default function Dashboard({ forceOrientador = false }) {
                   height: "100%",
                   display: "flex",
                   flexDirection: "column",
-                  width: { xs: "100%", md: 700 },
+                  width: { xs: "100%", md: 666 },
                 }}
               >
                 <CardContent>
@@ -1370,7 +1370,7 @@ export default function Dashboard({ forceOrientador = false }) {
                   height: "100%",
                   display: "flex",
                   flexDirection: "column",
-                  width: { xs: "100%", md: 700 },
+                  width: { xs: "100%", md: 666 },
                 }}
               >
                 <CardContent
@@ -1518,7 +1518,7 @@ export default function Dashboard({ forceOrientador = false }) {
 								height: "100%",
 								display: "flex",
 								flexDirection: "column",
-								width: { xs: "100%", md: 720 },
+								width: { xs: "100%", md: 695 },
 							}}
 						>
 							<CardContent>
@@ -1634,7 +1634,7 @@ export default function Dashboard({ forceOrientador = false }) {
 								height: "100%",
 								display: "flex",
 								flexDirection: "column",
-								width: { xs: "100%", md: 720 },
+								width: { xs: "100%", md: 695 },
 							}}
 						>
 							<CardContent>
@@ -1755,7 +1755,7 @@ export default function Dashboard({ forceOrientador = false }) {
 								height: "100%",
 								display: "flex",
 								flexDirection: "column",
-								width: { xs: "100%", md: 580 },
+								width: { xs: "100%", md: 560 },
 							}}
 						>
 							<CardContent>
@@ -1890,7 +1890,7 @@ export default function Dashboard({ forceOrientador = false }) {
 								height: "100%",
 								display: "flex",
 								flexDirection: "column",
-								width: { xs: "100%", md: 420 },
+								width: { xs: "100%", md: 406 },
 							}}
 						>
 							<CardContent>
@@ -1983,7 +1983,7 @@ export default function Dashboard({ forceOrientador = false }) {
 								height: "100%",
 								display: "flex",
 								flexDirection: "column",
-								width: { xs: "100%", md: 420 },
+								width: { xs: "100%", md: 406 },
 							}}
 						>
 							<CardContent>

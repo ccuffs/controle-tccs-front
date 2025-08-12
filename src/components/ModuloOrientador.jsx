@@ -36,7 +36,7 @@ export default function ModuloOrientador() {
 	};
 
 	return (
-		<Box>
+		<Box sx={{ width: 1400 }}>
 			<Typography variant="h4" component="h1" gutterBottom>
 				Módulo do Orientador
 			</Typography>

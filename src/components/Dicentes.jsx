@@ -394,15 +394,15 @@ export default function Dicentes() {
 				flexDirection: { xs: "column", sm: "row" },
 				alignItems: "center",
 				gap: 2,
-				width: { xs: "100%", sm: "auto" },
+				width: 1400,
 			}}
 		>
-			<Stack spacing={2}>
+			<Stack spacing={2} sx={{ width: "100%" }}>
 				<Typography variant="h5" component="h2">
 					Gerenciamento de Dicentes
 				</Typography>
 
-				<Stack direction="row" spacing={2} flexWrap="wrap">
+				<Stack direction="row" spacing={2} flexWrap="wrap" sx={{ width: "100%" }}>
 					<FormControl
 						sx={{
 							minWidth: { xs: "100%", sm: 300 },

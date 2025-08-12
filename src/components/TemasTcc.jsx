@@ -369,8 +369,8 @@ export default function TemasTcc() {
 	}
 
 	return (
-		<Box>
-			<Stack spacing={2}>
+		<Box sx={{ width: 1400 }}>
+			<Stack spacing={2} sx={{ width: "100%" }}>
 				<Typography variant="h5" component="h2">
 					Temas TCC por Curso
 				</Typography>
