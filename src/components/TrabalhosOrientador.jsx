@@ -181,7 +181,7 @@ export default function TrabalhosOrientador() {
 					rowSpanning={false}
 					disableSelectionOnClick
 					getRowId={(row) => row.id}
-					getRowHeight={() => "auto"}
+					rowHeight={56}
 				/>
 				<Snackbar
 					open={openMessage}

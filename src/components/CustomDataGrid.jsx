@@ -8,10 +8,11 @@ export default function CustomDataGrid({
 	pageSize = 10,
 	checkboxSelection = false,
 	disableSelectionOnClick = true,
-	rowSpanning = true,
+	rowSpanning = false,
 	getRowId = (row) => row.id,
 	getRowClassName,
-	getRowHeight = () => "auto",
+	getRowHeight,
+	rowHeight = 52,
 	columnVisibilityModel = {},
 	sx = {},
 	...otherProps
@@ -22,8 +23,6 @@ export default function CustomDataGrid({
 			alignItems: "center",
 			justifyContent: "flex-start",
 			padding: "8px",
-			minHeight: "auto",
-			height: "auto",
 		},
 		"& .MuiDataGrid-columnHeader": {
 			display: "flex",
@@ -45,6 +44,7 @@ export default function CustomDataGrid({
 				getRowId={getRowId}
 				getRowClassName={getRowClassName}
 				getRowHeight={getRowHeight}
+				rowHeight={rowHeight}
 				columnVisibilityModel={columnVisibilityModel}
 				sx={defaultSx}
 				{...otherProps}

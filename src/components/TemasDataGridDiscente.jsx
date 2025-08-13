@@ -157,10 +157,10 @@ export default function TemasDataGridDiscente({ temas }) {
 			pageSize={10}
 			checkboxSelection={false}
 			disableSelectionOnClick
-			rowSpanning
+			rowSpanning={false}
 			getRowId={(row) => row.id}
 			getRowClassName={getRowClassName}
-			getRowHeight={() => "auto"}
+			rowHeight={56}
 			sx={{
 				"& .row-with-bottom-border": {
 					borderBottom: "1px solid #b5b6be !important",

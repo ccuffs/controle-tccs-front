@@ -232,10 +232,10 @@ export default function TemasDataGrid({
 			pageSize={10}
 			checkboxSelection={false}
 			disableSelectionOnClick
-			rowSpanning
+			rowSpanning={false}
 			getRowId={(row) => row.id}
 			getRowClassName={getRowClassName}
-			getRowHeight={() => "auto"}
+			rowHeight={56}
 			columnVisibilityModel={columnVisibilityModel}
 			sx={{
 				"& .row-with-bottom-border": {

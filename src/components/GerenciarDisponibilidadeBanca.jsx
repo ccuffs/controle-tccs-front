@@ -651,7 +651,7 @@ const GerenciarDisponibilidadeBanca = () => {
 					rowSpanning={false}
 					disableSelectionOnClick
 					getRowId={(row) => row.id}
-					getRowHeight={() => "auto"}
+					rowHeight={56}
 					sx={{
 						"& .header-padrao": {
 							backgroundColor: "info.light",

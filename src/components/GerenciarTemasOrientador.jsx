@@ -781,7 +781,7 @@ export default function GerenciarTemasOrientador() {
 							checkboxSelection={false}
 							disableSelectionOnClick
 							getRowId={(row) => row.id}
-							getRowHeight={() => "auto"}
+							rowHeight={56}
 							columnVisibilityModel={columnVisibilityModel}
 						/>
 					</>

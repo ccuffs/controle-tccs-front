@@ -402,7 +402,12 @@ export default function Dicentes() {
 					Gerenciamento de Dicentes
 				</Typography>
 
-				<Stack direction="row" spacing={2} flexWrap="wrap" sx={{ width: "100%" }}>
+				<Stack
+					direction="row"
+					spacing={2}
+					flexWrap="wrap"
+					sx={{ width: "100%" }}
+				>
 					<FormControl
 						sx={{
 							minWidth: { xs: "100%", sm: 300 },

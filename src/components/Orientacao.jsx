@@ -379,9 +379,9 @@ export default function Orientacao() {
 					selectedAnoSemestre && faseSelecionada
 						? `${
 								params.row.matricula
-						  }_${selectedAnoSemestre.replace("/", "_")}_${
+							}_${selectedAnoSemestre.replace("/", "_")}_${
 								selectedCurso.id
-						  }_${faseSelecionada}`
+							}_${faseSelecionada}`
 						: null;
 				const orientadorSelecionado =
 					chave && orientacoesAlteradas[chave]
@@ -521,7 +521,7 @@ export default function Orientacao() {
 				const media =
 					notas.length > 0
 						? notas.reduce((a, b) => a + Number(b), 0) /
-						  notas.length
+							notas.length
 						: null;
 
 				return (
@@ -668,8 +668,8 @@ export default function Orientacao() {
 									{String(fase) === "1"
 										? "Projeto"
 										: String(fase) === "2"
-										? "TCC"
-										: `Fase ${fase}`}
+											? "TCC"
+											: `Fase ${fase}`}
 								</MenuItem>
 							))}
 							{fasesUnicas.length === 0 && !loadingOfertasTcc && (

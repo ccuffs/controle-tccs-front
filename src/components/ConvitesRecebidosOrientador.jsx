@@ -635,7 +635,7 @@ export default function ConvitesRecebidosOrientador() {
 							getRowId={(row) => {
 								return `${row.id_tcc}-${row.codigo_docente}-${row.fase}`;
 							}}
-							getRowHeight={() => "auto"}
+							rowHeight={56}
 							loading={loading}
 							localeText={{
 								noRowsLabel: "Nenhum convite encontrado",
