@@ -46,44 +46,52 @@ function Navbar() {
 		setDesktopOpen(!desktopOpen);
 	}
 
+	function closeAnyDrawer() {
+		if (isMobile) {
+			setMobileOpen(false);
+		} else if (desktopOpen) {
+			setDesktopOpen(false);
+		}
+	}
+
 	function handleClickHome() {
 		navigate("/");
-		if (isMobile) setMobileOpen(false);
+		closeAnyDrawer();
 	}
 
 	function handleClickCursos() {
 		navigate("/cursos");
-		if (isMobile) setMobileOpen(false);
+		closeAnyDrawer();
 	}
 
 	function handleClickOrientadores() {
 		navigate("/orientadores");
-		if (isMobile) setMobileOpen(false);
+		closeAnyDrawer();
 	}
 
 	function handleClickDicentes() {
 		navigate("/dicentes");
-		if (isMobile) setMobileOpen(false);
+		closeAnyDrawer();
 	}
 
 	function handleClickOrientacoes() {
 		navigate("/orientacoes");
-		if (isMobile) setMobileOpen(false);
+		closeAnyDrawer();
 	}
 
 	function handleClickTemasTcc() {
 		navigate("/temas-tcc");
-		if (isMobile) setMobileOpen(false);
+		closeAnyDrawer();
 	}
 
 	function handleClickModuloOrientador() {
 		navigate("/modulo-orientador");
-		if (isMobile) setMobileOpen(false);
+		closeAnyDrawer();
 	}
 
 	function handleClickModuloDiscente() {
 		navigate("/modulo-discente");
-		if (isMobile) setMobileOpen(false);
+		closeAnyDrawer();
 	}
 
 	const drawerContent = (
@@ -95,6 +103,19 @@ function Navbar() {
 			</Toolbar>
 			<Divider />
 			<List>
+				<PermissionContext
+					grupos={[
+						Permissoes.GRUPOS.ADMIN,
+						Permissoes.GRUPOS.PROFESSOR,
+					]}
+					showError={false}
+				>
+					<ListItem disablePadding>
+						<ListItemButton onClick={handleClickHome}>
+							<ListItemText primary="Dashboard" />
+						</ListItemButton>
+					</ListItem>
+				</PermissionContext>
 				<PermissionContext
 					grupos={[Permissoes.GRUPOS.ADMIN]}
 					showError={false}
@@ -163,18 +184,8 @@ function Navbar() {
 			<AppBar
 				position="fixed"
 				sx={{
-					width: {
-						md:
-							isAuthenticated && !isEstudante && desktopOpen
-								? `calc(100% - ${drawerWidth}px)`
-								: "100%",
-					},
-					ml: {
-						md:
-							isAuthenticated && !isEstudante && desktopOpen
-								? `${drawerWidth}px`
-								: 0,
-					},
+					width: "100%",
+					ml: 0,
 					zIndex: (theme) => theme.zIndex.drawer + 1,
 					transition: theme.transitions.create(["width", "margin"], {
 						easing: theme.transitions.easing.sharp,
@@ -240,23 +251,18 @@ function Navbar() {
 				</Drawer>
 			)}
 
-			{/* Desktop drawer */}
+			{/* Desktop drawer as overlay (temporary) */}
 			{isAuthenticated && !isEstudante && (
 				<Drawer
-					variant="persistent"
+					variant="temporary"
 					open={desktopOpen}
+					onClose={handleDesktopDrawerToggle}
+					ModalProps={{ keepMounted: true }}
 					sx={{
 						display: { xs: "none", md: "block" },
-						width: desktopOpen ? drawerWidth : 0,
-						flexShrink: 0,
 						"& .MuiDrawer-paper": {
 							width: drawerWidth,
 							boxSizing: "border-box",
-							transition: theme.transitions.create("width", {
-								easing: theme.transitions.easing.sharp,
-								duration:
-									theme.transitions.duration.enteringScreen,
-							}),
 						},
 					}}
 				>

@@ -93,13 +93,7 @@ function AppContent() {
 				sx={{
 					flexGrow: 1,
 					p: 3,
-					width: {
-						md: isEstudante
-							? "100%"
-							: desktopOpen
-								? `calc(100% - 240px)`
-								: "100%",
-					},
+					width: "100%",
 					transition: (theme) =>
 						theme.transitions.create(["width", "margin"], {
 							easing: theme.transitions.easing.sharp,
