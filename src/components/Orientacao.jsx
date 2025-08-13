@@ -23,6 +23,7 @@ import {
 import { DataGrid } from "@mui/x-data-grid";
 import SaveIcon from "@mui/icons-material/Save";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 
 export default function Orientacao() {
 	const [dicentes, setDicentes] = useState([]);
@@ -42,26 +43,30 @@ export default function Orientacao() {
 	const [orientacoesAlteradas, setOrientacoesAlteradas] = useState({});
 	const [trabalhosPorMatricula, setTrabalhosPorMatricula] = useState({});
 	const [loadingTrabalhos, setLoadingTrabalhos] = useState(false);
+	const [convitesPorTcc, setConvitesPorTcc] = useState({});
 
 	const { permissoesUsuario } = useAuth();
 
 	useEffect(() => {
 		getCursos();
 		getOfertasTcc();
+		getDicentes();
 	}, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-	useEffect(() => {
-		// Só busca dicentes, orientações e TCCs quando todos os filtros estão preenchidos
-		if (selectedCurso && selectedAnoSemestre && faseSelecionada) {
-			getDicentes();
-			getOrientacoes();
-			getTrabalhosComDetalhes();
-		} else {
-			setDicentes([]);
-			setOrientacoes([]);
-			setTrabalhosPorMatricula({});
-		}
-	}, [selectedCurso, selectedAnoSemestre, faseSelecionada]); // eslint-disable-line react-hooks/exhaustive-deps
+useEffect(() => {
+	// Atualiza dicentes conforme filtros (ano/semestre, fase)
+	getDicentes();
+
+	// Busca orientações e TCCs quando todos os filtros estão preenchidos
+	if (selectedCurso && selectedAnoSemestre && faseSelecionada) {
+		getOrientacoes();
+		getTrabalhosComDetalhes();
+	} else {
+		// Limpa dados dependentes de filtros completos
+		setOrientacoes([]);
+		setTrabalhosPorMatricula({});
+	}
+}, [selectedCurso, selectedAnoSemestre, faseSelecionada]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	useEffect(() => {
 		// Busca orientadores do curso selecionado
@@ -116,38 +121,34 @@ export default function Orientacao() {
 		}
 	}
 
-	async function getDicentes() {
-		setLoadingDicentes(true);
-		try {
-			const params = {};
-
-			if (selectedAnoSemestre) {
-				const [ano, semestre] = selectedAnoSemestre.split("/");
-				params.ano = ano;
-				params.semestre = semestre;
-			}
-
-			if (faseSelecionada) {
-				params.fase = faseSelecionada;
-			}
-
-			const response = await axiosInstance.get("/dicentes", { params });
-
-			// Ordena os dicentes por nome em ordem crescente
-			const dicentesOrdenados = (response.dicentes || []).sort((a, b) =>
-				a.nome.localeCompare(b.nome),
-			);
-			setDicentes(dicentesOrdenados);
-		} catch (error) {
-			console.log(
-				"Não foi possível retornar a lista de dicentes: ",
-				error,
-			);
-			setDicentes([]);
-		} finally {
-			setLoadingDicentes(false);
-		}
-	}
+async function getDicentes() {
+    setLoadingDicentes(true);
+    try {
+        const params = {};
+        if (selectedAnoSemestre) {
+            const [ano, semestre] = selectedAnoSemestre.split("/");
+            params.ano = ano;
+            params.semestre = semestre;
+        }
+        if (faseSelecionada) {
+            params.fase = faseSelecionada;
+        }
+        const response = await axiosInstance.get("/dicentes", { params });
+        // Ordena os dicentes por nome em ordem crescente
+        const dicentesOrdenados = (response.dicentes || []).sort((a, b) =>
+            a.nome.localeCompare(b.nome),
+        );
+        setDicentes(dicentesOrdenados);
+    } catch (error) {
+        console.log(
+            "Não foi possível retornar a lista de dicentes: ",
+            error,
+        );
+        setDicentes([]);
+    } finally {
+        setLoadingDicentes(false);
+    }
+}
 
 	async function getOrientacoes() {
 		try {
@@ -193,9 +194,31 @@ export default function Orientacao() {
 				}
 			}
 			setTrabalhosPorMatricula(mapa);
+
+			// Carregar convites para cada TCC (orientação e banca)
+			const idsTcc = Array.from(new Set(lista.map((t) => t.id).filter(Boolean)));
+			const resultados = await Promise.all(
+				idsTcc.map(async (id) => {
+					try {
+						const res = await axiosInstance.get("/convites", {
+							params: { id_tcc: id },
+						});
+						const convites = res.data?.convites || res.convites || [];
+						return { id, convites };
+					} catch (e) {
+						return { id, convites: [] };
+					}
+				}),
+			);
+			const mapaConvites = {};
+			for (const { id, convites } of resultados) {
+				mapaConvites[id] = convites;
+			}
+			setConvitesPorTcc(mapaConvites);
 		} catch (error) {
 			console.log("Não foi possível carregar TCCs:", error);
 			setTrabalhosPorMatricula({});
+			setConvitesPorTcc({});
 		} finally {
 			setLoadingTrabalhos(false);
 		}
@@ -206,16 +229,27 @@ export default function Orientacao() {
 			return "";
 
 		const [ano, semestre] = selectedAnoSemestre.split("/");
-		const orientacao = orientacoes.find(
-			(o) =>
-				o.matricula === matricula &&
-				o.ano === parseInt(ano) &&
-				o.semestre === parseInt(semestre) &&
-				o.id_curso === selectedCurso.id &&
-				o.fase === parseInt(faseSelecionada),
-		);
+		const orientacao = orientacoes.find((o) => {
+			const tcc = o.TrabalhoConclusao || o.trabalhoConclusao;
+			const mat = tcc?.matricula;
+			const cursoId = tcc?.Curso?.id || tcc?.id_curso || tcc?.idCurso;
+			const faseTcc = tcc?.fase != null ? parseInt(tcc.fase) : undefined;
+			const anoT = tcc?.ano;
+			const semestreT = tcc?.semestre;
+			const isOrientador = o.orientador === true;
+			return (
+				isOrientador &&
+				mat === matricula &&
+				anoT === parseInt(ano) &&
+				semestreT === parseInt(semestre) &&
+				cursoId === selectedCurso.id &&
+				faseTcc === parseInt(faseSelecionada)
+			);
+		});
 
-		return orientacao ? orientacao.codigo || "" : "";
+		return orientacao
+			? orientacao.codigo_docente || orientacao.Docente?.codigo || orientacao.codigo || ""
+			: "";
 	}
 
 	function handleOrientadorChange(matricula, codigoDocente) {
@@ -232,7 +266,7 @@ export default function Orientacao() {
 				semestre: parseInt(semestre),
 				id_curso: selectedCurso.id,
 				fase: parseInt(faseSelecionada),
-				codigo: codigoDocente || null,
+				codigo_docente: codigoDocente || null,
 			},
 		}));
 	}
@@ -240,63 +274,33 @@ export default function Orientacao() {
 	async function salvarOrientacoes() {
 		try {
 			const orientacoesParaSalvar = Object.values(orientacoesAlteradas);
-			console.log("Orientações para salvar:", orientacoesParaSalvar);
-
 			for (const orientacao of orientacoesParaSalvar) {
-				console.log("Processando orientação:", orientacao);
+				// Ignora quando não há orientador selecionado
+				if (!orientacao.codigo_docente) {
+					continue;
+				}
 
-				// Verifica se já existe uma orientação
-				const orientacaoExistente = orientacoes.find(
-					(o) =>
-						o.matricula === orientacao.matricula &&
-						o.ano === orientacao.ano &&
-						o.semestre === orientacao.semestre &&
-						o.id_curso === orientacao.id_curso &&
-						o.fase === orientacao.fase,
-				);
-
-				console.log("Orientação existente:", orientacaoExistente);
-
-				// Validar dados obrigatórios
-				if (
-					!orientacao.matricula ||
-					!orientacao.ano ||
-					!orientacao.semestre ||
-					!orientacao.id_curso ||
-					!orientacao.fase
-				) {
+				// Identifica o TCC do dicente no contexto filtrado
+				const tcc = trabalhosPorMatricula[orientacao.matricula];
+				const idTcc = tcc?.id;
+				if (!idTcc) {
 					throw new Error(
-						`Dados obrigatórios faltando na orientação: ${JSON.stringify(
-							orientacao,
-						)}`,
+						`Não foi possível identificar o TCC do dicente ${orientacao.matricula}. Verifique os filtros.`,
 					);
 				}
 
-				if (orientacaoExistente) {
-					console.log("Atualizando orientação existente");
-					console.log("Dados para atualização:", orientacao);
+				const payload = {
+					codigo_docente: orientacao.codigo_docente,
+					id_tcc: idTcc,
+					orientador: true,
+				};
 
-					await axiosInstance.put("/orientacoes", {
-						formData: orientacao,
-					});
-
-					console.log("Orientação atualizada com sucesso");
-				} else {
-					console.log("Criando nova orientação");
-					console.log("Dados para criação:", orientacao);
-
-					await axiosInstance.post("/orientacoes", {
-						formData: orientacao,
-					});
-
-					console.log("Orientação criada com sucesso");
-				}
+				await axiosInstance.post("/orientacoes", { formData: payload });
 			}
 
 			setMessageText("Orientações salvas com sucesso!");
 			setMessageSeverity("success");
 			setOrientacoesAlteradas({});
-			// Atualiza a lista de orientações
 			await getOrientacoes();
 		} catch (error) {
 			console.error("Erro ao salvar orientações:", error);
@@ -345,6 +349,9 @@ export default function Orientacao() {
 		? orientadoresCurso.map((oc) => oc.docente)
 		: [];
 
+// Lista de dicentes a exibir
+const dicentesFiltrados = dicentes;
+
 	// Configuração das colunas do DataGrid
 	const columns = [
 		{ field: "matricula", headerName: "Matrícula", width: 150 },
@@ -369,7 +376,7 @@ export default function Orientacao() {
 						: null;
 				const orientadorSelecionado =
 					chave && orientacoesAlteradas[chave]
-						? orientacoesAlteradas[chave].codigo || ""
+						? orientacoesAlteradas[chave].codigo_docente || ""
 						: orientadorAtual;
 
 				return (
@@ -422,27 +429,66 @@ export default function Orientacao() {
 			renderCell: (params) => {
 				const tcc = trabalhosPorMatricula[params.row.matricula];
 				const etapa = tcc?.etapa ?? null;
-				const convites = tcc?.Convites || tcc?.convites || [];
+				const convites = tcc?.id ? convitesPorTcc[tcc.id] || [] : [];
 				const defesas = tcc?.Defesas || tcc?.defesas || [];
 
 				let showWarn = false;
 				let tooltipText = "";
 
+				let showSuccess = false;
+				let successTooltip = "";
+
 				if (etapa === 0) {
 					const temConviteOrientacao = Array.isArray(convites)
 						? convites.some((c) => c.orientacao === true)
 						: false;
-					if (!temConviteOrientacao) {
+					const temOrientadorDefinido = !!getOrientadorAtual(
+						params.row.matricula,
+					);
+					if (!temConviteOrientacao && !temOrientadorDefinido) {
 						showWarn = true;
 						tooltipText = "O estudante não enviou convite para orientação";
+					} else if (temConviteOrientacao || temOrientadorDefinido) {
+						showSuccess = true;
+						successTooltip = temOrientadorDefinido
+							? "Orientador definido"
+							: "Convite para orientação enviado";
 					}
 				} else if (etapa === 5 || etapa === 8) {
 					const convitesBanca = Array.isArray(convites)
 						? convites.filter((c) => c.orientacao === false)
 						: [];
-					if (convitesBanca.length === 0) {
+					// Considera a fase corrente do TCC para validar convites corretos
+					const faseAtualTcc = tcc?.fase != null ? parseInt(tcc.fase) : null;
+					const temConviteBancaFase = convitesBanca.some(
+						(c) => (faseAtualTcc == null ? true : parseInt(c.fase) === faseAtualTcc),
+					);
+					if (!temConviteBancaFase) {
 						showWarn = true;
 						tooltipText = "O estudante não enviou convite para banca";
+					} else {
+						showSuccess = true;
+						successTooltip = "Convite para banca enviado";
+					}
+				} else if (etapa >= 1 && etapa <= 4) {
+					// Entre as etapas 1 e 4, sucesso se já tem orientador definido
+					const temOrientadorDefinido = !!getOrientadorAtual(params.row.matricula);
+					if (temOrientadorDefinido) {
+						showSuccess = true;
+						successTooltip = "Orientador definido";
+					}
+				} else if (etapa === 6 || etapa === 7 || etapa === 9) {
+					// Para etapas 6, 7 e 9, sucesso se existem convites de banca enviados na fase corrente
+					const convitesBanca = Array.isArray(convites)
+						? convites.filter((c) => c.orientacao === false)
+						: [];
+					const faseAtualTcc = tcc?.fase != null ? parseInt(tcc.fase) : null;
+					const temConviteBancaFase = convitesBanca.some(
+						(c) => (faseAtualTcc == null ? true : parseInt(c.fase) === faseAtualTcc),
+					);
+					if (temConviteBancaFase) {
+						showSuccess = true;
+						successTooltip = "Convites de banca enviados";
 					}
 				}
 
@@ -468,6 +514,11 @@ export default function Orientacao() {
 								<WarningAmberIcon color="warning" fontSize="small" />
 							</Tooltip>
 						)}
+						{!showWarn && showSuccess && (
+							<Tooltip title={successTooltip}>
+								<CheckCircleIcon color="success" fontSize="small" />
+							</Tooltip>
+						)}
 						<Typography
 							variant="body2"
 							color={media != null ? "text.primary" : "text.secondary"}
@@ -487,12 +538,10 @@ export default function Orientacao() {
 					Gerenciamento de Orientações
 				</Typography>
 
-				<Stack direction="row" spacing={2} flexWrap="wrap" sx={{ width: "100%" }}>
+				<Stack direction="row" spacing={2} alignItems="center">
 					<FormControl
-						sx={{
-							minWidth: { xs: "100%", sm: 300 },
-							width: { xs: "100%", sm: "auto" },
-						}}
+						fullWidth
+						size="small"
 					>
 						<InputLabel>Curso *</InputLabel>
 						<Select
@@ -525,12 +574,7 @@ export default function Orientacao() {
 						</Select>
 					</FormControl>
 
-					<FormControl
-						sx={{
-							minWidth: { xs: "100%", sm: 200 },
-							width: { xs: "100%", sm: "auto" },
-						}}
-					>
+					<FormControl sx={{ minWidth: 100 }} size="small">
 						<InputLabel>Ano/Semestre</InputLabel>
 						<Select
 							value={selectedAnoSemestre || ""}
@@ -567,12 +611,7 @@ export default function Orientacao() {
 						</Select>
 					</FormControl>
 
-					<FormControl
-						sx={{
-							minWidth: { xs: "100%", sm: 120 },
-							width: { xs: "100%", sm: "auto" },
-						}}
-					>
+					<FormControl sx={{ minWidth: 80 }} size="small">
 						<InputLabel>Fase TCC</InputLabel>
 						<Select
 							value={faseSelecionada || ""}
@@ -597,7 +636,11 @@ export default function Orientacao() {
 							</MenuItem>
 							{fasesUnicas.map((fase) => (
 								<MenuItem key={fase} value={fase}>
-									Fase {fase}
+									{String(fase) === "1"
+										? "Projeto"
+										: String(fase) === "2"
+										? "TCC"
+										: `Fase ${fase}`}
 								</MenuItem>
 							))}
 							{fasesUnicas.length === 0 && !loadingOfertasTcc && (
@@ -608,32 +651,27 @@ export default function Orientacao() {
 						</Select>
 					</FormControl>
 
-					<Box
-						display="flex"
-						alignItems="center"
-						sx={{ minWidth: 150 }}
-					>
-						{loadingDicentes ? (
-							<Box display="flex" alignItems="center">
-								<CircularProgress size={16} sx={{ mr: 1 }} />
-								<Typography
-									variant="body2"
-									color="text.secondary"
-								>
-									Carregando...
-								</Typography>
-							</Box>
-						) : (
-							<Typography variant="body2" color="text.secondary">
-								{`${dicentes.length} dicente${
-									dicentes.length !== 1 ? "s" : ""
-								} encontrado${
-									dicentes.length !== 1 ? "s" : ""
-								}`}
-							</Typography>
-						)}
-					</Box>
 				</Stack>
+
+				{/* Contador de dicentes em uma nova linha abaixo dos filtros */}
+				<Box>
+					{loadingDicentes ? (
+						<Box display="flex" alignItems="center">
+ 							<CircularProgress size={16} sx={{ mr: 1 }} />
+ 							<Typography variant="body2" color="text.secondary">
+ 								Carregando...
+ 							</Typography>
+ 						</Box>
+					) : (
+						<Typography variant="body2" color="text.secondary">
+							{`${dicentesFiltrados.length} dicente${
+								dicentesFiltrados.length !== 1 ? "s" : ""
+							} encontrado${
+								dicentesFiltrados.length !== 1 ? "s" : ""
+							}`}
+						</Typography>
+					)}
+				</Box>
 
 				<PermissionContext
 					permissoes={[
@@ -660,24 +698,7 @@ export default function Orientacao() {
 						)}
 				</PermissionContext>
 
-				{/* Mensagem informativa sobre filtros */}
-				{(!selectedCurso ||
-					!selectedAnoSemestre ||
-					!faseSelecionada) && (
-					<Paper
-						sx={{
-							p: 2,
-							bgcolor: "warning.light",
-							color: "warning.contrastText",
-						}}
-					>
-						<Typography variant="body2">
-							<strong>Selecione todos os filtros</strong> (curso,
-							ano/semestre e fase) para visualizar e gerenciar as
-							orientações.
-						</Typography>
-					</Paper>
-				)}
+				{/* (Opcional) Dica de filtros removida para exibir todos os dicentes por padrão */}
 
 				{/* Exibição de filtros ativos */}
 				{selectedCurso && selectedAnoSemestre && faseSelecionada && (
@@ -709,13 +730,10 @@ export default function Orientacao() {
 						Permissoes.ORIENTACAO.VISUALIZAR_TODAS,
 					]}
 				>
-					{selectedCurso &&
-						selectedAnoSemestre &&
-						faseSelecionada &&
-						dicentes.length > 0 && (
+					{dicentesFiltrados.length > 0 && (
 							<Box style={{ height: "500px" }}>
 								<DataGrid
-									rows={dicentes}
+									rows={dicentesFiltrados}
 									columns={columns}
 									pageSize={10}
 									checkboxSelection={false}
@@ -739,18 +757,14 @@ export default function Orientacao() {
 						Permissoes.ORIENTACAO.VISUALIZAR_TODAS,
 					]}
 				>
-					{selectedCurso &&
-						selectedAnoSemestre &&
-						faseSelecionada &&
-						dicentes.length === 0 &&
+					{dicentesFiltrados.length === 0 &&
 						!loadingDicentes && (
 							<Paper sx={{ p: 3, textAlign: "center" }}>
 								<Typography
 									variant="body2"
 									color="text.secondary"
 								>
-									Nenhum dicente encontrado com os filtros
-									aplicados.
+										Nenhum dicente encontrado.
 								</Typography>
 							</Paper>
 						)}
