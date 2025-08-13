@@ -10,7 +10,7 @@ import {
 	Select,
 	MenuItem,
 	TextField,
-	IconButton,
+	Button,
 	Checkbox,
 	FormControlLabel,
 	Snackbar,
@@ -18,9 +18,12 @@ import {
 	Tooltip,
 	CircularProgress,
 	Chip,
+	Card,
+	CardContent,
+	CardActions,
+	Divider,
 } from "@mui/material";
-import SaveIcon from "@mui/icons-material/Save";
-import CustomDataGrid from "./CustomDataGrid";
+import { useTheme } from "@mui/material/styles";
 
 function getAnoSemestreAtual() {
 	const data = new Date();
@@ -31,6 +34,7 @@ function getAnoSemestreAtual() {
 
 export default function AvaliarDefesasOrientador() {
 	const { usuario } = useAuth();
+	const theme = useTheme();
 
 	const [cursos, setCursos] = useState([]);
 	const [cursoSelecionado, setCursoSelecionado] = useState("");
@@ -48,6 +52,9 @@ export default function AvaliarDefesasOrientador() {
 
 	// estado local para edições: avaliacao por par (id_tcc, membro_banca)
 	const [avaliacoesEdicao, setAvaliacoesEdicao] = useState({});
+	// controle de edição por TCC e backup para cancelar
+	const [editandoTcc, setEditandoTcc] = useState({});
+	const [backupAvaliacoes, setBackupAvaliacoes] = useState({});
 
 	useEffect(() => {
 		getCursosOrientador();
@@ -153,12 +160,39 @@ export default function AvaliarDefesasOrientador() {
 		setOpenMessage(false);
 	}
 
-	// Preparar dados para o DataGrid - garantir que todos os membros da banca tenham inputs
-	const dadosParaGrid = useMemo(() => {
-		const dados = [];
-		const tccsProcessados = new Set();
+	function iniciarEdicao(idTcc) {
+		const prefix = `${idTcc}|`;
+		const snapshot = {};
+		Object.entries(avaliacoesEdicao).forEach(([k, v]) => {
+			if (k.startsWith(prefix)) snapshot[k] = v;
+		});
+		setBackupAvaliacoes((prev) => ({ ...prev, [idTcc]: snapshot }));
+		setEditandoTcc((prev) => ({ ...prev, [idTcc]: true }));
+	}
 
-		// Agrupar defesas por TCC
+	function cancelarEdicao(idTcc) {
+		const snapshot = backupAvaliacoes[idTcc] || {};
+		const prefix = `${idTcc}|`;
+		setAvaliacoesEdicao((prev) => {
+			const novo = { ...prev };
+			Object.keys(novo).forEach((k) => {
+				if (k.startsWith(prefix)) {
+					novo[k] = snapshot.hasOwnProperty(k) ? snapshot[k] : novo[k];
+				}
+			});
+			return novo;
+		});
+		setBackupAvaliacoes((prev) => {
+			const novo = { ...prev };
+			delete novo[idTcc];
+			return novo;
+		});
+		setEditandoTcc((prev) => ({ ...prev, [idTcc]: false }));
+	}
+
+	// Dados para Cards: um card por TCC com inputs para todos os membros da banca
+	const cardsPorTcc = useMemo(() => {
+		const resultado = [];
 		const defesasPorTcc = new Map();
 		defesas.forEach((defesa) => {
 			if (!defesasPorTcc.has(defesa.id_tcc)) {
@@ -167,16 +201,10 @@ export default function AvaliarDefesasOrientador() {
 			defesasPorTcc.get(defesa.id_tcc).push(defesa);
 		});
 
-		// Para cada TCC, garantir que todos os membros da banca tenham uma linha
 		defesasPorTcc.forEach((defesasTcc, idTcc) => {
 			const tcc = mapaTcc.get(idTcc);
 			if (!tcc) return;
 
-			// Se já processamos este TCC, pular
-			if (tccsProcessados.has(idTcc)) return;
-			tccsProcessados.add(idTcc);
-
-			// Calcular média das avaliações para este TCC
 			const notas = defesasTcc
 				.map((d) => {
 					const key = `${d.id_tcc}|${d.membro_banca}|${d.fase}`;
@@ -197,311 +225,65 @@ export default function AvaliarDefesasOrientador() {
 				notas.length === defesasTcc.length && defesasTcc.length > 0;
 			const aprovadoAutomatico = avaliacoesCompletas && media >= 6;
 
-			// Criar uma linha para cada membro da banca
-			defesasTcc.forEach((defesa) => {
-				const chave = `${defesa.id_tcc}|${defesa.membro_banca}|${defesa.fase}`;
-				const valorAvaliacao = avaliacoesEdicao[chave] ?? "";
+			const dataDefesaStr = defesasTcc[0]?.data_defesa
+				? new Date(defesasTcc[0].data_defesa).toLocaleString("pt-BR")
+				: "N/A";
 
-				dados.push({
-					id: `${defesa.id_tcc}-${defesa.membro_banca}-${defesa.fase}`,
-					idTcc: defesa.id_tcc,
-					membroBanca: defesa.membro_banca,
-					fase: defesa.fase,
-					nomeDicente: tcc.Dicente?.nome || "N/A",
-					matriculaDicente: tcc.Dicente?.matricula || "N/A",
-					tituloTcc: tcc.titulo || "N/A",
-					nomeCurso: tcc.Curso?.nome || "N/A",
-					nomeMembroBanca:
-						defesa.membroBanca?.nome || defesa.membro_banca,
-					avaliacao: valorAvaliacao,
-					dataDefesa: defesa.data_defesa
-						? new Date(defesa.data_defesa).toLocaleString("pt-BR")
-						: "N/A",
-					media: media,
-					avaliacoesCompletas: avaliacoesCompletas,
-					aprovadoAutomatico: aprovadoAutomatico,
-					notas: notas,
-					ehOrientador: defesa.orientador || false,
+			const membros = defesasTcc
+				.map((d) => {
+					const chave = `${d.id_tcc}|${d.membro_banca}|${d.fase}`;
+					return {
+						chave,
+						idTcc: d.id_tcc,
+						membroBanca: d.membro_banca,
+						nomeMembroBanca: d.membroBanca?.nome || d.membro_banca,
+						valorAvaliacao: avaliacoesEdicao[chave] ?? "",
+						ehOrientador: d.orientador || false,
+						salvo:
+							d.avaliacao !== null && d.avaliacao !== undefined,
+					};
+				})
+				.sort((a, b) => {
+					if (a.ehOrientador !== b.ehOrientador) {
+						return a.ehOrientador ? -1 : 1;
+					}
+					return (a.nomeMembroBanca || "").localeCompare(
+						b.nomeMembroBanca || "",
+					);
 				});
+
+			resultado.push({
+				idTcc,
+				nomeDicente: tcc.Dicente?.nome || "N/A",
+				matriculaDicente: tcc.Dicente?.matricula || "N/A",
+				tituloTcc: tcc.titulo || "N/A",
+				nomeCurso: tcc.Curso?.nome || "N/A",
+				fase: defesasTcc[0]?.fase,
+				media,
+				avaliacoesCompletas,
+				aprovadoAutomatico,
+				notas,
+				dataDefesa: dataDefesaStr,
+				membros,
 			});
 		});
 
-		return dados.sort((a, b) => {
-			// Ordenar por nome do estudante
-			const nomeA = a.nomeDicente || "";
-			const nomeB = b.nomeDicente || "";
-			if (nomeA !== nomeB) {
-				return nomeA.localeCompare(nomeB);
-			}
-			// Se mesmo estudante, ordenar por orientador primeiro, depois por nome do membro da banca
-			if (a.ehOrientador !== b.ehOrientador) {
-				return a.ehOrientador ? -1 : 1;
-			}
-			return (a.nomeMembroBanca || "").localeCompare(
-				b.nomeMembroBanca || "",
-			);
-		});
-	}, [defesas, mapaTcc, avaliacoesEdicao]);
-
-	// Agrupar dados por TCC para exibir aprovações
-	const aprovacoesPorTcc = useMemo(() => {
-		const aprovacoes = new Map();
-
-		dadosParaGrid.forEach((row) => {
-			if (!aprovacoes.has(row.idTcc)) {
-				aprovacoes.set(row.idTcc, {
-					idTcc: row.idTcc,
-					nomeDicente: row.nomeDicente,
-					tituloTcc: row.tituloTcc,
-					nomeCurso: row.nomeCurso,
-					fase: row.fase,
-					media: row.media,
-					avaliacoesCompletas: row.avaliacoesCompletas,
-					aprovadoAutomatico: row.aprovadoAutomatico,
-					notas: row.notas,
-				});
-			}
-		});
-
-		return Array.from(aprovacoes.values()).sort((a, b) =>
+		return resultado.sort((a, b) =>
 			(a.nomeDicente || "").localeCompare(b.nomeDicente || ""),
 		);
-	}, [dadosParaGrid]);
+	}, [defesas, mapaTcc, avaliacoesEdicao]);
 
-	const columns = [
-		{
-			field: "nomeDicente",
-			headerName: "Estudante",
-			width: 200,
-			renderCell: (params) => (
-				<div
-					style={{
-						display: "flex",
-						alignItems: "center",
-						whiteSpace: "normal",
-						wordWrap: "break-word",
-						lineHeight: "1.2",
-						width: "100%",
-						padding: "4px 0",
-					}}
-				>
-					{params.value}
-				</div>
-			),
-		},
-		{
-			field: "matriculaDicente",
-			headerName: "Matrícula",
-			width: 120,
-			renderCell: (params) => (
-				<div
-					style={{
-						display: "flex",
-						alignItems: "center",
-						whiteSpace: "normal",
-						wordWrap: "break-word",
-						lineHeight: "1.2",
-						width: "100%",
-						padding: "4px 0",
-					}}
-				>
-					{params.value}
-				</div>
-			),
-		},
-		{
-			field: "tituloTcc",
-			headerName: "Título do TCC",
-			width: 300,
-			renderCell: (params) => (
-				<div
-					style={{
-						display: "flex",
-						alignItems: "center",
-						whiteSpace: "normal",
-						wordWrap: "break-word",
-						lineHeight: "1.2",
-						width: "100%",
-						padding: "4px 0",
-					}}
-				>
-					{params.value}
-				</div>
-			),
-		},
-		{
-			field: "nomeCurso",
-			headerName: "Curso",
-			width: 150,
-			renderCell: (params) => (
-				<div
-					style={{
-						display: "flex",
-						alignItems: "center",
-						whiteSpace: "normal",
-						wordWrap: "break-word",
-						lineHeight: "1.2",
-						width: "100%",
-						padding: "4px 0",
-					}}
-				>
-					{params.value}
-				</div>
-			),
-		},
-		{
-			field: "fase",
-			headerName: "Fase",
-			width: 100,
-			renderCell: (params) => (
-				<div
-					style={{
-						display: "flex",
-						alignItems: "center",
-						whiteSpace: "normal",
-						wordWrap: "break-word",
-						lineHeight: "1.2",
-						width: "100%",
-						padding: "4px 0",
-					}}
-				>
-					<Chip
-						label={params.value === 1 ? "Projeto" : "TCC"}
-						size="small"
-						color={params.value === 1 ? "info" : "primary"}
-						variant="outlined"
-					/>
-				</div>
-			),
-		},
-		{
-			field: "nomeMembroBanca",
-			headerName: "Membro da Banca",
-			width: 220,
-			renderCell: (params) => (
-				<div
-					style={{
-						display: "flex",
-						alignItems: "center",
-						gap: "8px",
-						whiteSpace: "normal",
-						wordWrap: "break-word",
-						lineHeight: "1.2",
-						width: "100%",
-						padding: "4px 0",
-					}}
-				>
-					{params.value}
-					{params.row.ehOrientador && (
-						<Chip
-							label=""
-							size="small"
-							color="primary"
-							variant="outlined"
-						/>
-					)}
-				</div>
-			),
-		},
-		{
-			field: "avaliacao",
-			headerName: "Avaliação",
-			width: 150,
-			rowSpanValueGetter: (value, row) => {
-				return row ? `${row.nomeMembroBanca}-${row.fase}` : value;
-			},
-			renderCell: (params) => (
-				<div
-					style={{
-						display: "flex",
-						alignItems: "center",
-						width: "100%",
-						padding: "4px 0",
-					}}
-				>
-					<TextField
-						size="small"
-						value={params.value}
-						onChange={(e) =>
-							handleAvaliacaoChange(
-								params.row.idTcc,
-								params.row.membroBanca,
-								params.row.fase,
-								e.target.value,
-							)
-						}
-						placeholder="Ex: 8.5"
-						sx={{ width: "100%" }}
-					/>
-				</div>
-			),
-		},
-		{
-			field: "media",
-			headerName: "Média",
-			width: 120,
-			renderCell: (params) => (
-				<div
-					style={{
-						display: "flex",
-						alignItems: "center",
-						whiteSpace: "normal",
-						wordWrap: "break-word",
-						lineHeight: "1.2",
-						width: "100%",
-						padding: "4px 0",
-					}}
-				>
-					{params.row.avaliacoesCompletas && params.value ? (
-						<Chip
-							label={params.value.toFixed(2)}
-							size="small"
-							color={params.value >= 6 ? "success" : "error"}
-							variant="outlined"
-						/>
-					) : (
-						<Typography variant="body2" color="text.secondary">
-							Incompleta
-						</Typography>
-					)}
-				</div>
-			),
-		},
-		{
-			field: "dataDefesa",
-			headerName: "Data da Defesa",
-			width: 150,
-			renderCell: (params) => (
-				<div
-					style={{
-						display: "flex",
-						alignItems: "center",
-						whiteSpace: "normal",
-						wordWrap: "break-word",
-						lineHeight: "1.2",
-						width: "100%",
-						padding: "4px 0",
-					}}
-				>
-					{params.value}
-				</div>
-			),
-		},
-	];
-
-	// Função para salvar todas as avaliações
-	async function salvarTodasAvaliacoes() {
+	// Salvar avaliações apenas do TCC informado
+	async function salvarAvaliacoesDoTcc(idTccAlvo) {
 		try {
 			const promises = [];
-			const avaliacoesValidas = [];
-
-			// Coletar todas as avaliações válidas
+			let total = 0;
 			Object.entries(avaliacoesEdicao).forEach(([chave, valor]) => {
-				const [idTcc, membro, fase] = chave.split("|");
+				const [idTcc, membro] = chave.split("|");
+				if (String(idTcc) !== String(idTccAlvo)) return;
 				const numero = valor === "" ? null : Number(valor);
-
 				if (numero !== null && !Number.isNaN(numero) && numero >= 0) {
-					avaliacoesValidas.push({ idTcc, membro, fase, numero });
+					total += 1;
 					promises.push(
 						axiosInstance.put(`/defesas/${idTcc}/${membro}`, {
 							formData: { avaliacao: numero },
@@ -513,50 +295,25 @@ export default function AvaliarDefesasOrientador() {
 			if (promises.length > 0) {
 				await Promise.all(promises);
 				setMessageText(
-					`Avaliações salvas com sucesso. Total: ${avaliacoesValidas.length}`,
+					`Avaliações do TCC ${idTccAlvo} salvas com sucesso. Total: ${total}`,
 				);
 				setMessageSeverity("success");
 				setOpenMessage(true);
-				// Recarregar dados para atualizar as médias
 				await carregarDados();
+				setEditandoTcc((prev) => ({ ...prev, [idTccAlvo]: false }));
+				setBackupAvaliacoes((prev) => {
+					const novo = { ...prev };
+					delete novo[idTccAlvo];
+					return novo;
+				});
 			} else {
-				setMessageText("Nenhuma avaliação válida para salvar.");
+				setMessageText("Nenhuma avaliação válida para este TCC.");
 				setMessageSeverity("warning");
 				setOpenMessage(true);
 			}
 		} catch (error) {
-			console.error("Erro ao salvar avaliações:", error);
-			setMessageText("Erro ao salvar avaliações.");
-			setMessageSeverity("error");
-			setOpenMessage(true);
-		}
-	}
-
-	// Função para salvar todas as aprovações
-	async function salvarTodasAprovacoes() {
-		try {
-			const promises = aprovacoesPorTcc.map(async (aprovacao) => {
-				const payload = {};
-				if (aprovacao.fase === 1) {
-					payload.aprovado_projeto = aprovacao.aprovadoAutomatico;
-				} else if (aprovacao.fase === 2) {
-					payload.aprovado_tcc = aprovacao.aprovadoAutomatico;
-				}
-
-				if (Object.keys(payload).length > 0) {
-					await axiosInstance.put(
-						`/trabalho-conclusao/${aprovacao.idTcc}`,
-						payload,
-					);
-				}
-			});
-
-			await Promise.all(promises);
-			setMessageText("Aprovações salvas com sucesso.");
-			setMessageSeverity("success");
-			setOpenMessage(true);
-		} catch (error) {
-			setMessageText("Erro ao salvar aprovações.");
+			console.error("Erro ao salvar avaliações do TCC:", error);
+			setMessageText("Erro ao salvar avaliações do TCC.");
 			setMessageSeverity("error");
 			setOpenMessage(true);
 		}
@@ -650,202 +407,237 @@ export default function AvaliarDefesasOrientador() {
 								color="text.secondary"
 								gutterBottom
 							>
-								Total de avaliações: {dadosParaGrid.length}
+								Total de TCCs: {cardsPorTcc.length}
 							</Typography>
-							<Box style={{ height: "600px" }}>
-								<CustomDataGrid
-									rows={dadosParaGrid}
-									columns={columns}
-									pageSize={10}
-									checkboxSelection={false}
-									disableSelectionOnClick
-									getRowId={(row) => row.id}
-									getRowHeight={() => 56}
-									loading={loading}
-									localeText={{
-										noRowsLabel:
-											"Nenhuma avaliação encontrada",
-										loadingOverlay:
-											"Carregando avaliações...",
-									}}
-								/>
-							</Box>
 
-							{/* Botão para salvar todas as avaliações */}
-							<Box
-								sx={{
-									display: "flex",
-									justifyContent: "flex-end",
-									mt: 2,
-								}}
-							>
-								<Tooltip title="Salvar todas as avaliações">
-									<span>
-										<IconButton
-											color="primary"
-											variant="contained"
-											onClick={salvarTodasAvaliacoes}
-											disabled={
-												Object.keys(avaliacoesEdicao)
-													.length === 0
-											}
-										>
-											<SaveIcon />
-										</IconButton>
-									</span>
-								</Tooltip>
-							</Box>
-						</Box>
+							<Stack spacing={2}>
+								{cardsPorTcc.map((card) => (
+									<Card key={card.idTcc} variant="outlined" sx={{
+										backgroundColor:
+											theme.palette.background.default}}>
+										<CardContent>
+											<Stack spacing={1}>
+												<Typography
+													variant="h6"
+													component="h4"
+												>
+													{card.nomeDicente}
+												</Typography>
 
-						{/* Seção de Aprovações */}
-						{aprovacoesPorTcc.length > 0 && (
-							<Box sx={{ mt: 3 }}>
-								<Typography
-									variant="h6"
-									component="h4"
-									gutterBottom
-								>
-									Aprovações Automáticas
-								</Typography>
-								<Typography
-									variant="body2"
-									color="text.secondary"
-									gutterBottom
-								>
-									As aprovações são determinadas
-									automaticamente com base na média das
-									avaliações (≥ 6.0)
-								</Typography>
-
-								<Stack spacing={2} sx={{ mt: 2 }}>
-									{aprovacoesPorTcc.map((aprovacao) => (
-										<Box
-											key={aprovacao.idTcc}
-											sx={{
-												p: 2,
-												border: 1,
-												borderColor: "divider",
-												borderRadius: 1,
-												bgcolor: "background.paper",
-											}}
-										>
-											<Stack
-												direction="row"
-												spacing={2}
-												alignItems="center"
-											>
-												<Box sx={{ flexGrow: 1 }}>
-													<Typography
-														variant="subtitle1"
-														fontWeight={600}
-													>
-														{aprovacao.nomeDicente}
-													</Typography>
-													<Typography
-														variant="body2"
-														color="text.secondary"
-													>
-														{aprovacao.tituloTcc} •{" "}
-														{aprovacao.nomeCurso}
-													</Typography>
-													<Typography
-														variant="body2"
-														color="text.secondary"
-													>
-														Fase:{" "}
-														{aprovacao.fase === 1
-															? "Projeto"
-															: "TCC"}
-													</Typography>
-												</Box>
-
-												<Box
-													sx={{
-														textAlign: "center",
-														minWidth: 100,
-													}}
+												<Stack
+													direction="row"
+													spacing={2}
+													flexWrap="wrap"
 												>
 													<Typography
 														variant="body2"
 														color="text.secondary"
 													>
-														Média
+														<strong>
+															Matrícula:
+														</strong>{" "}
+														{card.matriculaDicente}
 													</Typography>
-													{aprovacao.avaliacoesCompletas &&
-													aprovacao.media ? (
-														<Chip
-															label={aprovacao.media.toFixed(
-																2,
-															)}
-															size="small"
-															color={
-																aprovacao.media >=
-																6
-																	? "success"
-																	: "error"
-															}
-															variant="outlined"
-														/>
-													) : (
+													<Typography
+														variant="body2"
+														color="text.secondary"
+													>
+														<strong>
+															Título do TCC:
+														</strong>{" "}
+														{card.tituloTcc}
+													</Typography>
+													<Typography
+														variant="body2"
+														color="text.secondary"
+													>
+														<strong>Curso:</strong>{" "}
+														{card.nomeCurso}
+													</Typography>
+													<Stack
+														direction="row"
+														spacing={1}
+														alignItems="center"
+													>
 														<Typography
 															variant="body2"
 															color="text.secondary"
 														>
-															Incompleta
+															<strong>
+																Fase:
+															</strong>
 														</Typography>
-													)}
-												</Box>
-
-												<FormControlLabel
-													control={
-														<Checkbox
-															checked={
-																aprovacao.aprovadoAutomatico
+														<Chip
+															label={
+																card.fase === 1
+																	? "Projeto"
+																	: "TCC"
 															}
-															disabled={
-																!aprovacao.avaliacoesCompletas
-															}
+															size="small"
 															color={
-																aprovacao.aprovadoAutomatico
-																	? "success"
-																	: "default"
+																card.fase === 1
+																	? "info"
+																	: "primary"
 															}
+															variant="outlined"
 														/>
-													}
-													label={`Aprovado ${aprovacao.fase === 1 ? "Projeto" : "TCC"}`}
-												/>
-											</Stack>
-										</Box>
-									))}
+													</Stack>
+													<Stack
+														direction="row"
+														spacing={1}
+														alignItems="center"
+													>
+														<Typography
+															variant="body2"
+															color="text.secondary"
+														>
+															<strong>
+																Média:
+															</strong>
+														</Typography>
+														{card.avaliacoesCompletas &&
+														card.media !== null ? (
+															<Chip
+																label={card.media.toFixed(
+																	2,
+																)}
+																size="small"
+																color={
+																	card.media >=
+																	6
+																		? "success"
+																		: "error"
+																}
+																variant="outlined"
+															/>
+														) : (
+															<Typography
+																variant="body2"
+																color="text.secondary"
+															>
+																Incompleta
+															</Typography>
+														)}
+													</Stack>
+													<Typography
+														variant="body2"
+														color="text.secondary"
+													>
+														<strong>
+															Data da Defesa:
+														</strong>{" "}
+														{card.dataDefesa}
+													</Typography>
+													<FormControlLabel
+														control={
+															<Checkbox
+																checked={Boolean(
+																	card.aprovadoAutomatico,
+																)}
+																disabled={
+																	!card.avaliacoesCompletas
+																}
+																color={
+																	card.aprovadoAutomatico
+																		? "success"
+																		: "default"
+																}
+															/>
+														}
+														label={`Aprovado ${
+															card.fase === 1
+																? "Projeto"
+																: "TCC"
+														}`}
+													/>
+												</Stack>
 
-									<Box
-										sx={{
-											display: "flex",
-											justifyContent: "flex-end",
-											mt: 2,
-										}}
-									>
-										<Tooltip title="Salvar todas as aprovações">
-											<span>
-												<IconButton
-													color="primary"
-													variant="contained"
-													onClick={
-														salvarTodasAprovacoes
-													}
-													disabled={aprovacoesPorTcc.every(
-														(ap) =>
-															!ap.avaliacoesCompletas,
-													)}
+												<Divider sx={{ my: 2 }} />
+
+												<Typography variant="subtitle1">
+													Banca e Orientador
+												</Typography>
+												<Box
+													sx={{
+														display: "grid",
+														gap: 2,
+														gridTemplateColumns: {
+															xs: "1fr",
+															sm: "repeat(2, 1fr)",
+															md: "repeat(3, 1fr)",
+														},
+														mt: 1,
+													}}
 												>
-													<SaveIcon />
-												</IconButton>
-											</span>
-										</Tooltip>
-									</Box>
-								</Stack>
-							</Box>
-						)}
+													{card.membros.map((m) => (
+														<Stack
+															key={m.chave}
+															spacing={0.5}
+														>
+															<Typography
+																variant="body2"
+																sx={{
+																	fontWeight: 500,
+																}}
+															>
+																{
+																	m.nomeMembroBanca
+																}
+															</Typography>
+															<Box sx={{ width: 100 }}>
+														<TextField
+																placeholder="Ex: 8.5"
+																size="small"
+															type="number"
+																value={
+																	m.valorAvaliacao
+																}
+																onChange={(e) =>
+																	handleAvaliacaoChange(
+																		card.idTcc,
+																		m.membroBanca,
+																		card.fase,
+																		e.target
+																		.value,
+																	)
+																}
+														inputProps={{ step: "0.1", min: 0 }}
+														disabled={Boolean(m.salvo) && !editandoTcc[card.idTcc]}
+														/>
+																</Box>
+														</Stack>
+													))}
+												</Box>
+											</Stack>
+										</CardContent>
+										<CardActions
+											sx={{ justifyContent: "flex-end" }}
+										>
+														{editandoTcc[card.idTcc] ? (
+															<Stack direction="row" spacing={1}>
+																<Tooltip title="Salvar avaliações deste TCC">
+																	<span>
+																		<Button
+																			variant="contained"
+																			color="primary"
+																			onClick={() => salvarAvaliacoesDoTcc(card.idTcc)}
+																		>
+																			Salvar
+																		</Button>
+																	</span>
+																</Tooltip>
+																<Button variant="outlined" color="inherit" onClick={() => cancelarEdicao(card.idTcc)}>
+																	Cancelar
+																</Button>
+															</Stack>
+														) : (
+															<Button variant="outlined" onClick={() => iniciarEdicao(card.idTcc)}>Editar</Button>
+														)}
+										</CardActions>
+									</Card>
+								))}
+							</Stack>
+						</Box>
 					</>
 				)}
 
