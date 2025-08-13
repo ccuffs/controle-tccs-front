@@ -18,9 +18,11 @@ import {
 	Paper,
 	CircularProgress,
 	MenuItem,
+	Tooltip,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import SaveIcon from "@mui/icons-material/Save";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 
 export default function Orientacao() {
 	const [dicentes, setDicentes] = useState([]);
@@ -38,6 +40,8 @@ export default function Orientacao() {
 	const [messageText, setMessageText] = React.useState("");
 	const [messageSeverity, setMessageSeverity] = React.useState("success");
 	const [orientacoesAlteradas, setOrientacoesAlteradas] = useState({});
+	const [trabalhosPorMatricula, setTrabalhosPorMatricula] = useState({});
+	const [loadingTrabalhos, setLoadingTrabalhos] = useState(false);
 
 	const { permissoesUsuario } = useAuth();
 
@@ -47,13 +51,15 @@ export default function Orientacao() {
 	}, []); // eslint-disable-line react-hooks/exhaustive-deps
 
 	useEffect(() => {
-		// Só busca dicentes e orientações quando todos os filtros estão preenchidos
+		// Só busca dicentes, orientações e TCCs quando todos os filtros estão preenchidos
 		if (selectedCurso && selectedAnoSemestre && faseSelecionada) {
 			getDicentes();
 			getOrientacoes();
+			getTrabalhosComDetalhes();
 		} else {
 			setDicentes([]);
 			setOrientacoes([]);
+			setTrabalhosPorMatricula({});
 		}
 	}, [selectedCurso, selectedAnoSemestre, faseSelecionada]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -153,6 +159,45 @@ export default function Orientacao() {
 				error,
 			);
 			setOrientacoes([]);
+		}
+	}
+
+	async function getTrabalhosComDetalhes() {
+		try {
+			setLoadingTrabalhos(true);
+			const params = {};
+			if (selectedAnoSemestre) {
+				const [ano, semestre] = selectedAnoSemestre.split("/");
+				params.ano = ano;
+				params.semestre = semestre;
+			}
+			if (faseSelecionada) {
+				params.fase = faseSelecionada;
+			}
+			if (selectedCurso?.id) {
+				params.id_curso = selectedCurso.id;
+			}
+
+			const resp = await axiosInstance.get("/trabalho-conclusao", {
+				params,
+			});
+			const lista = resp.data?.trabalhos || resp.trabalhos || [];
+
+			// Mapear por matrícula do dicente, escolhendo o TCC com maior id (mais recente)
+			const mapa = {};
+			for (const t of lista) {
+				const mat = t.Dicente?.matricula || t.matricula;
+				if (!mat) continue;
+				if (!mapa[mat] || (t.id && mapa[mat].id && t.id > mapa[mat].id)) {
+					mapa[mat] = t;
+				}
+			}
+			setTrabalhosPorMatricula(mapa);
+		} catch (error) {
+			console.log("Não foi possível carregar TCCs:", error);
+			setTrabalhosPorMatricula({});
+		} finally {
+			setLoadingTrabalhos(false);
 		}
 	}
 
@@ -366,6 +411,70 @@ export default function Orientacao() {
 							</Typography>
 						)}
 					</FormControl>
+				);
+			},
+		},
+		{
+			field: "etapaNota",
+			headerName: "Etapa / Nota",
+			width: 220,
+			sortable: false,
+			renderCell: (params) => {
+				const tcc = trabalhosPorMatricula[params.row.matricula];
+				const etapa = tcc?.etapa ?? null;
+				const convites = tcc?.Convites || tcc?.convites || [];
+				const defesas = tcc?.Defesas || tcc?.defesas || [];
+
+				let showWarn = false;
+				let tooltipText = "";
+
+				if (etapa === 0) {
+					const temConviteOrientacao = Array.isArray(convites)
+						? convites.some((c) => c.orientacao === true)
+						: false;
+					if (!temConviteOrientacao) {
+						showWarn = true;
+						tooltipText = "O estudante não enviou convite para orientação";
+					}
+				} else if (etapa === 5 || etapa === 8) {
+					const convitesBanca = Array.isArray(convites)
+						? convites.filter((c) => c.orientacao === false)
+						: [];
+					if (convitesBanca.length === 0) {
+						showWarn = true;
+						tooltipText = "O estudante não enviou convite para banca";
+					}
+				}
+
+				const faseAtual = tcc?.fase != null ? parseInt(tcc.fase) : null;
+				const defesasFase = Array.isArray(defesas)
+					? defesas.filter((d) => parseInt(d.fase) === faseAtual)
+					: [];
+				const notas = defesasFase
+					.map((d) => d.avaliacao)
+					.filter((v) => v !== null && v !== undefined);
+				const media =
+					notas.length > 0
+						? notas.reduce((a, b) => a + Number(b), 0) / notas.length
+						: null;
+
+				return (
+					<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+						<Typography variant="body2">
+							{etapa != null ? `Etapa ${etapa}` : "Etapa —"}
+						</Typography>
+						{showWarn && (
+							<Tooltip title={tooltipText}>
+								<WarningAmberIcon color="warning" fontSize="small" />
+							</Tooltip>
+						)}
+						<Typography
+							variant="body2"
+							color={media != null ? "text.primary" : "text.secondary"}
+						>
+							{media != null ? `Nota ${media.toFixed(1)}` : "Nota —"}
+						</Typography>
+					</Box>
 				);
 			},
 		},
