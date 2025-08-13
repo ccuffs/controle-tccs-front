@@ -53,20 +53,20 @@ export default function Orientacao() {
 		getDicentes();
 	}, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-useEffect(() => {
-	// Atualiza dicentes conforme filtros (ano/semestre, fase)
-	getDicentes();
+	useEffect(() => {
+		// Atualiza dicentes conforme filtros (ano/semestre, fase)
+		getDicentes();
 
-	// Busca orientações e TCCs quando todos os filtros estão preenchidos
-	if (selectedCurso && selectedAnoSemestre && faseSelecionada) {
-		getOrientacoes();
-		getTrabalhosComDetalhes();
-	} else {
-		// Limpa dados dependentes de filtros completos
-		setOrientacoes([]);
-		setTrabalhosPorMatricula({});
-	}
-}, [selectedCurso, selectedAnoSemestre, faseSelecionada]); // eslint-disable-line react-hooks/exhaustive-deps
+		// Busca orientações e TCCs quando todos os filtros estão preenchidos
+		if (selectedCurso && selectedAnoSemestre && faseSelecionada) {
+			getOrientacoes();
+			getTrabalhosComDetalhes();
+		} else {
+			// Limpa dados dependentes de filtros completos
+			setOrientacoes([]);
+			setTrabalhosPorMatricula({});
+		}
+	}, [selectedCurso, selectedAnoSemestre, faseSelecionada]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	useEffect(() => {
 		// Busca orientadores do curso selecionado
@@ -121,34 +121,34 @@ useEffect(() => {
 		}
 	}
 
-async function getDicentes() {
-    setLoadingDicentes(true);
-    try {
-        const params = {};
-        if (selectedAnoSemestre) {
-            const [ano, semestre] = selectedAnoSemestre.split("/");
-            params.ano = ano;
-            params.semestre = semestre;
-        }
-        if (faseSelecionada) {
-            params.fase = faseSelecionada;
-        }
-        const response = await axiosInstance.get("/dicentes", { params });
-        // Ordena os dicentes por nome em ordem crescente
-        const dicentesOrdenados = (response.dicentes || []).sort((a, b) =>
-            a.nome.localeCompare(b.nome),
-        );
-        setDicentes(dicentesOrdenados);
-    } catch (error) {
-        console.log(
-            "Não foi possível retornar a lista de dicentes: ",
-            error,
-        );
-        setDicentes([]);
-    } finally {
-        setLoadingDicentes(false);
-    }
-}
+	async function getDicentes() {
+		setLoadingDicentes(true);
+		try {
+			const params = {};
+			if (selectedAnoSemestre) {
+				const [ano, semestre] = selectedAnoSemestre.split("/");
+				params.ano = ano;
+				params.semestre = semestre;
+			}
+			if (faseSelecionada) {
+				params.fase = faseSelecionada;
+			}
+			const response = await axiosInstance.get("/dicentes", { params });
+			// Ordena os dicentes por nome em ordem crescente
+			const dicentesOrdenados = (response.dicentes || []).sort((a, b) =>
+				a.nome.localeCompare(b.nome),
+			);
+			setDicentes(dicentesOrdenados);
+		} catch (error) {
+			console.log(
+				"Não foi possível retornar a lista de dicentes: ",
+				error,
+			);
+			setDicentes([]);
+		} finally {
+			setLoadingDicentes(false);
+		}
+	}
 
 	async function getOrientacoes() {
 		try {
@@ -189,21 +189,27 @@ async function getDicentes() {
 			for (const t of lista) {
 				const mat = t.Dicente?.matricula || t.matricula;
 				if (!mat) continue;
-				if (!mapa[mat] || (t.id && mapa[mat].id && t.id > mapa[mat].id)) {
+				if (
+					!mapa[mat] ||
+					(t.id && mapa[mat].id && t.id > mapa[mat].id)
+				) {
 					mapa[mat] = t;
 				}
 			}
 			setTrabalhosPorMatricula(mapa);
 
 			// Carregar convites para cada TCC (orientação e banca)
-			const idsTcc = Array.from(new Set(lista.map((t) => t.id).filter(Boolean)));
+			const idsTcc = Array.from(
+				new Set(lista.map((t) => t.id).filter(Boolean)),
+			);
 			const resultados = await Promise.all(
 				idsTcc.map(async (id) => {
 					try {
 						const res = await axiosInstance.get("/convites", {
 							params: { id_tcc: id },
 						});
-						const convites = res.data?.convites || res.convites || [];
+						const convites =
+							res.data?.convites || res.convites || [];
 						return { id, convites };
 					} catch (e) {
 						return { id, convites: [] };
@@ -248,7 +254,10 @@ async function getDicentes() {
 		});
 
 		return orientacao
-			? orientacao.codigo_docente || orientacao.Docente?.codigo || orientacao.codigo || ""
+			? orientacao.codigo_docente ||
+					orientacao.Docente?.codigo ||
+					orientacao.codigo ||
+					""
 			: "";
 	}
 
@@ -349,8 +358,8 @@ async function getDicentes() {
 		? orientadoresCurso.map((oc) => oc.docente)
 		: [];
 
-// Lista de dicentes a exibir
-const dicentesFiltrados = dicentes;
+	// Lista de dicentes a exibir
+	const dicentesFiltrados = dicentes;
 
 	// Configuração das colunas do DataGrid
 	const columns = [
@@ -370,9 +379,9 @@ const dicentesFiltrados = dicentes;
 					selectedAnoSemestre && faseSelecionada
 						? `${
 								params.row.matricula
-							}_${selectedAnoSemestre.replace("/", "_")}_${
+						  }_${selectedAnoSemestre.replace("/", "_")}_${
 								selectedCurso.id
-							}_${faseSelecionada}`
+						  }_${faseSelecionada}`
 						: null;
 				const orientadorSelecionado =
 					chave && orientacoesAlteradas[chave]
@@ -447,7 +456,8 @@ const dicentesFiltrados = dicentes;
 					);
 					if (!temConviteOrientacao && !temOrientadorDefinido) {
 						showWarn = true;
-						tooltipText = "O estudante não enviou convite para orientação";
+						tooltipText =
+							"O estudante não enviou convite para orientação";
 					} else if (temConviteOrientacao || temOrientadorDefinido) {
 						showSuccess = true;
 						successTooltip = temOrientadorDefinido
@@ -459,20 +469,26 @@ const dicentesFiltrados = dicentes;
 						? convites.filter((c) => c.orientacao === false)
 						: [];
 					// Considera a fase corrente do TCC para validar convites corretos
-					const faseAtualTcc = tcc?.fase != null ? parseInt(tcc.fase) : null;
-					const temConviteBancaFase = convitesBanca.some(
-						(c) => (faseAtualTcc == null ? true : parseInt(c.fase) === faseAtualTcc),
+					const faseAtualTcc =
+						tcc?.fase != null ? parseInt(tcc.fase) : null;
+					const temConviteBancaFase = convitesBanca.some((c) =>
+						faseAtualTcc == null
+							? true
+							: parseInt(c.fase) === faseAtualTcc,
 					);
 					if (!temConviteBancaFase) {
 						showWarn = true;
-						tooltipText = "O estudante não enviou convite para banca";
+						tooltipText =
+							"O estudante não enviou convite para banca";
 					} else {
 						showSuccess = true;
 						successTooltip = "Convite para banca enviado";
 					}
 				} else if (etapa >= 1 && etapa <= 4) {
 					// Entre as etapas 1 e 4, sucesso se já tem orientador definido
-					const temOrientadorDefinido = !!getOrientadorAtual(params.row.matricula);
+					const temOrientadorDefinido = !!getOrientadorAtual(
+						params.row.matricula,
+					);
 					if (temOrientadorDefinido) {
 						showSuccess = true;
 						successTooltip = "Orientador definido";
@@ -482,9 +498,12 @@ const dicentesFiltrados = dicentes;
 					const convitesBanca = Array.isArray(convites)
 						? convites.filter((c) => c.orientacao === false)
 						: [];
-					const faseAtualTcc = tcc?.fase != null ? parseInt(tcc.fase) : null;
-					const temConviteBancaFase = convitesBanca.some(
-						(c) => (faseAtualTcc == null ? true : parseInt(c.fase) === faseAtualTcc),
+					const faseAtualTcc =
+						tcc?.fase != null ? parseInt(tcc.fase) : null;
+					const temConviteBancaFase = convitesBanca.some((c) =>
+						faseAtualTcc == null
+							? true
+							: parseInt(c.fase) === faseAtualTcc,
 					);
 					if (temConviteBancaFase) {
 						showSuccess = true;
@@ -501,7 +520,8 @@ const dicentesFiltrados = dicentes;
 					.filter((v) => v !== null && v !== undefined);
 				const media =
 					notas.length > 0
-						? notas.reduce((a, b) => a + Number(b), 0) / notas.length
+						? notas.reduce((a, b) => a + Number(b), 0) /
+						  notas.length
 						: null;
 
 				return (
@@ -511,19 +531,31 @@ const dicentesFiltrados = dicentes;
 						</Typography>
 						{showWarn && (
 							<Tooltip title={tooltipText}>
-								<WarningAmberIcon color="warning" fontSize="small" />
+								<WarningAmberIcon
+									color="warning"
+									fontSize="small"
+								/>
 							</Tooltip>
 						)}
 						{!showWarn && showSuccess && (
 							<Tooltip title={successTooltip}>
-								<CheckCircleIcon color="success" fontSize="small" />
+								<CheckCircleIcon
+									color="success"
+									fontSize="small"
+								/>
 							</Tooltip>
 						)}
 						<Typography
 							variant="body2"
-							color={media != null ? "text.primary" : "text.secondary"}
+							color={
+								media != null
+									? "text.primary"
+									: "text.secondary"
+							}
 						>
-							{media != null ? `Nota ${media.toFixed(1)}` : "Nota —"}
+							{media != null
+								? `Nota ${media.toFixed(1)}`
+								: "Nota —"}
 						</Typography>
 					</Box>
 				);
@@ -539,10 +571,7 @@ const dicentesFiltrados = dicentes;
 				</Typography>
 
 				<Stack direction="row" spacing={2} alignItems="center">
-					<FormControl
-						fullWidth
-						size="small"
-					>
+					<FormControl fullWidth size="small">
 						<InputLabel>Curso *</InputLabel>
 						<Select
 							value={selectedCurso ? selectedCurso.id : ""}
@@ -650,18 +679,17 @@ const dicentesFiltrados = dicentes;
 							)}
 						</Select>
 					</FormControl>
-
 				</Stack>
 
 				{/* Contador de dicentes em uma nova linha abaixo dos filtros */}
 				<Box>
 					{loadingDicentes ? (
 						<Box display="flex" alignItems="center">
- 							<CircularProgress size={16} sx={{ mr: 1 }} />
- 							<Typography variant="body2" color="text.secondary">
- 								Carregando...
- 							</Typography>
- 						</Box>
+							<CircularProgress size={16} sx={{ mr: 1 }} />
+							<Typography variant="body2" color="text.secondary">
+								Carregando...
+							</Typography>
+						</Box>
 					) : (
 						<Typography variant="body2" color="text.secondary">
 							{`${dicentesFiltrados.length} dicente${
@@ -731,24 +759,24 @@ const dicentesFiltrados = dicentes;
 					]}
 				>
 					{dicentesFiltrados.length > 0 && (
-							<Box style={{ height: "500px" }}>
-								<DataGrid
-									rows={dicentesFiltrados}
-									columns={columns}
-									pageSize={10}
-									checkboxSelection={false}
-									disableSelectionOnClick
-									getRowId={(row) => row.matricula}
-									initialState={{
-										sorting: {
-											sortModel: [
-												{ field: "nome", sort: "asc" },
-											],
-										},
-									}}
-								/>
-							</Box>
-						)}
+						<Box style={{ height: "500px" }}>
+							<DataGrid
+								rows={dicentesFiltrados}
+								columns={columns}
+								pageSize={10}
+								checkboxSelection={false}
+								disableSelectionOnClick
+								getRowId={(row) => row.matricula}
+								initialState={{
+									sorting: {
+										sortModel: [
+											{ field: "nome", sort: "asc" },
+										],
+									},
+								}}
+							/>
+						</Box>
+					)}
 				</PermissionContext>
 
 				<PermissionContext
@@ -757,17 +785,13 @@ const dicentesFiltrados = dicentes;
 						Permissoes.ORIENTACAO.VISUALIZAR_TODAS,
 					]}
 				>
-					{dicentesFiltrados.length === 0 &&
-						!loadingDicentes && (
-							<Paper sx={{ p: 3, textAlign: "center" }}>
-								<Typography
-									variant="body2"
-									color="text.secondary"
-								>
-										Nenhum dicente encontrado.
-								</Typography>
-							</Paper>
-						)}
+					{dicentesFiltrados.length === 0 && !loadingDicentes && (
+						<Paper sx={{ p: 3, textAlign: "center" }}>
+							<Typography variant="body2" color="text.secondary">
+								Nenhum dicente encontrado.
+							</Typography>
+						</Paper>
+					)}
 				</PermissionContext>
 
 				<Snackbar
