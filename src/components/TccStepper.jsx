@@ -284,7 +284,15 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 		if (trabalhoConclusao && trabalhoConclusao.fase === 1) {
 			return steps.slice(0, 6); // Fase 1 agora vai até a etapa 6 (seleção de horário da banca do projeto)
 		}
-		return steps; // Fase 2 percorre todas as etapas
+		// Para fase 2, verificar se o projeto foi aprovado antes de incluir a etapa 7
+		if (trabalhoConclusao && trabalhoConclusao.fase === 2) {
+			if (trabalhoConclusao.aprovado_projeto) {
+				return steps; // Todas as etapas se o projeto foi aprovado
+			} else {
+				return steps.slice(0, 6); // Apenas até a etapa 6 se o projeto não foi aprovado
+			}
+		}
+		return steps; // Fallback para outras situações
 	};
 
 	const validarEtapaAtual = () => {
@@ -319,7 +327,12 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 				return true;
 			case 6:
 				// Etapa 7 (fase 2): Seminário de Andamento obrigatório
+				// Só pode prosseguir se estiver na fase 2 E o projeto foi aprovado
 				if (trabalhoConclusao && trabalhoConclusao.fase === 2) {
+					// Verificar se o projeto foi aprovado
+					if (!trabalhoConclusao.aprovado_projeto) {
+						return false; // Não pode prosseguir se o projeto não foi aprovado
+					}
 					return (
 						formData.seminario_andamento &&
 						formData.seminario_andamento.trim().length > 0
@@ -970,9 +983,9 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 																	true
 																		? "success"
 																		: convite.data_feedback &&
-																			  !convite.aceito
-																			? "error"
-																			: "warning"
+																		  !convite.aceito
+																		? "error"
+																		: "warning"
 																}
 																sx={{ mb: 2 }}
 															>
@@ -993,9 +1006,9 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 																	true
 																		? "Aceito"
 																		: convite.data_feedback &&
-																			  !convite.aceito
-																			? "Recusado"
-																			: "Pendente"}
+																		  !convite.aceito
+																		? "Recusado"
+																		: "Pendente"}
 																</Typography>
 																{convite.data_envio && (
 																	<Typography variant="body2">
@@ -1145,7 +1158,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 																: `Enviar ${
 																		2 -
 																		convitesAceitosFase1.length
-																	} Convite(s) para Banca do Projeto`}
+																  } Convite(s) para Banca do Projeto`}
 														</Button>
 													)}
 												</Box>
@@ -1250,7 +1263,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 					const defesaAgendada =
 						defesasFase1 && defesasFase1.length > 0
 							? defesasFase1.find((d) => !!d.data_defesa) ||
-								defesasFase1[0]
+							  defesasFase1[0]
 							: null;
 					const dataHoraFormatada =
 						defesaAgendada && defesaAgendada.data_defesa
@@ -1263,18 +1276,40 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 						? dataHoraFormatada.toLocaleTimeString("pt-BR", {
 								hour: "2-digit",
 								minute: "2-digit",
-							})
+						  })
 						: null;
 				}
 
 				// Notas da banca de FASE 1
 				const notasBanca = defesasFase1 || [];
 
+				// Verificar se o projeto foi aprovado para mostrar status
+				const projetoAprovado = trabalhoConclusao.aprovado_projeto;
+
 				return (
 					<Box sx={{ mt: 2 }}>
 						<Typography variant="h6" gutterBottom>
 							Etapa 6: Resumo da Banca do Projeto (Fase 1)
 						</Typography>
+
+						{/* Status de aprovação do projeto */}
+						{projetoAprovado ? (
+							<Alert severity="success" sx={{ mb: 2 }}>
+								<Typography variant="body2">
+									🎉 <strong>Parabéns!</strong> Seu projeto de
+									TCC foi aprovado pela banca de avaliação!
+								</Typography>
+							</Alert>
+						) : (
+							<Alert severity="warning" sx={{ mb: 2 }}>
+								<Typography variant="body2">
+									⚠️ <strong>Atenção:</strong> Seu projeto de
+									TCC ainda não foi aprovado pela banca de
+									avaliação. Você só poderá prosseguir para a
+									próxima etapa após a aprovação.
+								</Typography>
+							</Alert>
+						)}
 						<Paper sx={{ p: 3 }}>
 							<Typography variant="subtitle1" gutterBottom>
 								Horário Selecionado
@@ -1320,7 +1355,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 												{d.avaliacao != null
 													? Number(
 															d.avaliacao,
-														).toFixed(1)
+													  ).toFixed(1)
 													: "Sem Nota"}
 											</Typography>
 										</Alert>
@@ -1452,8 +1487,8 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 													{convite.aceito
 														? "Participou da banca do projeto"
 														: convite.data_feedback
-															? "Recusou participar"
-															: "Convite pendente"}{" "}
+														? "Recusou participar"
+														: "Convite pendente"}{" "}
 													{convite.data_feedback &&
 														`em ${new Date(
 															convite.data_feedback,
@@ -1484,9 +1519,9 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 													convite.aceito === true
 														? "success"
 														: convite.data_feedback &&
-															  !convite.aceito
-															? "error"
-															: "warning"
+														  !convite.aceito
+														? "error"
+														: "warning"
 												}
 												sx={{ mb: 2 }}
 											>
@@ -1500,9 +1535,9 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 													{convite.aceito === true
 														? "Aceito"
 														: convite.data_feedback &&
-															  !convite.aceito
-															? "Recusado"
-															: "Pendente"}
+														  !convite.aceito
+														? "Recusado"
+														: "Pendente"}
 												</Typography>
 												{convite.data_envio && (
 													<Typography variant="body2">
@@ -1636,7 +1671,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 													: `Enviar ${
 															2 -
 															convitesAceitosFase2.length
-														} Convite(s) para Banca Final`}
+													  } Convite(s) para Banca Final`}
 											</Button>
 										)}
 									</Box>
@@ -1756,19 +1791,19 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 											defesasFase2.length > 0
 												? defesasFase2.find(
 														(d) => !!d.data_defesa,
-													) || defesasFase2[0]
+												  ) || defesasFase2[0]
 												: null;
 										const dataHoraFormatada =
 											defesaAgendada &&
 											defesaAgendada.data_defesa
 												? new Date(
 														defesaAgendada.data_defesa,
-													)
+												  )
 												: null;
 										dataStr = dataHoraFormatada
 											? dataHoraFormatada.toLocaleDateString(
 													"pt-BR",
-												)
+											  )
 											: null;
 										horaStr = dataHoraFormatada
 											? dataHoraFormatada.toLocaleTimeString(
@@ -1777,7 +1812,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 														hour: "2-digit",
 														minute: "2-digit",
 													},
-												)
+											  )
 											: null;
 									}
 
@@ -1855,9 +1890,9 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 																	null
 																		? Number(
 																				d.avaliacao,
-																			).toFixed(
+																		  ).toFixed(
 																				1,
-																			)
+																		  )
 																		: "Sem Nota"}
 																</Typography>
 															</Alert>
@@ -2119,6 +2154,12 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 										);
 									}
 									if (trabalhoConclusao?.fase === 2) {
+										// Para fase 2, verificar se o projeto foi aprovado
+										if (
+											!trabalhoConclusao.aprovado_projeto
+										) {
+											return false; // Não pode completar se o projeto não foi aprovado
+										}
 										return (
 											formData.seminario_andamento &&
 											formData.seminario_andamento.trim()
@@ -2207,33 +2248,66 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 								Voltar
 							</Button>
 						</Box>
-						<Button
-							onClick={handleNext}
-							disabled={saving || !validarEtapaAtual()}
-							variant="contained"
-							color="primary"
-							size="small"
-						>
-							{saving ? (
-								<>
-									<CircularProgress
-										size={16}
-										sx={{ mr: 1 }}
-									/>
-									Salvando...
-								</>
-							) : activeStep === getEtapasValidas().length - 1 ? (
-								"Finalizar"
+						{/* Só mostrar o botão se não estiver na etapa final ou se o projeto estiver aprovado na fase 2 */}
+						{(() => {
+							const isLastStep =
+								activeStep === getEtapasValidas().length - 1;
+							const canShowFinalizeButton =
+								isLastStep &&
+								(trabalhoConclusao?.fase !== 2 ||
+									(trabalhoConclusao?.fase === 2 &&
+										trabalhoConclusao?.aprovado_projeto));
+
+							return canShowFinalizeButton ? (
+								<Button
+									onClick={handleNext}
+									disabled={saving || !validarEtapaAtual()}
+									variant="contained"
+									color="primary"
+									size="small"
+								>
+									{saving ? (
+										<>
+											<CircularProgress
+												size={16}
+												sx={{ mr: 1 }}
+											/>
+											Salvando...
+										</>
+									) : (
+										"Finalizar"
+									)}
+								</Button>
 							) : (
-								"Próximo"
-							)}
-						</Button>
+								<Button
+									onClick={handleNext}
+									disabled={saving || !validarEtapaAtual()}
+									variant="contained"
+									color="primary"
+									size="small"
+								>
+									{saving ? (
+										<>
+											<CircularProgress
+												size={16}
+												sx={{ mr: 1 }}
+											/>
+											Salvando...
+										</>
+									) : (
+										"Próximo"
+									)}
+								</Button>
+							);
+						})()}
 					</Box>
 				)}
 
 				{activeStep === getEtapasValidas().length ? (
 					<Box>
-						{trabalhoConclusao?.fase === 2 ? (
+						{/* Só mostrar a tela de conclusão se o projeto estiver aprovado na fase 2 */}
+						{trabalhoConclusao?.fase === 2 &&
+						trabalhoConclusao?.aprovado_projeto ? (
 							<>
 								<Typography variant="h6" sx={{ mt: 1, mb: 2 }}>
 									Banca Final Agendada
@@ -2260,19 +2334,19 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 													? defesasFase2.find(
 															(d) =>
 																!!d.data_defesa,
-														) || defesasFase2[0]
+													  ) || defesasFase2[0]
 													: null;
 											const dataHoraFormatada =
 												defesaAgendada &&
 												defesaAgendada.data_defesa
 													? new Date(
 															defesaAgendada.data_defesa,
-														)
+													  )
 													: null;
 											dataStr = dataHoraFormatada
 												? dataHoraFormatada.toLocaleDateString(
 														"pt-BR",
-													)
+												  )
 												: null;
 											horaStr = dataHoraFormatada
 												? dataHoraFormatada.toLocaleTimeString(
@@ -2281,7 +2355,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 															hour: "2-digit",
 															minute: "2-digit",
 														},
-													)
+												  )
 												: null;
 										}
 
@@ -2361,9 +2435,9 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 																	null
 																		? Number(
 																				d.avaliacao,
-																			).toFixed(
+																		  ).toFixed(
 																				1,
-																			)
+																		  )
 																		: "Sem Nota"}
 																</Typography>
 															</Alert>
@@ -2388,9 +2462,55 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 							</>
 						) : (
 							<>
-								<Typography sx={{ mt: 2, mb: 1 }}>
-									Todas as etapas foram concluídas!
-								</Typography>
+								{trabalhoConclusao?.fase === 2 &&
+								!trabalhoConclusao?.aprovado_projeto ? (
+									<>
+										<Typography
+											variant="h6"
+											sx={{ mt: 1, mb: 2 }}
+										>
+											Aguardando Aprovação do Projeto
+										</Typography>
+										<Paper sx={{ p: 3, mb: 2 }}>
+											<Alert
+												severity="warning"
+												sx={{ mb: 2 }}
+											>
+												<Typography variant="body2">
+													<strong>Status:</strong> Seu
+													projeto de TCC ainda não foi
+													aprovado pela banca de
+													avaliação.
+												</Typography>
+											</Alert>
+											<Typography
+												variant="body2"
+												sx={{ mb: 2 }}
+											>
+												Você completou todas as etapas
+												disponíveis até o momento. Para
+												continuar com o processo do TCC,
+												é necessário aguardar a
+												aprovação do seu projeto pela
+												banca de avaliação.
+											</Typography>
+											<Typography
+												variant="body2"
+												color="text.secondary"
+											>
+												Após a aprovação, novas etapas
+												serão disponibilizadas para
+												você.
+											</Typography>
+										</Paper>
+									</>
+								) : (
+									<>
+										<Typography sx={{ mt: 2, mb: 1 }}>
+											Todas as etapas foram concluídas!
+										</Typography>
+									</>
+								)}
 								<Button onClick={() => setActiveStep(0)}>
 									Reiniciar
 								</Button>
@@ -2443,13 +2563,13 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 														(c) =>
 															c.aceito === true,
 													).length
-												} convite(s) aceito(s), falta(m) ${
+											  } convite(s) aceito(s), falta(m) ${
 													2 -
 													convitesBanca.filter(
 														(c) =>
 															c.aceito === true,
 													).length
-												}.`
+											  }.`
 											: " Ainda não há convites aceitos."}
 									</Typography>
 								</Alert>
@@ -2496,10 +2616,10 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 												0
 												? ` Você já tem ${
 														convitesAceitosFase2.length
-													} convite(s) aceito(s) para a banca final, falta(m) ${
+												  } convite(s) aceito(s) para a banca final, falta(m) ${
 														2 -
 														convitesAceitosFase2.length
-													}.`
+												  }.`
 												: " Ainda não há convites aceitos para a banca final.";
 										})()}
 									</Typography>
