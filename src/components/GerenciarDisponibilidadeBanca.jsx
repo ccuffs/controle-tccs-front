@@ -2,10 +2,6 @@ import React, { useState, useEffect } from "react";
 import {
 	Box,
 	Typography,
-	FormControl,
-	InputLabel,
-	Select,
-	MenuItem,
 	Button,
 	Alert,
 	CircularProgress,
@@ -15,6 +11,7 @@ import {
 import axiosInstance from "../auth/axios";
 import { useAuth } from "../contexts/AuthContext";
 import CustomDataGrid from "./CustomDataGrid";
+import FiltrosPesquisa from "./FiltrosPesquisa";
 
 const GerenciarDisponibilidadeBanca = () => {
 	const { usuario } = useAuth();
@@ -28,6 +25,7 @@ const GerenciarDisponibilidadeBanca = () => {
 	const [fase, setFase] = useState(1);
 	const [grade, setGrade] = useState(null);
 	const [disponibilidades, setDisponibilidades] = useState({});
+	const [disponibilidadesOriginais, setDisponibilidadesOriginais] = useState({});
 	// Mapa de slots ("YYYY-MM-DD-HH:mm:ss") bloqueados -> tipo ("banca" | "indisp")
 	const [bloqueados, setBloqueados] = useState(new Map());
 	const [rows, setRows] = useState([]);
@@ -131,6 +129,7 @@ const GerenciarDisponibilidadeBanca = () => {
 						disponibilidadesMap[key] = disp.disponivel;
 					});
 					setDisponibilidades(disponibilidadesMap);
+					setDisponibilidadesOriginais({ ...disponibilidadesMap });
 
 					// Buscar defesas do semestre e marcar slots bloqueados para este docente
 					try {
@@ -248,21 +247,7 @@ const GerenciarDisponibilidadeBanca = () => {
 		}
 	};
 
-	function handleCursoChange(e) {
-		setCursoSelecionado(e.target.value);
-	}
 
-	function handleAnoChange(e) {
-		setAno(e.target.value);
-	}
-
-	function handleSemestreChange(e) {
-		setSemestre(e.target.value);
-	}
-
-	function handleFaseChange(e) {
-		setFase(e.target.value);
-	}
 
 	const handleCheckboxChange = async (data, hora, checked) => {
 		if (!cursoSelecionado) return;
@@ -364,6 +349,9 @@ const GerenciarDisponibilidadeBanca = () => {
 					disponibilidades: disponibilidadesParaEnviar,
 				});
 
+				// Atualizar o estado original para refletir as mudanças salvas
+				setDisponibilidadesOriginais({ ...disponibilidades });
+
 				setSuccess("Disponibilidades sincronizadas com sucesso!");
 				setTimeout(() => setSuccess(""), 3000);
 			} else {
@@ -406,6 +394,31 @@ const GerenciarDisponibilidadeBanca = () => {
 		// Se houver defesa agendada, o slot é tratado como indisponível
 		if (isSlotBloqueado(key)) return false;
 		return disponibilidades[key] || false;
+	};
+
+	// Calcular número de alterações em relação ao estado original
+	const calcularNumeroAlteracoes = () => {
+		let alteracoes = 0;
+
+		// Verificar alterações nas disponibilidades
+		Object.keys(disponibilidades).forEach(key => {
+			const valorAtual = disponibilidades[key];
+			const valorOriginal = disponibilidadesOriginais[key];
+
+			// Se o valor mudou, conta como alteração
+			if (valorAtual !== valorOriginal) {
+				alteracoes++;
+			}
+		});
+
+		// Verificar se há novas disponibilidades que não existiam no original
+		Object.keys(disponibilidades).forEach(key => {
+			if (!(key in disponibilidadesOriginais)) {
+				alteracoes++;
+			}
+		});
+
+		return alteracoes;
 	};
 
 	const isDataCompleta = (data) => {
@@ -547,7 +560,7 @@ const GerenciarDisponibilidadeBanca = () => {
 	}
 
 	return (
-		<Box>
+		<Box >
 			<Typography variant="h6" component="h3" gutterBottom>
 				Gerenciar Disponibilidade para Bancas
 			</Typography>
@@ -565,66 +578,29 @@ const GerenciarDisponibilidadeBanca = () => {
 			)}
 
 			<Stack
-				direction="row"
+				// direction="row"
 				spacing={2}
-				alignItems="center"
+				// alignItems="center"
 				sx={{ mb: 3 }}
+
 			>
-				<FormControl fullWidth size="small">
-					<InputLabel>Curso</InputLabel>
-					<Select
-						value={cursoSelecionado}
-						label="Curso"
-						onChange={handleCursoChange}
-					>
-						<MenuItem value="">
-							<em>Selecione um curso</em>
-						</MenuItem>
-						{cursos.map((curso) => (
-							<MenuItem key={curso.id} value={curso.id}>
-								{curso.nome} - {curso.codigo} ({curso.turno})
-							</MenuItem>
-						))}
-					</Select>
-				</FormControl>
-				<FormControl sx={{ minWidth: 100 }} size="small">
-					<InputLabel>Ano</InputLabel>
-					<Select value={ano} label="Ano" onChange={handleAnoChange}>
-						{[ano - 1, ano, ano + 1].map((a) => (
-							<MenuItem key={a} value={a}>
-								{a}
-							</MenuItem>
-						))}
-					</Select>
-				</FormControl>
-				<FormControl sx={{ minWidth: 80 }} size="small">
-					<InputLabel>Semestre</InputLabel>
-					<Select
-						value={semestre}
-						label="Semestre"
-						onChange={handleSemestreChange}
-					>
-						{[1, 2].map((s) => (
-							<MenuItem key={s} value={s}>
-								{s}
-							</MenuItem>
-						))}
-					</Select>
-				</FormControl>
-				<FormControl sx={{ minWidth: 80 }} size="small">
-					<InputLabel>Fase</InputLabel>
-					<Select
-						value={fase}
-						label="Fase"
-						onChange={handleFaseChange}
-					>
-						{[1, 2].map((f) => (
-							<MenuItem key={f} value={f}>
-								{f == 1 ? "Projeto" : "TCC"}
-							</MenuItem>
-						))}
-					</Select>
-				</FormControl>
+				<FiltrosPesquisa
+					cursoSelecionado={cursoSelecionado}
+					setCursoSelecionado={setCursoSelecionado}
+					ano={ano}
+					setAno={setAno}
+					semestre={semestre}
+					setSemestre={setSemestre}
+					fase={fase}
+					setFase={setFase}
+					cursos={cursos}
+					habilitarCurso
+					habilitarAno
+					habilitarSemestre
+					habilitarFase
+					mostrarTodosCursos={false}
+					loading={loading}
+				/>
 				<Button
 					variant="contained"
 					color="primary"
@@ -636,9 +612,9 @@ const GerenciarDisponibilidadeBanca = () => {
 						!fase ||
 						loading
 					}
-					sx={{ minWidth: 120 }}
+					sx={{ maxWidth: 180 }}
 				>
-					{loading ? "Sincronizando..." : "Sincronizar"}
+					{loading ? "Sincronizando..." : `Sincronizar${calcularNumeroAlteracoes() > 0 ? ` (${calcularNumeroAlteracoes()})` : ''}`}
 				</Button>
 			</Stack>
 
