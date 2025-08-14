@@ -21,6 +21,8 @@ export default function FiltrosPesquisa({
 	habilitarAno = true,
 	habilitarSemestre = true,
 	habilitarFase = true,
+	mostrarTodosCursos = false,
+	loading = false,
 }) {
 	function handleCursoChange(e) {
 		setCursoSelecionado(e.target.value);
@@ -39,18 +41,20 @@ export default function FiltrosPesquisa({
 	}
 
 	return (
-				<Stack direction="row" spacing={2} alignItems="center">
+		<Stack direction="row" spacing={2} alignItems="center">
 			{habilitarCurso && (
-				<FormControl fullWidth size="small">
+				<FormControl fullWidth size="small" disabled={loading}>
 					<InputLabel>Curso</InputLabel>
 					<Select
 						value={cursoSelecionado}
 						label="Curso"
 						onChange={handleCursoChange}
 					>
-						<MenuItem value="">
-							<em>Todos os cursos</em>
-						</MenuItem>
+						{mostrarTodosCursos && (
+							<MenuItem value="">
+								<em>Todos os cursos</em>
+							</MenuItem>
+						)}
 						{cursos.map((curso) => (
 							<MenuItem key={curso.id} value={curso.id}>
 								{curso.nome} - {curso.codigo} ({curso.turno})
@@ -61,7 +65,7 @@ export default function FiltrosPesquisa({
 			)}
 
 			{habilitarAno && (
-				<FormControl sx={{ minWidth: 100 }} size="small">
+				<FormControl sx={{ minWidth: 100 }} size="small" disabled={loading}>
 					<InputLabel>Ano</InputLabel>
 					<Select
 						value={ano}
@@ -81,7 +85,7 @@ export default function FiltrosPesquisa({
 			)}
 
 			{habilitarSemestre && (
-				<FormControl sx={{ minWidth: 100 }} size="small">
+				<FormControl sx={{ minWidth: 100 }} size="small" disabled={loading}>
 					<InputLabel>Semestre</InputLabel>
 					<Select
 						value={semestre}
@@ -101,7 +105,7 @@ export default function FiltrosPesquisa({
 			)}
 
 			{habilitarFase && (
-				<FormControl sx={{ minWidth: 100 }} size="small">
+				<FormControl sx={{ minWidth: 100 }} size="small" disabled={loading}>
 					<InputLabel>Fase</InputLabel>
 					<Select
 						value={fase}

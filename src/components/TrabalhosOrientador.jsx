@@ -5,14 +5,11 @@ import {
 	Box,
 	Stack,
 	Typography,
-	FormControl,
-	InputLabel,
-	Select,
-	MenuItem,
 	Snackbar,
 	Alert,
 } from "@mui/material";
 import CustomDataGrid from "./CustomDataGrid";
+import FiltrosPesquisa from "./FiltrosPesquisa";
 
 function getAnoSemestreAtual() {
 	const data = new Date();
@@ -27,6 +24,7 @@ export default function TrabalhosOrientador() {
 	const [cursoSelecionado, setCursoSelecionado] = useState("");
 	const [ano, setAno] = useState(getAnoSemestreAtual().ano);
 	const [semestre, setSemestre] = useState(getAnoSemestreAtual().semestre);
+	const [fase, setFase] = useState("");
 	const [trabalhos, setTrabalhos] = useState([]);
 	const [openMessage, setOpenMessage] = useState(false);
 	const [messageText, setMessageText] = useState("");
@@ -42,7 +40,7 @@ export default function TrabalhosOrientador() {
 		} else {
 			setTrabalhos([]);
 		}
-	}, [cursoSelecionado, ano, semestre]);
+	}, [cursoSelecionado, ano, semestre, fase]);
 
 	async function getCursosOrientador() {
 		try {
@@ -70,7 +68,7 @@ export default function TrabalhosOrientador() {
 			const response = await axiosInstance.get("/orientacoes", {
 				params,
 			});
-			// Filtrar por curso, ano e semestre
+			// Filtrar por curso, ano, semestre e fase
 			const trabalhosFiltrados = (response.orientacoes || [])
 				.filter(
 					(o) =>
@@ -78,7 +76,8 @@ export default function TrabalhosOrientador() {
 						o.TrabalhoConclusao.Curso?.id ===
 							parseInt(cursoSelecionado) &&
 						o.TrabalhoConclusao.ano === parseInt(ano) &&
-						o.TrabalhoConclusao.semestre === parseInt(semestre),
+						o.TrabalhoConclusao.semestre === parseInt(semestre) &&
+						(fase === "" || o.TrabalhoConclusao.fase === parseInt(fase)),
 				)
 				.map((o) => ({
 					...o.TrabalhoConclusao,
@@ -94,15 +93,7 @@ export default function TrabalhosOrientador() {
 		}
 	}
 
-	function handleCursoChange(e) {
-		setCursoSelecionado(e.target.value);
-	}
-	function handleAnoChange(e) {
-		setAno(e.target.value);
-	}
-	function handleSemestreChange(e) {
-		setSemestre(e.target.value);
-	}
+
 	function handleCloseMessage(_, reason) {
 		if (reason === "clickaway") return;
 		setOpenMessage(false);
@@ -125,54 +116,23 @@ export default function TrabalhosOrientador() {
 				<Typography variant="h6" component="h3">
 					Trabalhos de Conclusão Orientados
 				</Typography>
-				<Stack direction="row" spacing={2} alignItems="center">
-					<FormControl fullWidth size="small">
-						<InputLabel>Curso</InputLabel>
-						<Select
-							value={cursoSelecionado}
-							label="Curso"
-							onChange={handleCursoChange}
-						>
-							<MenuItem value="">
-								<em>Selecione um curso</em>
-							</MenuItem>
-							{cursos.map((curso) => (
-								<MenuItem key={curso.id} value={curso.id}>
-									{curso.nome} - {curso.codigo} ({curso.turno}
-									)
-								</MenuItem>
-							))}
-						</Select>
-					</FormControl>
-					<FormControl sx={{ minWidth: 100 }} size="small">
-						<InputLabel>Ano</InputLabel>
-						<Select
-							value={ano}
-							label="Ano"
-							onChange={handleAnoChange}
-						>
-							{[ano - 1, ano, ano + 1].map((a) => (
-								<MenuItem key={a} value={a}>
-									{a}
-								</MenuItem>
-							))}
-						</Select>
-					</FormControl>
-					<FormControl sx={{ minWidth: 80 }} size="small">
-						<InputLabel>Semestre</InputLabel>
-						<Select
-							value={semestre}
-							label="Semestre"
-							onChange={handleSemestreChange}
-						>
-							{[1, 2].map((s) => (
-								<MenuItem key={s} value={s}>
-									{s}
-								</MenuItem>
-							))}
-						</Select>
-					</FormControl>
-				</Stack>
+				<FiltrosPesquisa
+					cursoSelecionado={cursoSelecionado}
+					setCursoSelecionado={setCursoSelecionado}
+					ano={ano}
+					setAno={setAno}
+					semestre={semestre}
+					setSemestre={setSemestre}
+					fase={fase}
+					setFase={setFase}
+					cursos={cursos}
+					habilitarCurso
+					habilitarAno
+					habilitarSemestre
+					habilitarFase
+					mostrarTodosCursos={false}
+					loading={false}
+				/>
 				<CustomDataGrid
 					rows={trabalhos}
 					columns={columns}

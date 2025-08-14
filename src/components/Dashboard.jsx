@@ -2,16 +2,13 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
 	Box,
 	Grid,
-	MenuItem,
 	Typography,
 	Stack,
-	FormControl,
-	InputLabel,
-	Select,
 } from "@mui/material";
 import axios from "../auth/axios";
 import { useAuth } from "../contexts/AuthContext";
 import { Permissoes } from "../enums/permissoes";
+import FiltrosPesquisa from "./FiltrosPesquisa";
 
 // Componentes de gráficos
 import GraficoEstudantesOrientador from "./GraficoEstudantesOrientador";
@@ -372,99 +369,24 @@ export default function Dashboard({ forceOrientador = false }) {
 			</Typography>
 
 			{/* Filtros globais */}
-			<Stack spacing={2} sx={{ width: 1400 }}>
-				<Stack direction="row" spacing={2} alignItems="center">
-					{(isAdmin ||
-						(isProfessor && cursosUsuario?.length > 0)) && (
-						<FormControl
-							fullWidth
-							size="small"
-							disabled={loadingFiltros}
-						>
-							<InputLabel>Curso</InputLabel>
-							<Select
-								value={filtroCurso}
-								label="Curso"
-								onChange={(e) => setFiltroCurso(e.target.value)}
-							>
-								{isAdmin && (
-									<MenuItem value="">
-										<em>Todos os cursos</em>
-									</MenuItem>
-								)}
-								{(isAdmin ? todosCursos : cursosUsuario).map(
-									(c) => (
-										<MenuItem
-											key={c.id}
-											value={String(c.id)}
-										>
-											{c.nome}
-										</MenuItem>
-									),
-								)}
-							</Select>
-						</FormControl>
-					)}
-
-					<FormControl
-						sx={{ minWidth: 100 }}
-						size="small"
-						disabled={loadingFiltros}
-					>
-						<InputLabel>Ano</InputLabel>
-						<Select
-							value={filtroAno}
-							label="Ano"
-							onChange={(e) => setFiltroAno(e.target.value)}
-						>
-							{anosUnicos.map((ano) => (
-								<MenuItem key={ano} value={String(ano)}>
-									{ano}
-								</MenuItem>
-							))}
-						</Select>
-					</FormControl>
-
-					<FormControl
-						sx={{ minWidth: 100 }}
-						size="small"
-						disabled={loadingFiltros}
-					>
-						<InputLabel>Semestre</InputLabel>
-						<Select
-							value={filtroSemestre}
-							label="Semestre"
-							onChange={(e) => setFiltroSemestre(e.target.value)}
-						>
-							{semestresDisponiveis.map((s) => (
-								<MenuItem key={s} value={String(s)}>
-									{s}
-								</MenuItem>
-							))}
-						</Select>
-					</FormControl>
-
-					{(isAdmin || isProfessor) && (
-						<FormControl
-							sx={{ minWidth: 100 }}
-							size="small"
-							disabled={loadingFiltros}
-						>
-							<InputLabel>Fase</InputLabel>
-							<Select
-								value={filtroFase}
-								label="Fase"
-								onChange={(e) => setFiltroFase(e.target.value)}
-							>
-								<MenuItem value="">
-									<em>Todas</em>
-								</MenuItem>
-								<MenuItem value="1">Projeto</MenuItem>
-								<MenuItem value="2">TCC</MenuItem>
-							</Select>
-						</FormControl>
-					)}
-				</Stack>
+			<Stack spacing={2} sx={{ width: isOrientadorView ? 1340 : 1400 }}>
+				<FiltrosPesquisa
+					cursoSelecionado={filtroCurso}
+					setCursoSelecionado={setFiltroCurso}
+					ano={filtroAno}
+					setAno={setFiltroAno}
+					semestre={filtroSemestre}
+					setSemestre={setFiltroSemestre}
+					fase={filtroFase}
+					setFase={setFiltroFase}
+					cursos={isAdmin ? todosCursos : cursosUsuario}
+					habilitarCurso={isAdmin || (isProfessor && cursosUsuario?.length > 0) || isOrientadorView}
+					habilitarAno
+					habilitarSemestre
+					habilitarFase={isAdmin || isProfessor || isOrientadorView}
+					mostrarTodosCursos={isAdmin}
+					loading={loadingFiltros}
+				/>
 			</Stack>
 
 			<Grid container spacing={2} sx={{ mt: 3 }}>

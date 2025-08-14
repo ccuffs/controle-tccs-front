@@ -446,6 +446,8 @@ export default function ConvitesRecebidosOrientador() {
 					habilitarAno
 					habilitarSemestre
 					habilitarFase
+					mostrarTodosCursos={false}
+					loading={loading}
 				/>
 				<Snackbar
 					open={openMessage}
