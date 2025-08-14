@@ -128,8 +128,16 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 			// Verificar se a resposta tem a estrutura esperada
 			const oferta = responseOferta.data || responseOferta;
 
-			if (!oferta || !oferta.ano || !oferta.semestre || !oferta.id_curso || !oferta.fase) {
-				throw new Error("Resposta da API da oferta não contém dados válidos");
+			if (
+				!oferta ||
+				!oferta.ano ||
+				!oferta.semestre ||
+				!oferta.id_curso ||
+				!oferta.fase
+			) {
+				throw new Error(
+					"Resposta da API da oferta não contém dados válidos",
+				);
 			}
 
 			console.log("Oferta extraída:", oferta);
@@ -146,7 +154,9 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 			const discente = responseDiscente.data || responseDiscente;
 
 			if (!discente || !discente.matricula) {
-				throw new Error("Resposta da API do discente não contém dados válidos");
+				throw new Error(
+					"Resposta da API do discente não contém dados válidos",
+				);
 			}
 
 			console.log("Discente extraído:", discente);
@@ -162,7 +172,9 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 					const tcc = responseTcc.data || responseTcc;
 
 					if (!tcc || !tcc.id) {
-						throw new Error("Resposta da API do TCC não contém dados válidos");
+						throw new Error(
+							"Resposta da API do TCC não contém dados válidos",
+						);
 					}
 
 					console.log("TCC extraído:", tcc);
@@ -194,15 +206,12 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 					} else {
 						// TCC da oferta atual - carregar normalmente
 						setTrabalhoConclusao(tcc);
-						setBloquearAtualizacaoEtapa(
-							isEtapaFinalBloqueada(tcc),
-						);
+						setBloquearAtualizacaoEtapa(isEtapaFinalBloqueada(tcc));
 						setFormData({
 							tema: tcc.tema || "",
 							titulo: tcc.titulo || "",
 							resumo: tcc.resumo || "",
-							seminario_andamento:
-								tcc.seminario_andamento || "",
+							seminario_andamento: tcc.seminario_andamento || "",
 						});
 
 						// Usar a etapa do banco de dados
@@ -216,10 +225,8 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 						await carregarConvites(tcc.id);
 					}
 				} else {
-									// Criar novo trabalho de conclusão se não existir
-				await criarNovoTrabalhoConclusao(
-					discente.matricula,
-				);
+					// Criar novo trabalho de conclusão se não existir
+					await criarNovoTrabalhoConclusao(discente.matricula);
 				}
 			} else {
 				setMessageText(
@@ -264,7 +271,10 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 			}
 			setConvitesBanca(convitesBancaArray);
 
-			console.log("Convites carregados:", { conviteOrientacao, convitesBancaArray });
+			console.log("Convites carregados:", {
+				conviteOrientacao,
+				convitesBancaArray,
+			});
 		} catch (error) {
 			console.error("Erro ao carregar convites:", error);
 			// Não re-throw o erro para não interromper o fluxo principal
@@ -310,7 +320,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 				novoTcc,
 			);
 
-						console.log("Resposta da API ao criar TCC:", response);
+			console.log("Resposta da API ao criar TCC:", response);
 			console.log("Tipo da resposta:", typeof response);
 			console.log("Estrutura da resposta:", Object.keys(response));
 
@@ -319,11 +329,16 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 
 			console.log("TCC criado extraído:", tccCriado);
 			console.log("Tipo do TCC criado:", typeof tccCriado);
-			console.log("Estrutura do TCC criado:", tccCriado ? Object.keys(tccCriado) : "null");
+			console.log(
+				"Estrutura do TCC criado:",
+				tccCriado ? Object.keys(tccCriado) : "null",
+			);
 
 			if (!tccCriado || !tccCriado.id) {
 				console.error("Resposta inválida da API:", response);
-				throw new Error("Resposta da API não contém dados válidos do TCC criado");
+				throw new Error(
+					"Resposta da API não contém dados válidos do TCC criado",
+				);
 			}
 
 			setTrabalhoConclusao(tccCriado);
@@ -338,7 +353,9 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 
 			// Verificar se o TCC foi realmente criado no banco
 			try {
-				const verificacao = await axiosInstance.get(`/trabalho-conclusao/${tccCriado.id}`);
+				const verificacao = await axiosInstance.get(
+					`/trabalho-conclusao/${tccCriado.id}`,
+				);
 				console.log("Verificação da criação do TCC:", verificacao);
 			} catch (verifError) {
 				console.error("Erro ao verificar TCC criado:", verifError);
@@ -701,13 +718,18 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 				`/dicentes/usuario/${usuario.id}`,
 			);
 
-			console.log("Resposta da API do discente na importação:", responseDiscente);
+			console.log(
+				"Resposta da API do discente na importação:",
+				responseDiscente,
+			);
 
 			// Verificar se a resposta tem a estrutura esperada
 			const discente = responseDiscente.data || responseDiscente;
 
 			if (!discente || !discente.matricula) {
-				throw new Error("Resposta da API do discente não contém dados válidos");
+				throw new Error(
+					"Resposta da API do discente não contém dados válidos",
+				);
 			}
 
 			console.log("Discente extraído na importação:", discente);
@@ -722,6 +744,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 						semestre: ofertaAtual.semestre,
 						id_curso: ofertaAtual.id_curso,
 						fase: 2, // TCC II (próxima fase)
+						aprovado_projeto: true, // Se está migrando para fase 2, o projeto foi aprovado
 					};
 
 					const response = await axiosInstance.put(
@@ -742,10 +765,20 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 							tccAtualizado.seminario_andamento || "",
 					});
 
-					// Sempre retornar para etapa 0, independente da escolha
-					setActiveStep(0);
+					// Manter a etapa atual do TCC ou definir etapa apropriada para fase 2
+					// Se o projeto foi aprovado na fase 1, continuar da etapa 6 (seminário de andamento)
+					// Se não foi aprovado, continuar da etapa atual
+					let etapaContinuacao = tccAnterior.etapa || 0;
+
+					// Se o projeto foi aprovado e estamos migrando para fase 2,
+					// continuar da etapa 6 (seminário de andamento)
+					if (tccAnterior.aprovado_projeto && tccAnterior.fase === 1) {
+						etapaContinuacao = 6; // Etapa do seminário de andamento
+					}
+
+					setActiveStep(etapaContinuacao);
 					if (onEtapaChange) {
-						onEtapaChange(0);
+						onEtapaChange(etapaContinuacao);
 					}
 
 					await carregarConvites(tccAnterior.id);
@@ -768,7 +801,8 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 							tema: novoTcc.tema || "",
 							titulo: novoTcc.titulo || "",
 							resumo: novoTcc.resumo || "",
-							seminario_andamento: novoTcc.seminario_andamento || "",
+							seminario_andamento:
+								novoTcc.seminario_andamento || "",
 						});
 
 						setMessageText(
@@ -778,7 +812,9 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 						setOpenMessage(true);
 					} catch (error) {
 						console.error("Erro ao criar novo TCC:", error);
-						setMessageText("Erro ao criar novo TCC. Tente novamente.");
+						setMessageText(
+							"Erro ao criar novo TCC. Tente novamente.",
+						);
 						setMessageSeverity("error");
 						setOpenMessage(true);
 					}
@@ -806,18 +842,26 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 
 					console.log("Resposta da API ao importar TCC:", response);
 					console.log("Tipo da resposta:", typeof response);
-					console.log("Estrutura da resposta:", Object.keys(response));
+					console.log(
+						"Estrutura da resposta:",
+						Object.keys(response),
+					);
 
 					// Verificar se a resposta tem a estrutura esperada
 					const tccImportado = response.data || response;
 
 					console.log("TCC importado extraído:", tccImportado);
 					console.log("Tipo do TCC importado:", typeof tccImportado);
-					console.log("Estrutura do TCC importado:", tccImportado ? Object.keys(tccImportado) : "null");
+					console.log(
+						"Estrutura do TCC importado:",
+						tccImportado ? Object.keys(tccImportado) : "null",
+					);
 
 					if (!tccImportado || !tccImportado.id) {
 						console.error("Resposta inválida da API:", response);
-						throw new Error("Resposta da API não contém dados válidos do TCC importado");
+						throw new Error(
+							"Resposta da API não contém dados válidos do TCC importado",
+						);
 					}
 
 					setTrabalhoConclusao(tccImportado);
@@ -839,10 +883,18 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 
 					// Verificar se o TCC foi realmente criado no banco
 					try {
-						const verificacao = await axiosInstance.get(`/trabalho-conclusao/${tccImportado.id}`);
-						console.log("Verificação da criação do TCC importado:", verificacao);
+						const verificacao = await axiosInstance.get(
+							`/trabalho-conclusao/${tccImportado.id}`,
+						);
+						console.log(
+							"Verificação da criação do TCC importado:",
+							verificacao,
+						);
 					} catch (verifError) {
-						console.error("Erro ao verificar TCC importado:", verifError);
+						console.error(
+							"Erro ao verificar TCC importado:",
+							verifError,
+						);
 					}
 
 					setMessageText(
@@ -863,7 +915,8 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 							tema: novoTcc.tema || "",
 							titulo: novoTcc.titulo || "",
 							resumo: novoTcc.resumo || "",
-							seminario_andamento: novoTcc.seminario_andamento || "",
+							seminario_andamento:
+								novoTcc.seminario_andamento || "",
 						});
 
 						setMessageText(
@@ -873,7 +926,9 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 						setOpenMessage(true);
 					} catch (error) {
 						console.error("Erro ao criar novo TCC:", error);
-						setMessageText("Erro ao criar novo TCC. Tente novamente.");
+						setMessageText(
+							"Erro ao criar novo TCC. Tente novamente.",
+						);
 						setMessageSeverity("error");
 						setOpenMessage(true);
 					}
