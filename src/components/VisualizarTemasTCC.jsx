@@ -8,11 +8,6 @@ import {
 	Button,
 	Snackbar,
 	Stack,
-	TextField,
-	MenuItem,
-	Select,
-	FormControl,
-	InputLabel,
 	Typography,
 	Chip,
 	Paper,
@@ -20,8 +15,7 @@ import {
 	CircularProgress,
 	Grid,
 } from "@mui/material";
-import { DataGrid } from "@mui/x-data-grid";
-import TemasDataGridDiscente from "./TemasDataGridDiscente";
+import TemasDataGrid from "./TemasDataGrid";
 
 export default function VisualizarTemasTCC({ onAvancarEtapa }) {
 	const { usuario } = useContext(AuthContext);
@@ -178,7 +172,10 @@ export default function VisualizarTemasTCC({ onAvancarEtapa }) {
 					área(s)
 				</Typography>
 
-				<TemasDataGridDiscente temas={temasAtivos} />
+				<TemasDataGrid
+					temas={temasAtivos}
+					isDiscenteView={true}
+				/>
 
 				{onAvancarEtapa && (
 					<Box

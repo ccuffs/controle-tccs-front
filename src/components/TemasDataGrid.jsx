@@ -10,6 +10,7 @@ export default function TemasDataGrid({
 	onOpenVagasModal,
 	onToggleAtivo,
 	onDelete,
+	isDiscenteView = false,
 }) {
 	// Preparar dados para o DataGrid sem agrupamento
 	const temasParaGrid = temas
@@ -62,17 +63,16 @@ export default function TemasDataGrid({
 		{
 			field: "docenteNome",
 			headerName: "Docente Responsável",
-			width: 250,
+			width: isDiscenteView ? 300 : 250,
 			renderCell: (params) => (
 				<div
 					style={{
-						display: "flex",
-						alignItems: "center",
 						whiteSpace: "normal",
 						wordWrap: "break-word",
-						lineHeight: "1.2",
+						lineHeight: "1.4",
 						width: "100%",
-						padding: "4px 0",
+						height: "auto",
+						minHeight: "auto",
 					}}
 				>
 					{params.value}
@@ -82,17 +82,16 @@ export default function TemasDataGrid({
 		{
 			field: "areaNome",
 			headerName: "Área TCC",
-			width: 200,
+			width: isDiscenteView ? 250 : 200,
 			renderCell: (params) => (
 				<div
 					style={{
-						display: "flex",
-						alignItems: "center",
 						whiteSpace: "normal",
 						wordWrap: "break-word",
-						lineHeight: "1.2",
+						lineHeight: "1.4",
 						width: "100%",
-						padding: "4px 0",
+						height: "auto",
+						minHeight: "auto",
 					}}
 				>
 					{params.value}
@@ -102,17 +101,16 @@ export default function TemasDataGrid({
 		{
 			field: "descricao",
 			headerName: "Descrição",
-			width: 250,
+			width: isDiscenteView ? 500 : 250,
 			renderCell: (params) => (
 				<div
 					style={{
-						display: "flex",
-						alignItems: "center",
 						whiteSpace: "normal",
 						wordWrap: "break-word",
-						lineHeight: "1.2",
+						lineHeight: "1.4",
 						width: "100%",
-						padding: "4px 0",
+						height: "auto",
+						minHeight: "auto",
 					}}
 				>
 					{params.value}
@@ -136,7 +134,7 @@ export default function TemasDataGrid({
 		{
 			field: "vagasOferta",
 			headerName: "Vagas",
-			width: 200,
+			width: isDiscenteView ? 300 : 200,
 			renderCell: (params) => {
 				const vagas = params.row.vagasOferta || 0;
 
@@ -217,9 +215,10 @@ export default function TemasDataGrid({
 		},
 	];
 
-	// Criar modelo de visibilidade das colunas baseado nas permissões
+	// Criar modelo de visibilidade das colunas baseado nas permissões e modo de visualização
 	const columnVisibilityModel = {
-		actions: hasPermission([
+		ativo: !isDiscenteView,
+		actions: !isDiscenteView && hasPermission([
 			Permissoes.GRUPOS.ADMIN,
 			Permissoes.GRUPOS.PROFESSOR,
 		]),
@@ -232,14 +231,41 @@ export default function TemasDataGrid({
 			pageSize={10}
 			checkboxSelection={false}
 			disableSelectionOnClick
-			rowSpanning={false}
+			rowSpanning
 			getRowId={(row) => row.id}
 			getRowClassName={getRowClassName}
-			rowHeight={56}
+			getRowHeight={() => 'auto'}
 			columnVisibilityModel={columnVisibilityModel}
 			sx={{
 				"& .row-with-bottom-border": {
 					borderBottom: "1px solid #b5b6be !important",
+				},
+				"& .MuiDataGrid-cell": {
+					display: "flex",
+					alignItems: "flex-start",
+					lineHeight: "1.4",
+					paddingTop: "12px",
+					paddingBottom: "12px",
+					minHeight: "auto",
+					height: "auto",
+					overflow: "visible",
+				},
+				"& .MuiDataGrid-cellContent": {
+					whiteSpace: "normal",
+					wordWrap: "break-word",
+					overflow: "visible",
+					width: "100%",
+					minHeight: "auto",
+				},
+				"& .MuiDataGrid-row": {
+					minHeight: "auto !important",
+					height: "auto !important",
+				},
+				"& .MuiDataGrid-renderingZone": {
+					"& .MuiDataGrid-row": {
+						minHeight: "auto !important",
+						height: "auto !important",
+					},
 				},
 			}}
 		/>

@@ -171,7 +171,7 @@ export default function ConvitesRecebidosOrientador() {
 		setConviteSelecionado(null);
 	}
 
-	// Preparar dados para o DataGrid seguindo o padrão do TemasDataGridDiscente
+	// Preparar dados para o DataGrid seguindo o padrão do TemasDataGrid (modo discente)
 	const convitesParaGrid = convites
 		.map((convite) => {
 			return {
