@@ -430,7 +430,8 @@ export default function Orientacao() {
 				);
 			},
 		},
-		{
+		// Coluna Etapa/Nota - só exibe quando todos os filtros estão selecionados
+		...(selectedCurso && selectedAnoSemestre && faseSelecionada ? [{
 			field: "etapaNota",
 			headerName: "Etapa / Nota",
 			width: 220,
@@ -560,7 +561,7 @@ export default function Orientacao() {
 					</Box>
 				);
 			},
-		},
+		}] : []),
 	];
 
 	return (
@@ -727,29 +728,6 @@ export default function Orientacao() {
 				</PermissionContext>
 
 				{/* (Opcional) Dica de filtros removida para exibir todos os dicentes por padrão */}
-
-				{/* Exibição de filtros ativos */}
-				{selectedCurso && selectedAnoSemestre && faseSelecionada && (
-					<Paper
-						sx={{
-							p: 2,
-							bgcolor: "primary.light",
-							color: "primary.contrastText",
-						}}
-					>
-						<Typography variant="body2">
-							<strong>Filtros ativos:</strong>
-							{selectedCurso && ` Curso: ${selectedCurso.nome}`}
-							{selectedAnoSemestre &&
-								` | Ano/Semestre: ${selectedAnoSemestre}`}
-							{faseSelecionada && ` | Fase: ${faseSelecionada}`}
-						</Typography>
-						<Typography variant="body2" sx={{ mt: 0.5 }}>
-							{docentesDisponiveis.length} orientador(es)
-							disponível(is) para este curso.
-						</Typography>
-					</Paper>
-				)}
 
 				{/* DataGrid de dicentes e orientações */}
 				<PermissionContext
