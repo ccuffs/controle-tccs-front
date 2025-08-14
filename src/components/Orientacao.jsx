@@ -431,137 +431,179 @@ export default function Orientacao() {
 			},
 		},
 		// Coluna Etapa/Nota - só exibe quando todos os filtros estão selecionados
-		...(selectedCurso && selectedAnoSemestre && faseSelecionada ? [{
-			field: "etapaNota",
-			headerName: "Etapa / Nota",
-			width: 220,
-			sortable: false,
-			renderCell: (params) => {
-				const tcc = trabalhosPorMatricula[params.row.matricula];
-				const etapa = tcc?.etapa ?? null;
-				const convites = tcc?.id ? convitesPorTcc[tcc.id] || [] : [];
-				const defesas = tcc?.Defesas || tcc?.defesas || [];
+		...(selectedCurso && selectedAnoSemestre && faseSelecionada
+			? [
+					{
+						field: "etapaNota",
+						headerName: "Etapa / Nota",
+						width: 220,
+						sortable: false,
+						renderCell: (params) => {
+							const tcc =
+								trabalhosPorMatricula[params.row.matricula];
+							const etapa = tcc?.etapa ?? null;
+							const convites = tcc?.id
+								? convitesPorTcc[tcc.id] || []
+								: [];
+							const defesas = tcc?.Defesas || tcc?.defesas || [];
 
-				let showWarn = false;
-				let tooltipText = "";
+							let showWarn = false;
+							let tooltipText = "";
 
-				let showSuccess = false;
-				let successTooltip = "";
+							let showSuccess = false;
+							let successTooltip = "";
 
-				if (etapa === 0) {
-					const temConviteOrientacao = Array.isArray(convites)
-						? convites.some((c) => c.orientacao === true)
-						: false;
-					const temOrientadorDefinido = !!getOrientadorAtual(
-						params.row.matricula,
-					);
-					if (!temConviteOrientacao && !temOrientadorDefinido) {
-						showWarn = true;
-						tooltipText =
-							"O estudante não enviou convite para orientação";
-					} else if (temConviteOrientacao || temOrientadorDefinido) {
-						showSuccess = true;
-						successTooltip = temOrientadorDefinido
-							? "Orientador definido"
-							: "Convite para orientação enviado";
-					}
-				} else if (etapa === 5 || etapa === 8) {
-					const convitesBanca = Array.isArray(convites)
-						? convites.filter((c) => c.orientacao === false)
-						: [];
-					// Considera a fase corrente do TCC para validar convites corretos
-					const faseAtualTcc =
-						tcc?.fase != null ? parseInt(tcc.fase) : null;
-					const temConviteBancaFase = convitesBanca.some((c) =>
-						faseAtualTcc == null
-							? true
-							: parseInt(c.fase) === faseAtualTcc,
-					);
-					if (!temConviteBancaFase) {
-						showWarn = true;
-						tooltipText =
-							"O estudante não enviou convite para banca";
-					} else {
-						showSuccess = true;
-						successTooltip = "Convite para banca enviado";
-					}
-				} else if (etapa >= 1 && etapa <= 4) {
-					// Entre as etapas 1 e 4, sucesso se já tem orientador definido
-					const temOrientadorDefinido = !!getOrientadorAtual(
-						params.row.matricula,
-					);
-					if (temOrientadorDefinido) {
-						showSuccess = true;
-						successTooltip = "Orientador definido";
-					}
-				} else if (etapa === 6 || etapa === 7 || etapa === 9) {
-					// Para etapas 6, 7 e 9, sucesso se existem convites de banca enviados na fase corrente
-					const convitesBanca = Array.isArray(convites)
-						? convites.filter((c) => c.orientacao === false)
-						: [];
-					const faseAtualTcc =
-						tcc?.fase != null ? parseInt(tcc.fase) : null;
-					const temConviteBancaFase = convitesBanca.some((c) =>
-						faseAtualTcc == null
-							? true
-							: parseInt(c.fase) === faseAtualTcc,
-					);
-					if (temConviteBancaFase) {
-						showSuccess = true;
-						successTooltip = "Convites de banca enviados";
-					}
-				}
-
-				const faseAtual = tcc?.fase != null ? parseInt(tcc.fase) : null;
-				const defesasFase = Array.isArray(defesas)
-					? defesas.filter((d) => parseInt(d.fase) === faseAtual)
-					: [];
-				const notas = defesasFase
-					.map((d) => d.avaliacao)
-					.filter((v) => v !== null && v !== undefined);
-				const media =
-					notas.length > 0
-						? notas.reduce((a, b) => a + Number(b), 0) /
-							notas.length
-						: null;
-
-				return (
-					<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-						<Typography variant="body2">
-							{etapa != null ? `Etapa ${etapa}` : "Etapa —"}
-						</Typography>
-						{showWarn && (
-							<Tooltip title={tooltipText}>
-								<WarningAmberIcon
-									color="warning"
-									fontSize="small"
-								/>
-							</Tooltip>
-						)}
-						{!showWarn && showSuccess && (
-							<Tooltip title={successTooltip}>
-								<CheckCircleIcon
-									color="success"
-									fontSize="small"
-								/>
-							</Tooltip>
-						)}
-						<Typography
-							variant="body2"
-							color={
-								media != null
-									? "text.primary"
-									: "text.secondary"
+							if (etapa === 0) {
+								const temConviteOrientacao = Array.isArray(
+									convites,
+								)
+									? convites.some(
+											(c) => c.orientacao === true,
+										)
+									: false;
+								const temOrientadorDefinido =
+									!!getOrientadorAtual(params.row.matricula);
+								if (
+									!temConviteOrientacao &&
+									!temOrientadorDefinido
+								) {
+									showWarn = true;
+									tooltipText =
+										"O estudante não enviou convite para orientação";
+								} else if (
+									temConviteOrientacao ||
+									temOrientadorDefinido
+								) {
+									showSuccess = true;
+									successTooltip = temOrientadorDefinido
+										? "Orientador definido"
+										: "Convite para orientação enviado";
+								}
+							} else if (etapa === 5 || etapa === 8) {
+								const convitesBanca = Array.isArray(convites)
+									? convites.filter(
+											(c) => c.orientacao === false,
+										)
+									: [];
+								// Considera a fase corrente do TCC para validar convites corretos
+								const faseAtualTcc =
+									tcc?.fase != null
+										? parseInt(tcc.fase)
+										: null;
+								const temConviteBancaFase = convitesBanca.some(
+									(c) =>
+										faseAtualTcc == null
+											? true
+											: parseInt(c.fase) === faseAtualTcc,
+								);
+								if (!temConviteBancaFase) {
+									showWarn = true;
+									tooltipText =
+										"O estudante não enviou convite para banca";
+								} else {
+									showSuccess = true;
+									successTooltip =
+										"Convite para banca enviado";
+								}
+							} else if (etapa >= 1 && etapa <= 4) {
+								// Entre as etapas 1 e 4, sucesso se já tem orientador definido
+								const temOrientadorDefinido =
+									!!getOrientadorAtual(params.row.matricula);
+								if (temOrientadorDefinido) {
+									showSuccess = true;
+									successTooltip = "Orientador definido";
+								}
+							} else if (
+								etapa === 6 ||
+								etapa === 7 ||
+								etapa === 9
+							) {
+								// Para etapas 6, 7 e 9, sucesso se existem convites de banca enviados na fase corrente
+								const convitesBanca = Array.isArray(convites)
+									? convites.filter(
+											(c) => c.orientacao === false,
+										)
+									: [];
+								const faseAtualTcc =
+									tcc?.fase != null
+										? parseInt(tcc.fase)
+										: null;
+								const temConviteBancaFase = convitesBanca.some(
+									(c) =>
+										faseAtualTcc == null
+											? true
+											: parseInt(c.fase) === faseAtualTcc,
+								);
+								if (temConviteBancaFase) {
+									showSuccess = true;
+									successTooltip =
+										"Convites de banca enviados";
+								}
 							}
-						>
-							{media != null
-								? `Nota ${media.toFixed(1)}`
-								: "Nota —"}
-						</Typography>
-					</Box>
-				);
-			},
-		}] : []),
+
+							const faseAtual =
+								tcc?.fase != null ? parseInt(tcc.fase) : null;
+							const defesasFase = Array.isArray(defesas)
+								? defesas.filter(
+										(d) => parseInt(d.fase) === faseAtual,
+									)
+								: [];
+							const notas = defesasFase
+								.map((d) => d.avaliacao)
+								.filter((v) => v !== null && v !== undefined);
+							const media =
+								notas.length > 0
+									? notas.reduce((a, b) => a + Number(b), 0) /
+										notas.length
+									: null;
+
+							return (
+								<Box
+									sx={{
+										display: "flex",
+										alignItems: "center",
+										gap: 1,
+									}}
+								>
+									<Typography variant="body2">
+										{etapa != null
+											? `Etapa ${etapa}`
+											: "Etapa —"}
+									</Typography>
+									{showWarn && (
+										<Tooltip title={tooltipText}>
+											<WarningAmberIcon
+												color="warning"
+												fontSize="small"
+											/>
+										</Tooltip>
+									)}
+									{!showWarn && showSuccess && (
+										<Tooltip title={successTooltip}>
+											<CheckCircleIcon
+												color="success"
+												fontSize="small"
+											/>
+										</Tooltip>
+									)}
+									<Typography
+										variant="body2"
+										color={
+											media != null
+												? "text.primary"
+												: "text.secondary"
+										}
+									>
+										{media != null
+											? `Nota ${media.toFixed(1)}`
+											: "Nota —"}
+									</Typography>
+								</Box>
+							);
+						},
+					},
+				]
+			: []),
 	];
 
 	return (
