@@ -5,10 +5,6 @@ import {
 	Box,
 	Stack,
 	Typography,
-	FormControl,
-	InputLabel,
-	Select,
-	MenuItem,
 	TextField,
 	Button,
 	Checkbox,
@@ -24,6 +20,7 @@ import {
 	Divider,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
+import FiltrosPesquisa from "./FiltrosPesquisa";
 
 function getAnoSemestreAtual() {
 	const data = new Date();
@@ -328,73 +325,23 @@ export default function AvaliarDefesasOrientador() {
 					Avaliar Defesas
 				</Typography>
 
-				<Stack direction="row" spacing={2} alignItems="center">
-					<FormControl fullWidth size="small">
-						<InputLabel>Curso</InputLabel>
-						<Select
-							value={cursoSelecionado}
-							label="Curso"
-							onChange={(e) =>
-								setCursoSelecionado(e.target.value)
-							}
-						>
-							<MenuItem value="">
-								<em>Selecione um curso</em>
-							</MenuItem>
-							{cursos.map((curso) => (
-								<MenuItem key={curso.id} value={curso.id}>
-									{curso.nome} - {curso.codigo} ({curso.turno}
-									)
-								</MenuItem>
-							))}
-						</Select>
-					</FormControl>
-
-					<FormControl sx={{ minWidth: 100 }} size="small">
-						<InputLabel>Ano</InputLabel>
-						<Select
-							value={ano}
-							label="Ano"
-							onChange={(e) => setAno(e.target.value)}
-						>
-							{[ano - 1, ano, ano + 1].map((a) => (
-								<MenuItem key={a} value={a}>
-									{a}
-								</MenuItem>
-							))}
-						</Select>
-					</FormControl>
-
-					<FormControl sx={{ minWidth: 80 }} size="small">
-						<InputLabel>Semestre</InputLabel>
-						<Select
-							value={semestre}
-							label="Semestre"
-							onChange={(e) => setSemestre(e.target.value)}
-						>
-							{[1, 2].map((s) => (
-								<MenuItem key={s} value={s}>
-									{s}
-								</MenuItem>
-							))}
-						</Select>
-					</FormControl>
-
-					<FormControl sx={{ minWidth: 80 }} size="small">
-						<InputLabel>Fase</InputLabel>
-						<Select
-							value={fase}
-							label="Fase"
-							onChange={(e) => setFase(e.target.value)}
-						>
-							{[1, 2].map((f) => (
-								<MenuItem key={f} value={f}>
-									{f == 1 ? "Projeto" : "TCC"}
-								</MenuItem>
-							))}
-						</Select>
-					</FormControl>
-				</Stack>
+				<FiltrosPesquisa
+					cursoSelecionado={cursoSelecionado}
+					setCursoSelecionado={setCursoSelecionado}
+					ano={ano}
+					setAno={setAno}
+					semestre={semestre}
+					setSemestre={setSemestre}
+					fase={fase}
+					setFase={setFase}
+					cursos={cursos}
+					habilitarCurso
+					habilitarAno
+					habilitarSemestre
+					habilitarFase
+					mostrarTodosCursos={false}
+					loading={loading}
+				/>
 
 				{loading ? (
 					<Stack direction="row" alignItems="center" spacing={1}>
