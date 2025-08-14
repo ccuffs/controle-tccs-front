@@ -626,12 +626,12 @@ export default function AvaliarDefesasOrientador() {
 																		</Button>
 																	</span>
 																</Tooltip>
-																<Button variant="outlined" color="inherit" onClick={() => cancelarEdicao(card.idTcc)}>
+																<Button variant="outlined" color="error" onClick={() => cancelarEdicao(card.idTcc)}>
 																	Cancelar
 																</Button>
 															</Stack>
 														) : (
-															<Button variant="outlined" onClick={() => iniciarEdicao(card.idTcc)}>Editar</Button>
+															<Button variant="outlined" color="primary" onClick={() => iniciarEdicao(card.idTcc)}>Editar</Button>
 														)}
 										</CardActions>
 									</Card>
