@@ -512,7 +512,7 @@ export default function Dashboard({ forceOrientador = false }) {
 				</Stack>
 			</Stack>
 
-			<Grid container spacing={2}>
+			<Grid container spacing={2} sx={{ mt: 3 }}>
 				{/* Gráfico 1: Estudantes com orientador definido na oferta e Donut por etapa, lado a lado */}
 				{(isAdmin || isProfessor) && (
 					<>
@@ -1081,7 +1081,7 @@ export default function Dashboard({ forceOrientador = false }) {
           2ª linha → Convites no período, Defesas agendadas */}
 			{!isAdmin && !isProfessor && isOrientador && isOrientadorView && (
 				<>
-					<Grid container spacing={2}>
+					<Grid container spacing={2} sx={{ mt: 3 }}>
 						{/* Distribuição por etapa */}
 						<Grid item xs={12} md={4} lg={4}>
 							<Card
@@ -1091,7 +1091,7 @@ export default function Dashboard({ forceOrientador = false }) {
 									height: "100%",
 									display: "flex",
 									flexDirection: "column",
-									width: { xs: "100%", md: 406 },
+									width: { xs: "100%", md: 436 },
 								}}
 							>
 								<CardContent
@@ -1200,7 +1200,7 @@ export default function Dashboard({ forceOrientador = false }) {
 									height: "100%",
 									display: "flex",
 									flexDirection: "column",
-									width: { xs: "100%", md: 406 },
+									width: { xs: "100%", md: 436 },
 								}}
 							>
 								<CardContent>
@@ -1307,7 +1307,7 @@ export default function Dashboard({ forceOrientador = false }) {
 									height: "100%",
 									display: "flex",
 									flexDirection: "column",
-									width: { xs: "100%", md: 406 },
+									width: { xs: "100%", md: 436 },
 								}}
 							>
 								<CardContent>
@@ -1406,7 +1406,7 @@ export default function Dashboard({ forceOrientador = false }) {
 						</Grid>
 					</Grid>
 
-					<Grid container spacing={2} sx={{ mt: 0 }}>
+					<Grid container spacing={2} sx={{ mt: 3 }}>
 						{/* Convites enviados no período (linha) */}
 						<Grid item xs={12} md={8}>
 							<Card
@@ -1889,7 +1889,7 @@ export default function Dashboard({ forceOrientador = false }) {
 
 			{/* Gráficos 2 e 3: Orientandos por docente e Defesas aceitas por docente lado a lado */}
 			{(isAdmin || isProfessor) && (
-				<Grid container spacing={2} sx={{ mt: 0 }}>
+				<Grid container spacing={2} sx={{ mt: 3 }}>
 					{/* Gráfico 2: Barras horizontais - Orientandos por docente */}
 					<Grid item xs={12} md={6} lg={6}>
 						<Card
@@ -2129,7 +2129,7 @@ export default function Dashboard({ forceOrientador = false }) {
 			{(isAdmin ||
 				isProfessor ||
 				(isOrientador && !isOrientadorView)) && (
-				<Grid container spacing={2} sx={{ mt: 0 }}>
+				<Grid container spacing={2} sx={{ mt: 3 }}>
 					<Grid item xs={12} md={8}>
 						<Card
 							sx={{

@@ -177,7 +177,9 @@ export default function AvaliarDefesasOrientador() {
 			const novo = { ...prev };
 			Object.keys(novo).forEach((k) => {
 				if (k.startsWith(prefix)) {
-					novo[k] = snapshot.hasOwnProperty(k) ? snapshot[k] : novo[k];
+					novo[k] = snapshot.hasOwnProperty(k)
+						? snapshot[k]
+						: novo[k];
 				}
 			});
 			return novo;
@@ -412,9 +414,15 @@ export default function AvaliarDefesasOrientador() {
 
 							<Stack spacing={2}>
 								{cardsPorTcc.map((card) => (
-									<Card key={card.idTcc} variant="outlined" sx={{
-										backgroundColor:
-											theme.palette.background.default}}>
+									<Card
+										key={card.idTcc}
+										variant="outlined"
+										sx={{
+											backgroundColor:
+												theme.palette.background
+													.default,
+										}}
+									>
 										<CardContent>
 											<Stack spacing={1}>
 												<Typography
@@ -584,27 +592,45 @@ export default function AvaliarDefesasOrientador() {
 																	m.nomeMembroBanca
 																}
 															</Typography>
-															<Box sx={{ width: 100 }}>
-														<TextField
-																placeholder="Ex: 8.5"
-																size="small"
-															type="number"
-																value={
-																	m.valorAvaliacao
-																}
-																onChange={(e) =>
-																	handleAvaliacaoChange(
-																		card.idTcc,
-																		m.membroBanca,
-																		card.fase,
-																		e.target
-																		.value,
-																	)
-																}
-														inputProps={{ step: "0.1", min: 0 }}
-														disabled={Boolean(m.salvo) && !editandoTcc[card.idTcc]}
-														/>
-																</Box>
+															<Box
+																sx={{
+																	width: 100,
+																}}
+															>
+																<TextField
+																	placeholder="Ex: 8.5"
+																	size="small"
+																	type="number"
+																	value={
+																		m.valorAvaliacao
+																	}
+																	onChange={(
+																		e,
+																	) =>
+																		handleAvaliacaoChange(
+																			card.idTcc,
+																			m.membroBanca,
+																			card.fase,
+																			e
+																				.target
+																				.value,
+																		)
+																	}
+																	inputProps={{
+																		step: "0.1",
+																		min: 0,
+																	}}
+																	disabled={
+																		Boolean(
+																			m.salvo,
+																		) &&
+																		!editandoTcc[
+																			card
+																				.idTcc
+																		]
+																	}
+																/>
+															</Box>
 														</Stack>
 													))}
 												</Box>
@@ -613,26 +639,51 @@ export default function AvaliarDefesasOrientador() {
 										<CardActions
 											sx={{ justifyContent: "flex-end" }}
 										>
-														{editandoTcc[card.idTcc] ? (
-															<Stack direction="row" spacing={1}>
-																<Tooltip title="Salvar avaliações deste TCC">
-																	<span>
-																		<Button
-																			variant="contained"
-																			color="primary"
-																			onClick={() => salvarAvaliacoesDoTcc(card.idTcc)}
-																		>
-																			Salvar
-																		</Button>
-																	</span>
-																</Tooltip>
-																<Button variant="outlined" color="error" onClick={() => cancelarEdicao(card.idTcc)}>
-																	Cancelar
-																</Button>
-															</Stack>
-														) : (
-															<Button variant="outlined" color="primary" onClick={() => iniciarEdicao(card.idTcc)}>Editar</Button>
-														)}
+											{editandoTcc[card.idTcc] ? (
+												<Stack
+													direction="row"
+													spacing={1}
+												>
+													<Tooltip title="Salvar avaliações deste TCC">
+														<span>
+															<Button
+																variant="contained"
+																color="primary"
+																onClick={() =>
+																	salvarAvaliacoesDoTcc(
+																		card.idTcc,
+																	)
+																}
+															>
+																Salvar
+															</Button>
+														</span>
+													</Tooltip>
+													<Button
+														variant="outlined"
+														color="error"
+														onClick={() =>
+															cancelarEdicao(
+																card.idTcc,
+															)
+														}
+													>
+														Cancelar
+													</Button>
+												</Stack>
+											) : (
+												<Button
+													variant="outlined"
+													color="primary"
+													onClick={() =>
+														iniciarEdicao(
+															card.idTcc,
+														)
+													}
+												>
+													Editar
+												</Button>
+											)}
 										</CardActions>
 									</Card>
 								))}
