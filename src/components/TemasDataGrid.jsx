@@ -11,6 +11,7 @@ export default function TemasDataGrid({
 	onToggleAtivo,
 	onDelete,
 	isDiscenteView = false,
+	isOrientadorView = false,
 }) {
 	// Preparar dados para o DataGrid sem agrupamento
 	const temasParaGrid = temas
@@ -21,14 +22,17 @@ export default function TemasDataGrid({
 			vagasOferta: tema?.vagasOferta || tema?.vagas || 0,
 		}))
 		.sort((a, b) => {
-			// Primeiro ordenar por nome do docente
-			const nomeA = a.docenteNome || "";
-			const nomeB = b.docenteNome || "";
-			if (nomeA !== nomeB) {
-				return nomeA.localeCompare(nomeB);
+			// No modo orientador, não ordenar por docente já que só há um
+			if (!isOrientadorView) {
+				// Primeiro ordenar por nome do docente
+				const nomeA = a.docenteNome || "";
+				const nomeB = b.docenteNome || "";
+				if (nomeA !== nomeB) {
+					return nomeA.localeCompare(nomeB);
+				}
 			}
 
-			// Se mesmo docente, ordenar por área TCC
+			// Ordenar por área TCC
 			const areaA = a.areaNome || "";
 			const areaB = b.areaNome || "";
 			if (areaA !== areaB) {
@@ -43,6 +47,11 @@ export default function TemasDataGrid({
 	const { hasPermission } = usePermissions();
 
 	const getRowClassName = (params) => {
+		// No modo orientador, não criar bordas baseadas no docente
+		if (isOrientadorView) {
+			return "";
+		}
+
 		const currentDocente = params.row.docenteNome;
 
 		// Encontrar o índice da linha atual no array temasParaGrid
@@ -217,6 +226,7 @@ export default function TemasDataGrid({
 
 	// Criar modelo de visibilidade das colunas baseado nas permissões e modo de visualização
 	const columnVisibilityModel = {
+		docenteNome: !isOrientadorView, // Ocultar coluna docente no modo orientador
 		ativo: !isDiscenteView,
 		actions: !isDiscenteView && hasPermission([
 			Permissoes.GRUPOS.ADMIN,

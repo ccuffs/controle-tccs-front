@@ -4,6 +4,7 @@ import PermissionContext from "../contexts/PermissionContext";
 import { Permissoes } from "../enums/permissoes";
 import permissoesService from "../services/permissoesService";
 import { useAuth } from "../contexts/AuthContext";
+import FiltrosPesquisa from "./FiltrosPesquisa";
 
 import {
 	Alert,
@@ -31,9 +32,10 @@ export default function Orientacao() {
 	const [orientadoresCurso, setOrientadoresCurso] = useState([]);
 	const [ofertasTcc, setOfertasTcc] = useState([]);
 	const [orientacoes, setOrientacoes] = useState([]);
-	const [selectedCurso, setSelectedCurso] = useState(null);
-	const [selectedAnoSemestre, setSelectedAnoSemestre] = useState(null);
-	const [faseSelecionada, setFaseSelecionada] = useState("");
+	const [cursoSelecionado, setCursoSelecionado] = useState("");
+	const [ano, setAno] = useState(new Date().getFullYear());
+	const [semestre, setSemestre] = useState("");
+	const [fase, setFase] = useState("");
 	const [loadingCursos, setLoadingCursos] = useState(false);
 	const [loadingOfertasTcc, setLoadingOfertasTcc] = useState(false);
 	const [loadingDicentes, setLoadingDicentes] = useState(false);
@@ -54,28 +56,32 @@ export default function Orientacao() {
 	}, []); // eslint-disable-line react-hooks/exhaustive-deps
 
 	useEffect(() => {
-		// Atualiza dicentes conforme filtros (ano/semestre, fase)
+		// Atualiza dicentes conforme filtros (ano, semestre, fase)
 		getDicentes();
 
-		// Busca orientações e TCCs quando todos os filtros estão preenchidos
-		if (selectedCurso && selectedAnoSemestre && faseSelecionada) {
+		// Busca orientações quando todos os filtros estão preenchidos
+		if (cursoSelecionado && ano && semestre && fase) {
 			getOrientacoes();
+		} else {
+			setOrientacoes([]);
+		}
+
+		// Busca TCCs quando ano e semestre estão selecionados (para exibir ícones)
+		if (ano && semestre) {
 			getTrabalhosComDetalhes();
 		} else {
-			// Limpa dados dependentes de filtros completos
-			setOrientacoes([]);
 			setTrabalhosPorMatricula({});
 		}
-	}, [selectedCurso, selectedAnoSemestre, faseSelecionada]); // eslint-disable-line react-hooks/exhaustive-deps
+	}, [cursoSelecionado, ano, semestre, fase]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	useEffect(() => {
 		// Busca orientadores do curso selecionado
-		if (selectedCurso) {
-			getOrientadoresCurso(selectedCurso.id);
+		if (cursoSelecionado) {
+			getOrientadoresCurso(cursoSelecionado);
 		} else {
 			setOrientadoresCurso([]);
 		}
-	}, [selectedCurso]); // eslint-disable-line react-hooks/exhaustive-deps
+	}, [cursoSelecionado]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	async function getCursos() {
 		setLoadingCursos(true);
@@ -125,13 +131,14 @@ export default function Orientacao() {
 		setLoadingDicentes(true);
 		try {
 			const params = {};
-			if (selectedAnoSemestre) {
-				const [ano, semestre] = selectedAnoSemestre.split("/");
+			if (ano) {
 				params.ano = ano;
+			}
+			if (semestre) {
 				params.semestre = semestre;
 			}
-			if (faseSelecionada) {
-				params.fase = faseSelecionada;
+			if (fase) {
+				params.fase = fase;
 			}
 			const response = await axiosInstance.get("/dicentes", { params });
 			// Ordena os dicentes por nome em ordem crescente
@@ -167,16 +174,17 @@ export default function Orientacao() {
 		try {
 			setLoadingTrabalhos(true);
 			const params = {};
-			if (selectedAnoSemestre) {
-				const [ano, semestre] = selectedAnoSemestre.split("/");
+			if (ano) {
 				params.ano = ano;
+			}
+			if (semestre) {
 				params.semestre = semestre;
 			}
-			if (faseSelecionada) {
-				params.fase = faseSelecionada;
+			if (fase) {
+				params.fase = fase;
 			}
-			if (selectedCurso?.id) {
-				params.id_curso = selectedCurso.id;
+			if (cursoSelecionado) {
+				params.id_curso = cursoSelecionado;
 			}
 
 			const resp = await axiosInstance.get("/trabalho-conclusao", {
@@ -231,10 +239,9 @@ export default function Orientacao() {
 	}
 
 	function getOrientadorAtual(matricula) {
-		if (!selectedCurso || !selectedAnoSemestre || !faseSelecionada)
+		if (!cursoSelecionado || !ano || !semestre || !fase)
 			return "";
 
-		const [ano, semestre] = selectedAnoSemestre.split("/");
 		const orientacao = orientacoes.find((o) => {
 			const tcc = o.TrabalhoConclusao || o.trabalhoConclusao;
 			const mat = tcc?.matricula;
@@ -248,8 +255,8 @@ export default function Orientacao() {
 				mat === matricula &&
 				anoT === parseInt(ano) &&
 				semestreT === parseInt(semestre) &&
-				cursoId === selectedCurso.id &&
-				faseTcc === parseInt(faseSelecionada)
+				cursoId === cursoSelecionado &&
+				faseTcc === parseInt(fase)
 			);
 		});
 
@@ -262,10 +269,9 @@ export default function Orientacao() {
 	}
 
 	function handleOrientadorChange(matricula, codigoDocente) {
-		if (!selectedCurso || !selectedAnoSemestre || !faseSelecionada) return;
+		if (!cursoSelecionado || !ano || !semestre || !fase) return;
 
-		const [ano, semestre] = selectedAnoSemestre.split("/");
-		const chave = `${matricula}_${ano}_${semestre}_${selectedCurso.id}_${faseSelecionada}`;
+		const chave = `${matricula}_${ano}_${semestre}_${cursoSelecionado}_${fase}`;
 
 		setOrientacoesAlteradas((prev) => ({
 			...prev,
@@ -273,8 +279,8 @@ export default function Orientacao() {
 				matricula: matricula,
 				ano: parseInt(ano),
 				semestre: parseInt(semestre),
-				id_curso: selectedCurso.id,
-				fase: parseInt(faseSelecionada),
+				id_curso: cursoSelecionado,
+				fase: parseInt(fase),
 				codigo_docente: codigoDocente || null,
 			},
 		}));
@@ -320,21 +326,10 @@ export default function Orientacao() {
 		}
 	}
 
-	function handleCursoChange(e) {
-		const curso = cursos.find((c) => c.id === e.target.value);
-		setSelectedCurso(curso || null);
-		setOrientacoesAlteradas({}); // Limpa alterações pendentes
-	}
-
-	function handleAnoSemestreChange(e) {
-		setSelectedAnoSemestre(e.target.value || null);
-		setOrientacoesAlteradas({}); // Limpa alterações pendentes
-	}
-
-	function handleFaseChange(e) {
-		setFaseSelecionada(e.target.value || "");
-		setOrientacoesAlteradas({}); // Limpa alterações pendentes
-	}
+	// Função para limpar alterações quando qualquer filtro muda
+	useEffect(() => {
+		setOrientacoesAlteradas({});
+	}, [cursoSelecionado, ano, semestre, fase]);
 
 	function handleCloseMessage(_, reason) {
 		if (reason === "clickaway") {
@@ -343,18 +338,8 @@ export default function Orientacao() {
 		setOpenMessage(false);
 	}
 
-	// Gerar listas únicas a partir das ofertas TCC
-	const anosSemsestresUnicos = [
-		...new Set(
-			ofertasTcc.map((oferta) => `${oferta.ano}/${oferta.semestre}`),
-		),
-	].sort();
-	const fasesUnicas = [
-		...new Set(ofertasTcc.map((oferta) => oferta.fase.toString())),
-	].sort();
-
 	// Filtrar apenas docentes que podem orientar no curso selecionado
-	const docentesDisponiveis = selectedCurso
+	const docentesDisponiveis = cursoSelecionado
 		? orientadoresCurso.map((oc) => oc.docente)
 		: [];
 
@@ -376,12 +361,8 @@ export default function Orientacao() {
 					params.row.matricula,
 				);
 				const chave =
-					selectedAnoSemestre && faseSelecionada
-						? `${
-								params.row.matricula
-							}_${selectedAnoSemestre.replace("/", "_")}_${
-								selectedCurso.id
-							}_${faseSelecionada}`
+					ano && semestre && fase
+						? `${params.row.matricula}_${ano}_${semestre}_${cursoSelecionado}_${fase}`
 						: null;
 				const orientadorSelecionado =
 					chave && orientacoesAlteradas[chave]
@@ -392,7 +373,7 @@ export default function Orientacao() {
 					<FormControl
 						fullWidth
 						size="small"
-						disabled={!selectedAnoSemestre || !faseSelecionada}
+						disabled={!ano || !semestre || !fase}
 					>
 						{permissoesService.verificarPermissaoPorIds(
 							permissoesUsuario,
@@ -430,8 +411,8 @@ export default function Orientacao() {
 				);
 			},
 		},
-		// Coluna Etapa/Nota - só exibe quando todos os filtros estão selecionados
-		...(selectedCurso && selectedAnoSemestre && faseSelecionada
+		// Coluna Etapa/Nota - exibe quando ano e semestre estão selecionados
+		...(ano && semestre
 			? [
 					{
 						field: "etapaNota",
@@ -494,7 +475,9 @@ export default function Orientacao() {
 									(c) =>
 										faseAtualTcc == null
 											? true
-											: parseInt(c.fase) === faseAtualTcc,
+											: fase
+											? parseInt(c.fase) === faseAtualTcc
+											: true, // Se fase não estiver filtrada, aceita qualquer fase
 								);
 								if (!temConviteBancaFase) {
 									showWarn = true;
@@ -532,7 +515,9 @@ export default function Orientacao() {
 									(c) =>
 										faseAtualTcc == null
 											? true
-											: parseInt(c.fase) === faseAtualTcc,
+											: fase
+											? parseInt(c.fase) === faseAtualTcc
+											: true, // Se fase não estiver filtrada, aceita qualquer fase
 								);
 								if (temConviteBancaFase) {
 									showSuccess = true;
@@ -545,7 +530,9 @@ export default function Orientacao() {
 								tcc?.fase != null ? parseInt(tcc.fase) : null;
 							const defesasFase = Array.isArray(defesas)
 								? defesas.filter(
-										(d) => parseInt(d.fase) === faseAtual,
+										(d) => fase
+											? parseInt(d.fase) === faseAtual
+											: true, // Se fase não estiver filtrada, aceita todas as defesas
 									)
 								: [];
 							const notas = defesasFase
@@ -613,116 +600,18 @@ export default function Orientacao() {
 					Gerenciamento de Orientações
 				</Typography>
 
-				<Stack direction="row" spacing={2} alignItems="center">
-					<FormControl fullWidth size="small">
-						<InputLabel>Curso *</InputLabel>
-						<Select
-							value={selectedCurso ? selectedCurso.id : ""}
-							onChange={handleCursoChange}
-							label="Curso *"
-							disabled={loadingCursos || cursos.length === 0}
-							startAdornment={
-								loadingCursos && (
-									<CircularProgress
-										size={16}
-										sx={{ mr: 1 }}
-									/>
-								)
-							}
-						>
-							<MenuItem value="">
-								<em>Selecione um curso</em>
-							</MenuItem>
-							{cursos.map((curso) => (
-								<MenuItem key={curso.id} value={curso.id}>
-									{curso.nome} ({curso.codigo})
-								</MenuItem>
-							))}
-							{cursos.length === 0 && !loadingCursos && (
-								<MenuItem disabled>
-									Nenhum curso encontrado
-								</MenuItem>
-							)}
-						</Select>
-					</FormControl>
-
-					<FormControl sx={{ minWidth: 100 }} size="small">
-						<InputLabel>Ano/Semestre</InputLabel>
-						<Select
-							value={selectedAnoSemestre || ""}
-							onChange={handleAnoSemestreChange}
-							label="Ano/Semestre"
-							disabled={
-								loadingOfertasTcc ||
-								anosSemsestresUnicos.length === 0 ||
-								loadingDicentes
-							}
-							startAdornment={
-								(loadingOfertasTcc || loadingDicentes) && (
-									<CircularProgress
-										size={16}
-										sx={{ mr: 1 }}
-									/>
-								)
-							}
-						>
-							<MenuItem value="">
-								<em>Todos os períodos</em>
-							</MenuItem>
-							{anosSemsestresUnicos.map((anoSemestre) => (
-								<MenuItem key={anoSemestre} value={anoSemestre}>
-									{anoSemestre}º Semestre
-								</MenuItem>
-							))}
-							{anosSemsestresUnicos.length === 0 &&
-								!loadingOfertasTcc && (
-									<MenuItem disabled>
-										Nenhum ano/semestre cadastrado
-									</MenuItem>
-								)}
-						</Select>
-					</FormControl>
-
-					<FormControl sx={{ minWidth: 80 }} size="small">
-						<InputLabel>Fase TCC</InputLabel>
-						<Select
-							value={faseSelecionada || ""}
-							label="Fase TCC"
-							onChange={handleFaseChange}
-							disabled={
-								loadingOfertasTcc ||
-								fasesUnicas.length === 0 ||
-								loadingDicentes
-							}
-							startAdornment={
-								(loadingOfertasTcc || loadingDicentes) && (
-									<CircularProgress
-										size={16}
-										sx={{ mr: 1 }}
-									/>
-								)
-							}
-						>
-							<MenuItem value="">
-								<em>Todas as fases</em>
-							</MenuItem>
-							{fasesUnicas.map((fase) => (
-								<MenuItem key={fase} value={fase}>
-									{String(fase) === "1"
-										? "Projeto"
-										: String(fase) === "2"
-											? "TCC"
-											: `Fase ${fase}`}
-								</MenuItem>
-							))}
-							{fasesUnicas.length === 0 && !loadingOfertasTcc && (
-								<MenuItem disabled>
-									Nenhuma fase cadastrada
-								</MenuItem>
-							)}
-						</Select>
-					</FormControl>
-				</Stack>
+				<FiltrosPesquisa
+					cursoSelecionado={cursoSelecionado}
+					setCursoSelecionado={setCursoSelecionado}
+					ano={ano}
+					setAno={setAno}
+					semestre={semestre}
+					setSemestre={setSemestre}
+					fase={fase}
+					setFase={setFase}
+					cursos={cursos}
+					loading={loadingCursos || loadingOfertasTcc || loadingDicentes}
+				/>
 
 				{/* Contador de dicentes em uma nova linha abaixo dos filtros */}
 				<Box>
@@ -752,9 +641,10 @@ export default function Orientacao() {
 					showError={false}
 				>
 					{Object.keys(orientacoesAlteradas).length > 0 &&
-						selectedCurso &&
-						selectedAnoSemestre &&
-						faseSelecionada && (
+						cursoSelecionado &&
+						ano &&
+						semestre &&
+						fase && (
 							<Box>
 								<Button
 									variant="contained"

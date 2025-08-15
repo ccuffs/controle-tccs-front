@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axiosInstance from "../auth/axios";
+import { useAuth } from "../contexts/AuthContext";
 
 import {
 	Alert,
@@ -23,7 +24,8 @@ import PermissionContext from "../contexts/PermissionContext";
 import { Permissoes } from "../enums/permissoes";
 import TemasDataGrid from "./TemasDataGrid";
 
-export default function TemasTcc() {
+export default function TemasTcc({ isOrientadorView = false }) {
+	const { usuario } = useAuth();
 	const [temas, setTemas] = useState([]);
 	const [cursos, setCursos] = useState([]);
 	const [cursoSelecionado, setCursoSelecionado] = useState("");
@@ -32,7 +34,7 @@ export default function TemasTcc() {
 	const [formData, setFormData] = useState({
 		descricao: "",
 		id_area_tcc: "",
-		codigo_docente: "",
+		codigo_docente: isOrientadorView ? (usuario?.codigo || usuario?.id || "") : "",
 	});
 	const [openMessage, setOpenMessage] = React.useState(false);
 	const [openDialog, setOpenDialog] = React.useState(false);
@@ -53,18 +55,27 @@ export default function TemasTcc() {
 	});
 
 	useEffect(() => {
-		getCursos();
-	}, []);
+		if (isOrientadorView) {
+			getCursosOrientador();
+		} else {
+			getCursos();
+		}
+	}, [isOrientadorView, usuario]);
 
 	useEffect(() => {
 		if (cursoSelecionado) {
-			getDocentesOrientadoresPorCurso(cursoSelecionado);
-			getTemasPorCurso(cursoSelecionado);
+			if (isOrientadorView) {
+				getTemasPorCursoOrientador(cursoSelecionado);
+				getAreasTccOrientador();
+			} else {
+				getDocentesOrientadoresPorCurso(cursoSelecionado);
+				getTemasPorCurso(cursoSelecionado);
+			}
 		} else {
 			setDocentesOrientadores([]);
 			setTemas([]);
 		}
-	}, [cursoSelecionado]);
+	}, [cursoSelecionado, isOrientadorView, usuario]);
 
 	useEffect(() => {
 		if (formData.codigo_docente) {
@@ -80,6 +91,31 @@ export default function TemasTcc() {
 			setCursos(response.cursos || []);
 		} catch (error) {
 			console.log("Não foi possível retornar a lista de cursos: ", error);
+			setCursos([]);
+		}
+	}
+
+	async function getCursosOrientador() {
+		try {
+			const codigoDocente = usuario?.codigo || usuario?.id;
+			if (!codigoDocente) return;
+
+			// Buscar cursos do orientador logado
+			const response = await axiosInstance.get(
+				`/orientadores/docente/${codigoDocente}`,
+			);
+			const cursosOrientador = response.orientacoes || [];
+			setCursos(cursosOrientador.map((orientacao) => orientacao.curso));
+
+			// Se o orientador possui apenas 1 curso, pré-selecionar
+			if (cursosOrientador.length === 1) {
+				setCursoSelecionado(cursosOrientador[0].curso.id);
+			}
+		} catch (error) {
+			console.log(
+				"Não foi possível retornar a lista de cursos do orientador: ",
+				error,
+			);
 			setCursos([]);
 		}
 	}
@@ -129,17 +165,61 @@ export default function TemasTcc() {
 		}
 	}
 
+	async function getTemasPorCursoOrientador(idCurso) {
+		try {
+			const codigoDocente = usuario?.codigo || usuario?.id;
+			if (!codigoDocente) return;
+
+			// Buscar apenas os temas do orientador logado no curso selecionado
+			const response = await axiosInstance.get(
+				`/temas-tcc/docente/${codigoDocente}/curso/${idCurso}`,
+			);
+			setTemas(response || []);
+		} catch (error) {
+			console.log(
+				"Não foi possível retornar a lista de temas TCC do orientador: ",
+				error,
+			);
+			setTemas([]);
+		}
+	}
+
+	async function getAreasTccOrientador() {
+		try {
+			const codigoDocente = usuario?.codigo || usuario?.id;
+			if (!codigoDocente) return;
+
+			const response = await axiosInstance.get(
+				`/areas-tcc/docente/${codigoDocente}`,
+			);
+			setAreasTcc(response.areas || []);
+		} catch (error) {
+			console.log(
+				"Não foi possível retornar a lista de áreas TCC do orientador: ",
+				error,
+			);
+			setAreasTcc([]);
+		}
+	}
+
 	function handleDelete(row) {
 		setTemaDelete(row.id);
 		setOpenDialog(true);
 	}
 
 	function handleOpenVagasModal(tema) {
+		const codigoDocente = isOrientadorView
+			? (usuario?.codigo || usuario?.id)
+			: tema.codigo_docente;
+		const docenteNome = isOrientadorView
+			? usuario?.nome
+			: tema.docenteNome;
+
 		setTemaVagas({
 			id: tema.id,
 			vagas: tema.vagasOferta || tema.vagas || 0,
-			codigoDocente: tema.codigo_docente,
-			docenteNome: tema.docenteNome,
+			codigoDocente: codigoDocente,
+			docenteNome: docenteNome,
 		});
 		setOpenVagasModal(true);
 	}
@@ -164,15 +244,20 @@ export default function TemasTcc() {
 				},
 			);
 
-			setMessageText(
-				`Vagas da oferta do ${temaVagas.docenteNome} atualizadas com sucesso!`,
-			);
+			const mensagem = isOrientadorView
+				? `Vagas da sua oferta atualizadas com sucesso!`
+				: `Vagas da oferta do ${temaVagas.docenteNome} atualizadas com sucesso!`;
+			setMessageText(mensagem);
 			setMessageSeverity("success");
 			setOpenMessage(true);
 
 			// Atualiza a lista
 			if (cursoSelecionado) {
-				await getTemasPorCurso(cursoSelecionado);
+				if (isOrientadorView) {
+					await getTemasPorCursoOrientador(cursoSelecionado);
+				} else {
+					await getTemasPorCurso(cursoSelecionado);
+				}
 			}
 
 			handleCloseVagasModal();
@@ -194,7 +279,7 @@ export default function TemasTcc() {
 		setFormData({
 			descricao: "",
 			id_area_tcc: "",
-			codigo_docente: "",
+			codigo_docente: isOrientadorView ? (usuario?.codigo || usuario?.id || "") : "",
 		});
 	}
 
@@ -203,15 +288,22 @@ export default function TemasTcc() {
 	}
 
 	function handleOpenAreaModal() {
-		if (!formData.codigo_docente) {
-			setMessageText("Por favor, selecione um docente primeiro!");
+		const codigoDocente = isOrientadorView
+			? (usuario?.codigo || usuario?.id)
+			: formData.codigo_docente;
+
+		if (!codigoDocente) {
+			const mensagem = isOrientadorView
+				? "Erro: Código do docente não encontrado!"
+				: "Por favor, selecione um docente primeiro!";
+			setMessageText(mensagem);
 			setMessageSeverity("error");
 			setOpenMessage(true);
 			return;
 		}
 		setNovaAreaData({
 			descricao: "",
-			codigo_docente: formData.codigo_docente,
+			codigo_docente: codigoDocente,
 		});
 		setOpenAreaModal(true);
 	}
@@ -241,7 +333,11 @@ export default function TemasTcc() {
 			setMessageSeverity("success");
 			handleCloseAreaModal();
 			// Atualiza a lista de áreas TCC
-			await getAreasTccPorDocente(formData.codigo_docente);
+			if (isOrientadorView) {
+				await getAreasTccOrientador();
+			} else {
+				await getAreasTccPorDocente(formData.codigo_docente);
+			}
 		} catch (error) {
 			console.log(
 				"Não foi possível criar a área TCC no banco de dados",
@@ -276,11 +372,15 @@ export default function TemasTcc() {
 			setFormData({
 				descricao: "",
 				id_area_tcc: "",
-				codigo_docente: "",
+				codigo_docente: isOrientadorView ? (usuario?.codigo || usuario?.id || "") : "",
 			});
 
 			// Atualiza a lista
-			await getTemasPorCurso(cursoSelecionado);
+			if (isOrientadorView) {
+				await getTemasPorCursoOrientador(cursoSelecionado);
+			} else {
+				await getTemasPorCurso(cursoSelecionado);
+			}
 		} catch (error) {
 			console.log(
 				"Não foi possível inserir o tema TCC no banco de dados",
@@ -296,7 +396,7 @@ export default function TemasTcc() {
 		setFormData({
 			descricao: "",
 			id_area_tcc: "",
-			codigo_docente: "",
+			codigo_docente: isOrientadorView ? (usuario?.codigo || usuario?.id || "") : "",
 		});
 	}
 
@@ -321,7 +421,11 @@ export default function TemasTcc() {
 
 			// Atualiza a lista
 			if (cursoSelecionado) {
-				await getTemasPorCurso(cursoSelecionado);
+				if (isOrientadorView) {
+					await getTemasPorCursoOrientador(cursoSelecionado);
+				} else {
+					await getTemasPorCurso(cursoSelecionado);
+				}
 			}
 		} catch (error) {
 			console.log(
@@ -357,7 +461,11 @@ export default function TemasTcc() {
 
 			// Atualiza a lista
 			if (cursoSelecionado) {
-				await getTemasPorCurso(cursoSelecionado);
+				if (isOrientadorView) {
+					await getTemasPorCursoOrientador(cursoSelecionado);
+				} else {
+					await getTemasPorCurso(cursoSelecionado);
+				}
 			}
 		} catch (error) {
 			console.log("Não foi possível alterar o status do tema");
@@ -395,10 +503,10 @@ export default function TemasTcc() {
 
 				{cursoSelecionado && (
 					<PermissionContext
-						grupos={[
-							Permissoes.GRUPOS.ADMIN,
-							Permissoes.GRUPOS.PROFESSOR,
-						]}
+						grupos={isOrientadorView
+							? [Permissoes.GRUPOS.ORIENTADOR]
+							: [Permissoes.GRUPOS.ADMIN, Permissoes.GRUPOS.PROFESSOR]
+						}
 						showError={false}
 					>
 						<Typography variant="h6" component="h3">
@@ -406,27 +514,29 @@ export default function TemasTcc() {
 						</Typography>
 
 						<Stack spacing={2}>
-							<FormControl fullWidth size="small">
-								<InputLabel>Docente Orientador</InputLabel>
-								<Select
-									name="codigo_docente"
-									value={formData.codigo_docente}
-									label="Docente Orientador"
-									onChange={handleInputChange}
-								>
-									{docentesOrientadores.map((orientacao) => (
-										<MenuItem
-											key={orientacao.docente?.codigo}
-											value={orientacao.docente?.codigo}
-										>
-											{orientacao.docente?.nome} (
-											{orientacao.docente?.codigo})
-										</MenuItem>
-									))}
-								</Select>
-							</FormControl>
+							{!isOrientadorView && (
+								<FormControl fullWidth size="small">
+									<InputLabel>Docente Orientador</InputLabel>
+									<Select
+										name="codigo_docente"
+										value={formData.codigo_docente}
+										label="Docente Orientador"
+										onChange={handleInputChange}
+									>
+										{docentesOrientadores.map((orientacao) => (
+											<MenuItem
+												key={orientacao.docente?.codigo}
+												value={orientacao.docente?.codigo}
+											>
+												{orientacao.docente?.nome} (
+												{orientacao.docente?.codigo})
+											</MenuItem>
+										))}
+									</Select>
+								</FormControl>
+							)}
 
-							{formData.codigo_docente && (
+							{(formData.codigo_docente || isOrientadorView) && (
 								<Stack
 									direction="row"
 									spacing={2}
@@ -549,8 +659,10 @@ export default function TemasTcc() {
 					<DialogContent>
 						<Stack spacing={2} sx={{ mt: 1 }}>
 							<Typography variant="body2" color="text.secondary">
-								Editando vagas da oferta do docente:{" "}
-								<strong>{temaVagas.docenteNome}</strong>
+								{isOrientadorView
+									? "Editando vagas da sua oferta no curso selecionado."
+									: `Editando vagas da oferta do docente: ${temaVagas.docenteNome}`
+								}
 							</Typography>
 							<Typography
 								variant="caption"
@@ -558,7 +670,7 @@ export default function TemasTcc() {
 							>
 								Nota: As vagas são por oferta do docente, não
 								por tema individual. Alterar aqui afetará todos
-								os temas deste docente.
+								{isOrientadorView ? " os seus temas neste curso." : " os temas deste docente."}
 							</Typography>
 							<TextField
 								label="Número de Vagas da Oferta"
@@ -659,6 +771,7 @@ export default function TemasTcc() {
 							onOpenVagasModal={handleOpenVagasModal}
 							onToggleAtivo={handleToggleAtivo}
 							onDelete={handleDelete}
+							isOrientadorView={isOrientadorView}
 						/>
 					</>
 				)}

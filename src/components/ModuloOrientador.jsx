@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Box, Typography, Tabs, Tab } from "@mui/material";
-import GerenciarTemasOrientador from "./GerenciarTemasOrientador";
+import TemasTcc from "./TemasTcc";
 import ConvitesRecebidosOrientador from "./ConvitesRecebidosOrientador";
 import TrabalhosOrientador from "./TrabalhosOrientador";
 import GerenciarDisponibilidadeBanca from "./GerenciarDisponibilidadeBanca";
@@ -66,7 +66,7 @@ export default function ModuloOrientador() {
 			</TabPanel>
 
 			<TabPanel value={tabValue} index={2}>
-				<GerenciarTemasOrientador />
+				<TemasTcc isOrientadorView={true} />
 			</TabPanel>
 
 			<TabPanel value={tabValue} index={3}>
