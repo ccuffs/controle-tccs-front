@@ -23,6 +23,9 @@ export default function FiltrosPesquisa({
 	habilitarFase = true,
 	mostrarTodosCursos = false,
 	loading = false,
+	anosDisponiveis = [],
+	semestresDisponiveis = [],
+	fasesDisponiveis = [],
 }) {
 	function handleCursoChange(e) {
 		setCursoSelecionado(e.target.value);
@@ -75,11 +78,21 @@ export default function FiltrosPesquisa({
 						<MenuItem value="">
 							<em>Todos</em>
 						</MenuItem>
-						{[ano - 1, ano, ano + 1].map((a) => (
-							<MenuItem key={a} value={a}>
-								{a}
-							</MenuItem>
-						))}
+						{anosDisponiveis.length > 0 ? (
+							// Usar anos das ofertas TCC se disponíveis
+							anosDisponiveis.map((a) => (
+								<MenuItem key={a} value={a}>
+									{a}
+								</MenuItem>
+							))
+						) : (
+							// Fallback para anos padrão se não houver ofertas
+							[new Date().getFullYear() - 1, new Date().getFullYear(), new Date().getFullYear() + 1].map((a) => (
+								<MenuItem key={a} value={a}>
+									{a}
+								</MenuItem>
+							))
+						)}
 					</Select>
 				</FormControl>
 			)}
@@ -95,11 +108,21 @@ export default function FiltrosPesquisa({
 						<MenuItem value="">
 							<em>Todos</em>
 						</MenuItem>
-						{[1, 2].map((s) => (
-							<MenuItem key={s} value={s}>
-								{s}
-							</MenuItem>
-						))}
+						{semestresDisponiveis.length > 0 ? (
+							// Usar semestres das ofertas TCC se disponíveis
+							semestresDisponiveis.map((s) => (
+								<MenuItem key={s} value={s}>
+									{s}º Semestre
+								</MenuItem>
+							))
+						) : (
+							// Fallback para semestres padrão se não houver ofertas
+							[1, 2].map((s) => (
+								<MenuItem key={s} value={s}>
+									{s}º Semestre
+								</MenuItem>
+							))
+						)}
 					</Select>
 				</FormControl>
 			)}
@@ -115,9 +138,21 @@ export default function FiltrosPesquisa({
 						<MenuItem value="">
 							<em>Todas</em>
 						</MenuItem>
-						<MenuItem value="0">Orientação</MenuItem>
-						<MenuItem value="1">Projeto</MenuItem>
-						<MenuItem value="2">TCC</MenuItem>
+						{fasesDisponiveis.length > 0 ? (
+							// Usar fases das ofertas TCC se disponíveis
+							fasesDisponiveis.map((f) => (
+								<MenuItem key={f} value={f}>
+									Fase {f}
+								</MenuItem>
+							))
+						) : (
+							// Fallback para fases padrão se não houver ofertas
+							<>
+								<MenuItem value="0">Orientação</MenuItem>
+								<MenuItem value="1">Projeto</MenuItem>
+								<MenuItem value="2">TCC</MenuItem>
+							</>
+						)}
 					</Select>
 				</FormControl>
 			)}
