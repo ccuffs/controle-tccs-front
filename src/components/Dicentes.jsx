@@ -4,6 +4,7 @@ import PermissionContext from "../contexts/PermissionContext";
 import { Permissoes } from "../enums/permissoes";
 import CustomDataGrid from "./CustomDataGrid";
 import FiltrosPesquisa from "./FiltrosPesquisa";
+import DicenteModal from "./DicenteModal";
 
 import {
 	Alert,
@@ -16,7 +17,6 @@ import {
 	DialogActions,
 	Snackbar,
 	Stack,
-	TextField,
 	Typography,
 	CircularProgress,
 } from "@mui/material";
@@ -29,22 +29,12 @@ export default function Dicentes() {
 	const [selectedCurso, setSelectedCurso] = useState(null);
 	const [loadingCursos, setLoadingCursos] = useState(false);
 	const [loadingDicentes, setLoadingDicentes] = useState(false);
-	const [formData, setFormData] = useState({
-		matricula: "",
-		nome: "",
-		email: "",
-	});
 	const [openMessage, setOpenMessage] = React.useState(false);
 	const [openDialog, setOpenDialog] = React.useState(false);
 	const [openDicenteModal, setOpenDicenteModal] = React.useState(false);
 	const [messageText, setMessageText] = React.useState("");
 	const [messageSeverity, setMessageSeverity] = React.useState("success");
 	const [dicenteDelete, setDicenteDelete] = React.useState(null);
-	const [novoDicenteData, setNovoDicenteData] = useState({
-		matricula: "",
-		nome: "",
-		email: "",
-	});
 	const [isEditing, setIsEditing] = useState(false);
 	const [dicenteToEdit, setDicenteToEdit] = useState(null);
 
@@ -94,11 +84,6 @@ export default function Dicentes() {
 
 	function handleEdit(row) {
 		setDicenteToEdit(row);
-		setNovoDicenteData({
-			matricula: row.matricula.toString(),
-			nome: row.nome,
-			email: row.email,
-		});
 		setIsEditing(true);
 		setOpenDicenteModal(true);
 	}
@@ -108,21 +93,11 @@ export default function Dicentes() {
 		setSelectedCurso(curso || null);
 	}
 
-	function handleNovoDicenteChange(e) {
-		setNovoDicenteData({
-			...novoDicenteData,
-			[e.target.name]: e.target.value,
-		});
-	}
+
 
 	function handleOpenDicenteModal() {
 		setIsEditing(false);
 		setDicenteToEdit(null);
-		setNovoDicenteData({
-			matricula: "",
-			nome: "",
-			email: "",
-		});
 		setOpenDicenteModal(true);
 	}
 
@@ -130,19 +105,14 @@ export default function Dicentes() {
 		setOpenDicenteModal(false);
 		setIsEditing(false);
 		setDicenteToEdit(null);
-		setNovoDicenteData({
-			matricula: "",
-			nome: "",
-			email: "",
-		});
 	}
 
-	async function handleCreateDicente() {
+	async function handleCreateDicente(formData) {
 		try {
 			if (
-				!novoDicenteData.matricula ||
-				!novoDicenteData.nome ||
-				!novoDicenteData.email
+				!formData.matricula ||
+				!formData.nome ||
+				!formData.email
 			) {
 				setMessageText(
 					"Por favor, preencha todos os campos obrigatórios!",
@@ -158,8 +128,8 @@ export default function Dicentes() {
 					`/dicentes/${dicenteToEdit.matricula}`,
 					{
 						formData: {
-							nome: novoDicenteData.nome,
-							email: novoDicenteData.email,
+							nome: formData.nome,
+							email: formData.email,
 						},
 					},
 				);
@@ -167,8 +137,8 @@ export default function Dicentes() {
 			} else {
 				// Criar novo dicente
 				const dicenteParaEnviar = {
-					...novoDicenteData,
-					matricula: parseInt(novoDicenteData.matricula),
+					...formData,
+					matricula: parseInt(formData.matricula),
 				};
 
 				await axiosInstance.post("/dicentes", {
@@ -350,67 +320,13 @@ export default function Dicentes() {
 				</PermissionContext>
 
 				{/* Modal para criar/editar dicente */}
-				<Dialog
+				<DicenteModal
 					open={openDicenteModal}
 					onClose={handleCloseDicenteModal}
-					aria-labelledby="dicente-modal-title"
-					maxWidth="sm"
-					fullWidth
-				>
-					<DialogTitle id="dicente-modal-title">
-						{isEditing ? "Editar Dicente" : "Criar Novo Dicente"}
-					</DialogTitle>
-					<DialogContent>
-						<Stack spacing={2} sx={{ mt: 1 }}>
-							<TextField
-								name="matricula"
-								label="Matrícula"
-								value={novoDicenteData.matricula}
-								onChange={handleNovoDicenteChange}
-								fullWidth
-								size="small"
-								required
-								disabled={isEditing}
-								helperText={
-									isEditing
-										? "A matrícula não pode ser alterada"
-										: ""
-								}
-							/>
-							<TextField
-								name="nome"
-								label="Nome"
-								value={novoDicenteData.nome}
-								onChange={handleNovoDicenteChange}
-								fullWidth
-								size="small"
-								required
-							/>
-							<TextField
-								name="email"
-								label="Email"
-								type="email"
-								value={novoDicenteData.email}
-								onChange={handleNovoDicenteChange}
-								fullWidth
-								size="small"
-								required
-							/>
-						</Stack>
-					</DialogContent>
-					<DialogActions>
-						<Button onClick={handleCloseDicenteModal}>
-							Cancelar
-						</Button>
-						<Button
-							onClick={handleCreateDicente}
-							variant="contained"
-							color="primary"
-						>
-							{isEditing ? "Atualizar" : "Criar"} Dicente
-						</Button>
-					</DialogActions>
-				</Dialog>
+					isEditing={isEditing}
+					dicenteToEdit={dicenteToEdit}
+					onSubmit={handleCreateDicente}
+				/>
 
 				<Snackbar
 					open={openMessage}
