@@ -20,11 +20,20 @@ import {
 	CircularProgress,
 	MenuItem,
 	Tooltip,
+	Dialog,
+	DialogTitle,
+	DialogContent,
+	DialogActions,
+	TextField,
+	Chip,
+	Grid,
+	LinearProgress,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import SaveIcon from "@mui/icons-material/Save";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 
 export default function Orientacao() {
 	const [dicentes, setDicentes] = useState([]);
@@ -46,6 +55,16 @@ export default function Orientacao() {
 	const [trabalhosPorMatricula, setTrabalhosPorMatricula] = useState({});
 	const [loadingTrabalhos, setLoadingTrabalhos] = useState(false);
 	const [convitesPorTcc, setConvitesPorTcc] = useState({});
+
+	// Estados para upload de PDF
+	const [openUploadModal, setOpenUploadModal] = React.useState(false);
+	const [uploadFile, setUploadFile] = useState(null);
+	const [uploading, setUploading] = useState(false);
+	const [uploadResults, setUploadResults] = useState(null);
+	const [modalAno, setModalAno] = useState("");
+	const [modalSemestre, setModalSemestre] = useState("");
+	const [modalFase, setModalFase] = useState("");
+	const [modalCurso, setModalCurso] = useState(null);
 
 	const { permissoesUsuario } = useAuth();
 
@@ -338,6 +357,111 @@ export default function Orientacao() {
 		setOpenMessage(false);
 	}
 
+	function handleModalAnoChange(e) {
+		setModalAno(e.target.value || "");
+	}
+
+	function handleModalSemestreChange(e) {
+		setModalSemestre(e.target.value || "");
+	}
+
+	function handleModalFaseChange(e) {
+		setModalFase(e.target.value || "");
+	}
+
+	function handleModalCursoChange(e) {
+		const cursoId = e.target.value;
+		const curso = cursos.find((c) => c.id === cursoId);
+		setModalCurso(curso || null);
+	}
+
+	function handleOpenUploadModal() {
+		// Pré-popular com os valores da tela principal
+		const curso = cursos.find((c) => c.id === cursoSelecionado);
+		setModalCurso(curso || null);
+		setModalAno(ano);
+		setModalSemestre(semestre);
+		setModalFase(fase);
+		setOpenUploadModal(true);
+	}
+
+	function handleCloseUploadModal() {
+		setOpenUploadModal(false);
+		setUploadFile(null);
+		setUploadResults(null);
+		// Resetar os valores do modal
+		setModalCurso(null);
+		setModalAno("");
+		setModalSemestre("");
+		setModalFase("");
+	}
+
+	function handleFileChange(e) {
+		const file = e.target.files[0];
+		if (file && file.type === "application/pdf") {
+			setUploadFile(file);
+		} else {
+			setMessageText("Por favor, selecione um arquivo PDF válido!");
+			setMessageSeverity("error");
+			setOpenMessage(true);
+		}
+	}
+
+	async function handleUploadPDF() {
+		if (!uploadFile) {
+			setMessageText("Por favor, selecione um arquivo PDF!");
+			setMessageSeverity("error");
+			setOpenMessage(true);
+			return;
+		}
+
+		if (!modalAno || !modalSemestre || !modalFase || !modalCurso) {
+			setMessageText(
+				"Por favor, selecione o curso, ano, semestre e a fase!",
+			);
+			setMessageSeverity("error");
+			setOpenMessage(true);
+			return;
+		}
+
+		setUploading(true);
+		const formData = new FormData();
+		formData.append("pdf", uploadFile);
+
+		// Adicionar ano, semestre, fase e curso aos dados
+		formData.append("ano", modalAno);
+		formData.append("semestre", modalSemestre);
+		formData.append("fase", modalFase);
+		formData.append("id_curso", modalCurso.id);
+
+		try {
+			const response = await axiosInstance.post(
+				"/dicentes/processar-pdf",
+				formData,
+				{
+					headers: {
+						"Content-Type": "multipart/form-data",
+					},
+				},
+			);
+
+			setUploadResults(response);
+			setMessageText(
+				`PDF processado com sucesso! ${response.sucessos} dicentes inseridos, ${response.erros} erros.`,
+			);
+			setMessageSeverity("success");
+			// Atualiza a lista de dicentes
+			await getDicentes();
+		} catch (error) {
+			console.log("Erro ao fazer upload do PDF:", error);
+			setMessageText("Falha ao processar PDF!");
+			setMessageSeverity("error");
+		} finally {
+			setUploading(false);
+			setOpenMessage(true);
+		}
+	}
+
 	// Filtrar apenas docentes que podem orientar no curso selecionado
 	const docentesDisponiveis = cursoSelecionado
 		? orientadoresCurso.map((oc) => oc.docente)
@@ -593,6 +717,48 @@ export default function Orientacao() {
 			: []),
 	];
 
+	// Gerar listas únicas a partir das ofertas TCC
+	const anosUnicos = [
+		...new Set(
+			ofertasTcc
+				.filter(
+					(oferta) =>
+						oferta &&
+						typeof oferta.ano === "number" &&
+						oferta.ano > 0,
+				)
+				.map((oferta) => oferta.ano),
+		),
+	].sort((a, b) => a - b);
+
+	const semestresUnicos = [
+		...new Set(
+			ofertasTcc
+				.filter(
+					(oferta) =>
+						oferta &&
+						typeof oferta.semestre === "number" &&
+						oferta.semestre > 0,
+				)
+				.map((oferta) => oferta.semestre),
+		),
+	].sort((a, b) => a - b);
+
+	const fasesUnicas = [
+		...new Set(
+			ofertasTcc
+				.filter(
+					(oferta) =>
+						oferta &&
+						oferta.fase !== null &&
+						oferta.fase !== undefined,
+				)
+				.map((oferta) => oferta.fase.toString()),
+		),
+	]
+		.filter((fase) => fase && fase !== "undefined" && fase !== "null")
+		.sort((a, b) => parseInt(a) - parseInt(b));
+
 	return (
 		<Box sx={{ width: 1400 }}>
 			<Stack spacing={2} sx={{ width: "100%" }}>
@@ -611,6 +777,10 @@ export default function Orientacao() {
 					setFase={setFase}
 					cursos={cursos}
 					loading={loadingCursos || loadingOfertasTcc || loadingDicentes}
+					// Passar os anos e semestres únicos das ofertas TCC
+					anosDisponiveis={anosUnicos}
+					semestresDisponiveis={semestresUnicos}
+					fasesDisponiveis={fasesUnicas}
 				/>
 
 				{/* Contador de dicentes em uma nova linha abaixo dos filtros */}
@@ -640,12 +810,12 @@ export default function Orientacao() {
 					]}
 					showError={false}
 				>
-					{Object.keys(orientacoesAlteradas).length > 0 &&
-						cursoSelecionado &&
-						ano &&
-						semestre &&
-						fase && (
-							<Box>
+					<Stack direction="row" spacing={2}>
+						{Object.keys(orientacoesAlteradas).length > 0 &&
+							cursoSelecionado &&
+							ano &&
+							semestre &&
+							fase && (
 								<Button
 									variant="contained"
 									color="primary"
@@ -655,9 +825,389 @@ export default function Orientacao() {
 									Salvar Alterações (
 									{Object.keys(orientacoesAlteradas).length})
 								</Button>
-							</Box>
-						)}
+							)}
+						<PermissionContext
+							permissoes={[Permissoes.DICENTE.CRIAR]}
+							showError={false}
+						>
+							<Button
+								variant="outlined"
+								color="secondary"
+								startIcon={<CloudUploadIcon />}
+								onClick={handleOpenUploadModal}
+							>
+								Upload PDF Lista
+							</Button>
+						</PermissionContext>
+					</Stack>
 				</PermissionContext>
+
+				{/* Modal para upload de PDF */}
+				<Dialog
+					open={openUploadModal}
+					onClose={handleCloseUploadModal}
+					aria-labelledby="upload-pdf-title"
+					maxWidth="md"
+					fullWidth
+				>
+					<DialogTitle id="upload-pdf-title">
+						Upload de Lista de Presença (PDF)
+					</DialogTitle>
+					<DialogContent>
+						<Stack spacing={3} sx={{ mt: 1 }}>
+							<Typography variant="body2" color="text.secondary">
+								Selecione um arquivo PDF de lista de presença
+								para importar dicentes automaticamente. O
+								arquivo deve conter dados no formato: NOME
+								seguido da MATRÍCULA. Os dicentes serão
+								vinculados ao curso, ano/semestre e fase
+								selecionados abaixo.
+							</Typography>
+
+							{/* Selects para Curso, Ano/Semestre e Fase */}
+							<Grid container spacing={3}>
+								<Grid item xs={12} md={3}>
+									<FormControl
+										fullWidth
+										required
+										sx={{ minWidth: 200 }}
+									>
+										<InputLabel>Curso</InputLabel>
+										<Select
+											value={
+												modalCurso ? modalCurso.id : ""
+											}
+											onChange={handleModalCursoChange}
+											label="Curso"
+											disabled={
+												loadingCursos ||
+												cursos.length === 0
+											}
+										>
+											{cursos.map((curso) => (
+												<MenuItem
+													key={curso.id}
+													value={curso.id}
+												>
+													{curso.nome}
+												</MenuItem>
+											))}
+											{cursos.length === 0 &&
+												!loadingCursos && (
+													<MenuItem disabled>
+														Nenhum curso cadastrado
+													</MenuItem>
+												)}
+										</Select>
+									</FormControl>
+								</Grid>
+								<Grid item xs={12} md={3}>
+									<FormControl
+										fullWidth
+										required
+										sx={{ minWidth: 200 }}
+									>
+										<InputLabel>Ano</InputLabel>
+										<Select
+											value={modalAno || ""}
+											onChange={handleModalAnoChange}
+											label="Ano"
+											disabled={
+												loadingOfertasTcc ||
+												anosUnicos.length === 0
+											}
+										>
+											{anosUnicos.map((ano) => (
+												<MenuItem key={ano} value={ano}>
+													{ano}
+												</MenuItem>
+											))}
+											{anosUnicos.length === 0 &&
+												!loadingOfertasTcc && (
+													<MenuItem disabled>
+														Nenhum ano cadastrado
+													</MenuItem>
+												)}
+										</Select>
+									</FormControl>
+								</Grid>
+								<Grid item xs={12} md={3}>
+									<FormControl
+										fullWidth
+										required
+										sx={{ minWidth: 200 }}
+									>
+										<InputLabel>Semestre</InputLabel>
+										<Select
+											value={modalSemestre || ""}
+											onChange={handleModalSemestreChange}
+											label="Semestre"
+											disabled={
+												loadingOfertasTcc ||
+												semestresUnicos.length === 0
+											}
+										>
+											{semestresUnicos.map((semestre) => (
+												<MenuItem
+													key={semestre}
+													value={semestre}
+												>
+													{semestre}º Semestre
+												</MenuItem>
+											))}
+											{semestresUnicos.length === 0 &&
+												!loadingOfertasTcc && (
+													<MenuItem disabled>
+														Nenhum semestre
+														cadastrado
+													</MenuItem>
+												)}
+										</Select>
+									</FormControl>
+								</Grid>
+								<Grid item xs={12} md={3}>
+									<FormControl
+										fullWidth
+										required
+										sx={{ minWidth: 200 }}
+									>
+										<InputLabel>Fase TCC</InputLabel>
+										<Select
+											value={modalFase || ""}
+											onChange={handleModalFaseChange}
+											label="Fase TCC"
+											disabled={
+												loadingOfertasTcc ||
+												fasesUnicas.length === 0
+											}
+										>
+											{fasesUnicas.map((fase) => (
+												<MenuItem
+													key={fase}
+													value={fase}
+												>
+													Fase {fase}
+												</MenuItem>
+											))}
+											{fasesUnicas.length === 0 &&
+												!loadingOfertasTcc && (
+													<MenuItem disabled>
+														Nenhuma fase cadastrada
+													</MenuItem>
+												)}
+										</Select>
+									</FormControl>
+								</Grid>
+							</Grid>
+
+							<Box>
+								<input
+									accept="application/pdf"
+									style={{ display: "none" }}
+									id="raised-button-file"
+									type="file"
+									onChange={handleFileChange}
+								/>
+								<label htmlFor="raised-button-file">
+									<Button
+										variant="outlined"
+										component="span"
+										startIcon={<CloudUploadIcon />}
+										fullWidth
+									>
+										Selecionar Arquivo PDF
+									</Button>
+								</label>
+							</Box>
+
+							{uploadFile && (
+								<Paper
+									sx={{ p: 2, bgcolor: "background.default" }}
+								>
+									<Typography variant="body2">
+										<strong>Arquivo selecionado:</strong>{" "}
+										{uploadFile.name}
+									</Typography>
+									<Typography variant="body2">
+										<strong>Tamanho:</strong>{" "}
+										{(
+											uploadFile.size /
+											1024 /
+											1024
+										).toFixed(2)}{" "}
+										MB
+									</Typography>
+								</Paper>
+							)}
+
+							{uploading && (
+								<Box>
+									<Typography variant="body2" sx={{ mb: 1 }}>
+										Processando PDF...
+									</Typography>
+									<LinearProgress />
+								</Box>
+							)}
+
+							{uploadResults && (
+								<Paper
+									sx={{
+										p: 2,
+										bgcolor: "success.light",
+										color: "success.contrastText",
+									}}
+								>
+									<Typography variant="h6" gutterBottom>
+										Resultados do Processamento
+									</Typography>
+									<Stack
+										direction="row"
+										spacing={1}
+										sx={{ mb: 2 }}
+									>
+										<Chip
+											label={`Total: ${uploadResults.totalEncontrados}`}
+											color="default"
+											size="small"
+										/>
+										<Chip
+											label={`Sucessos: ${uploadResults.sucessos}`}
+											color="success"
+											size="small"
+										/>
+										<Chip
+											label={`Erros: ${uploadResults.erros}`}
+											color="error"
+											size="small"
+										/>
+									</Stack>
+
+									{uploadResults.detalhes &&
+										uploadResults.detalhes.length > 0 && (
+											<Box
+												sx={{
+													maxHeight: 200,
+													overflow: "auto",
+												}}
+											>
+												{uploadResults.detalhes
+													.slice(0, 10)
+													.map((detalhe, index) => (
+														<Box
+															key={index}
+															sx={{
+																mb: 0.5,
+																display: "flex",
+																alignItems:
+																	"center",
+																gap: 1,
+															}}
+														>
+															<Typography
+																variant="body2"
+																component="span"
+															>
+																<strong>
+																	{
+																		detalhe.matricula
+																	}
+																</strong>{" "}
+																- {detalhe.nome}
+																:
+															</Typography>
+															<Chip
+																label={
+																	detalhe.status ===
+																	"dicente_e_orientacao_inseridos"
+																		? "Novo dicente + orientação"
+																		: detalhe.status ===
+																		  "orientacao_inserida"
+																		? "Orientação criada"
+																		: detalhe.status ===
+																		  "dicente_inserido_orientacao_ja_existe"
+																		? "Novo dicente (orientação já existe)"
+																		: detalhe.status ===
+																		  "orientacao_ja_existe"
+																		? "Orientação já existe"
+																		: detalhe.status ===
+																		  "dicente_ja_existe"
+																		? "Dicente já existe"
+																		: detalhe.status ===
+																		  "inserido"
+																		? "Inserido"
+																		: detalhe.status ===
+																		  "já_existe"
+																		? "Já existe"
+																		: detalhe.status
+																}
+																size="small"
+																color={
+																	detalhe.status ===
+																	"dicente_e_orientacao_inseridos"
+																		? "success"
+																		: detalhe.status ===
+																		  "orientacao_inserida"
+																		? "success"
+																		: detalhe.status ===
+																		  "dicente_inserido_orientacao_ja_existe"
+																		? "info"
+																		: detalhe.status ===
+																		  "orientacao_ja_existe"
+																		? "warning"
+																		: detalhe.status ===
+																		  "dicente_ja_existe"
+																		? "warning"
+																		: detalhe.status ===
+																		  "inserido"
+																		? "success"
+																		: detalhe.status ===
+																		  "já_existe"
+																		? "warning"
+																		: "error"
+																}
+															/>
+														</Box>
+													))}
+												{uploadResults.detalhes.length >
+													10 && (
+													<Typography
+														variant="body2"
+														color="text.secondary"
+													>
+														... e mais{" "}
+														{uploadResults.detalhes
+															.length - 10}{" "}
+														registros
+													</Typography>
+												)}
+											</Box>
+										)}
+								</Paper>
+							)}
+						</Stack>
+					</DialogContent>
+					<DialogActions>
+						<Button onClick={handleCloseUploadModal}>
+							{uploadResults ? "Fechar" : "Cancelar"}
+						</Button>
+						{uploadFile && !uploading && !uploadResults && (
+							<Button
+								onClick={handleUploadPDF}
+								variant="contained"
+								color="primary"
+								startIcon={<CloudUploadIcon />}
+								disabled={
+									!modalCurso ||
+									!modalAno ||
+									!modalSemestre ||
+									!modalFase
+								}
+							>
+								Processar PDF
+							</Button>
+						)}
+					</DialogActions>
+				</Dialog>
 
 				{/* (Opcional) Dica de filtros removida para exibir todos os dicentes por padrão */}
 
