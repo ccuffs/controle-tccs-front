@@ -25,10 +25,12 @@ import VisualizarTemasTCC from "./VisualizarTemasTCC";
 import ConviteOrientadorModal from "./ConviteOrientadorModal";
 import ConviteBancaModal from "./ConviteBancaModal";
 import SelecionarHorarioBanca from "./SelecionarHorarioBanca";
+import { useTheme } from "@mui/material/styles";
 
 const steps = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
 export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
+	const theme = useTheme();
 	const { usuario } = useContext(AuthContext);
 	const [activeStep, setActiveStep] = useState(etapaInicial);
 	const [loading, setLoading] = useState(true);
@@ -961,7 +963,14 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 					<Box sx={{ mt: 2 }}>
 						{/* Seção de Convite para Orientador - Posicionada acima do VisualizarTemasTCC */}
 						{trabalhoConclusao && (
-							<Paper sx={{ p: 3, mb: 3 }}>
+							<Paper
+								sx={{
+									p: 3,
+									mb: 3,
+									backgroundColor:
+										theme.palette.background.default,
+								}}
+							>
 								<Typography variant="h6" gutterBottom>
 									Convite para Orientador
 								</Typography>
@@ -1129,7 +1138,14 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 						</Typography>
 
 						{trabalhoConclusao && (
-							<Paper sx={{ p: 3, mb: 3 }}>
+							<Paper
+								sx={{
+									p: 3,
+									mb: 3,
+									backgroundColor:
+										theme.palette.background.default,
+								}}
+							>
 								<Typography variant="h6" gutterBottom>
 									Composição da Banca de Avaliação do Projeto
 								</Typography>
@@ -1186,9 +1202,9 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 																	true
 																		? "success"
 																		: convite.data_feedback &&
-																			  !convite.aceito
-																			? "error"
-																			: "warning"
+																		  !convite.aceito
+																		? "error"
+																		: "warning"
 																}
 																sx={{ mb: 2 }}
 															>
@@ -1209,9 +1225,9 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 																	true
 																		? "Aceito"
 																		: convite.data_feedback &&
-																			  !convite.aceito
-																			? "Recusado"
-																			: "Pendente"}
+																		  !convite.aceito
+																		? "Recusado"
+																		: "Pendente"}
 																</Typography>
 																{convite.data_envio && (
 																	<Typography variant="body2">
@@ -1361,7 +1377,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 																: `Enviar ${
 																		2 -
 																		convitesAceitosFase1.length
-																	} Convite(s) para Banca do Projeto`}
+																  } Convite(s) para Banca do Projeto`}
 														</Button>
 													)}
 												</Box>
@@ -1466,7 +1482,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 					const defesaAgendada =
 						defesasFase1 && defesasFase1.length > 0
 							? defesasFase1.find((d) => !!d.data_defesa) ||
-								defesasFase1[0]
+							  defesasFase1[0]
 							: null;
 					const dataHoraFormatada =
 						defesaAgendada && defesaAgendada.data_defesa
@@ -1479,7 +1495,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 						? dataHoraFormatada.toLocaleTimeString("pt-BR", {
 								hour: "2-digit",
 								minute: "2-digit",
-							})
+						  })
 						: null;
 				}
 
@@ -1558,7 +1574,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 												{d.avaliacao != null
 													? Number(
 															d.avaliacao,
-														).toFixed(1)
+													  ).toFixed(1)
 													: "Sem Nota"}
 											</Typography>
 										</Alert>
@@ -1690,8 +1706,8 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 													{convite.aceito
 														? "Participou da banca do projeto"
 														: convite.data_feedback
-															? "Recusou participar"
-															: "Convite pendente"}{" "}
+														? "Recusou participar"
+														: "Convite pendente"}{" "}
 													{convite.data_feedback &&
 														`em ${new Date(
 															convite.data_feedback,
@@ -1722,9 +1738,9 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 													convite.aceito === true
 														? "success"
 														: convite.data_feedback &&
-															  !convite.aceito
-															? "error"
-															: "warning"
+														  !convite.aceito
+														? "error"
+														: "warning"
 												}
 												sx={{ mb: 2 }}
 											>
@@ -1738,9 +1754,9 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 													{convite.aceito === true
 														? "Aceito"
 														: convite.data_feedback &&
-															  !convite.aceito
-															? "Recusado"
-															: "Pendente"}
+														  !convite.aceito
+														? "Recusado"
+														: "Pendente"}
 												</Typography>
 												{convite.data_envio && (
 													<Typography variant="body2">
@@ -1874,7 +1890,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 													: `Enviar ${
 															2 -
 															convitesAceitosFase2.length
-														} Convite(s) para Banca Final`}
+													  } Convite(s) para Banca Final`}
 											</Button>
 										)}
 									</Box>
@@ -1994,19 +2010,19 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 											defesasFase2.length > 0
 												? defesasFase2.find(
 														(d) => !!d.data_defesa,
-													) || defesasFase2[0]
+												  ) || defesasFase2[0]
 												: null;
 										const dataHoraFormatada =
 											defesaAgendada &&
 											defesaAgendada.data_defesa
 												? new Date(
 														defesaAgendada.data_defesa,
-													)
+												  )
 												: null;
 										dataStr = dataHoraFormatada
 											? dataHoraFormatada.toLocaleDateString(
 													"pt-BR",
-												)
+											  )
 											: null;
 										horaStr = dataHoraFormatada
 											? dataHoraFormatada.toLocaleTimeString(
@@ -2015,7 +2031,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 														hour: "2-digit",
 														minute: "2-digit",
 													},
-												)
+											  )
 											: null;
 									}
 
@@ -2093,9 +2109,9 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 																	null
 																		? Number(
 																				d.avaliacao,
-																			).toFixed(
+																		  ).toFixed(
 																				1,
-																			)
+																		  )
 																		: "Sem Nota"}
 																</Typography>
 															</Alert>
@@ -2310,7 +2326,13 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 				</Paper>
 			)}
 
-			<Paper sx={{ p: 3, mb: 3 }}>
+			<Paper
+				sx={{
+					p: 3,
+					mb: 3,
+					backgroundColor: theme.palette.background.default,
+				}}
+			>
 				<Stepper activeStep={activeStep} sx={{ mb: 4 }}>
 					{getEtapasValidas().map((label, index) => {
 						const stepProps = {};
@@ -2537,19 +2559,19 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 													? defesasFase2.find(
 															(d) =>
 																!!d.data_defesa,
-														) || defesasFase2[0]
+													  ) || defesasFase2[0]
 													: null;
 											const dataHoraFormatada =
 												defesaAgendada &&
 												defesaAgendada.data_defesa
 													? new Date(
 															defesaAgendada.data_defesa,
-														)
+													  )
 													: null;
 											dataStr = dataHoraFormatada
 												? dataHoraFormatada.toLocaleDateString(
 														"pt-BR",
-													)
+												  )
 												: null;
 											horaStr = dataHoraFormatada
 												? dataHoraFormatada.toLocaleTimeString(
@@ -2558,7 +2580,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 															hour: "2-digit",
 															minute: "2-digit",
 														},
-													)
+												  )
 												: null;
 										}
 
@@ -2638,9 +2660,9 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 																	null
 																		? Number(
 																				d.avaliacao,
-																			).toFixed(
+																		  ).toFixed(
 																				1,
-																			)
+																		  )
 																		: "Sem Nota"}
 																</Typography>
 															</Alert>
@@ -2766,13 +2788,13 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 														(c) =>
 															c.aceito === true,
 													).length
-												} convite(s) aceito(s), falta(m) ${
+											  } convite(s) aceito(s), falta(m) ${
 													2 -
 													convitesBanca.filter(
 														(c) =>
 															c.aceito === true,
 													).length
-												}.`
+											  }.`
 											: " Ainda não há convites aceitos."}
 									</Typography>
 								</Alert>
@@ -2819,10 +2841,10 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 												0
 												? ` Você já tem ${
 														convitesAceitosFase2.length
-													} convite(s) aceito(s) para a banca final, falta(m) ${
+												  } convite(s) aceito(s) para a banca final, falta(m) ${
 														2 -
 														convitesAceitosFase2.length
-													}.`
+												  }.`
 												: " Ainda não há convites aceitos para a banca final.";
 										})()}
 									</Typography>

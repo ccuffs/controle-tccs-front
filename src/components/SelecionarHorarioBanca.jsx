@@ -11,6 +11,7 @@ import {
 } from "@mui/material";
 import axiosInstance from "../auth/axios";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import { useTheme } from "@mui/material/styles";
 
 // Props esperadas:
 // - oferta: { ano, semestre, id_curso, fase }
@@ -25,6 +26,7 @@ export default function SelecionarHorarioBanca({
 	onChange,
 	selectedSlot,
 }) {
+	const theme = useTheme();
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
 	const [gradeBase, setGradeBase] = useState(null); // datas/horarios
@@ -193,7 +195,14 @@ export default function SelecionarHorarioBanca({
 					{Object.keys(intersecao)
 						.sort()
 						.map((data) => (
-							<Paper key={data} sx={{ p: 2 }}>
+							<Paper
+								key={data}
+								sx={{
+									p: 2,
+									backgroundColor:
+										theme.palette.background.default,
+								}}
+							>
 								<Typography variant="subtitle2" gutterBottom>
 									{formatarData(data)}
 								</Typography>
@@ -237,7 +246,7 @@ export default function SelecionarHorarioBanca({
 														? {
 																fontWeight: 700,
 																boxShadow: 2,
-															}
+														  }
 														: {}
 												}
 											/>

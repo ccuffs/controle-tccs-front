@@ -16,8 +16,10 @@ import {
 	Grid,
 } from "@mui/material";
 import TemasDataGrid from "./TemasDataGrid";
+import { useTheme } from "@mui/material/styles";
 
 export default function VisualizarTemasTCC({ onAvancarEtapa }) {
+	const theme = useTheme();
 	const { usuario } = useContext(AuthContext);
 	const [temas, setTemas] = useState([]);
 	const [temasAtivos, setTemasAtivos] = useState([]);
@@ -124,7 +126,13 @@ export default function VisualizarTemasTCC({ onAvancarEtapa }) {
 					Temas TCC Disponíveis
 				</Typography>
 
-				<Paper sx={{ p: 2, mb: 2 }}>
+				<Paper
+					sx={{
+						p: 2,
+						mb: 2,
+						backgroundColor: theme.palette.background.default,
+					}}
+				>
 					<Grid container spacing={2} alignItems="center">
 						<Grid item xs={12} md={6}>
 							<Typography variant="h6" component="h3">
@@ -172,10 +180,7 @@ export default function VisualizarTemasTCC({ onAvancarEtapa }) {
 					área(s)
 				</Typography>
 
-				<TemasDataGrid
-					temas={temasAtivos}
-					isDiscenteView={true}
-				/>
+				<TemasDataGrid temas={temasAtivos} isDiscenteView={true} />
 
 				{onAvancarEtapa && (
 					<Box
