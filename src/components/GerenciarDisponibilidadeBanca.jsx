@@ -598,6 +598,8 @@ const GerenciarDisponibilidadeBanca = () => {
 					habilitarAno
 					habilitarSemestre
 					habilitarFase
+					habilitarFiltroOrientacao={false}
+					habilitarFiltroTodasFases={false}
 					mostrarTodosCursos={false}
 					loading={loading}
 				/>
