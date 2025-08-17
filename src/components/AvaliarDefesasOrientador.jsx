@@ -183,24 +183,63 @@ export default function AvaliarDefesasOrientador() {
 		const snapshot = backupAvaliacoes[chaveUnica] || {};
 		const idTcc = chaveUnica.includes('_') ? chaveUnica.split('_')[0] : chaveUnica;
 		const prefix = `${idTcc}|`;
-		setAvaliacoesEdicao((prev) => {
-			const novo = { ...prev };
-			Object.keys(novo).forEach((k) => {
-				if (k.startsWith(prefix)) {
-					// Se for modo "Todas" as fases, restaura apenas pela fase específica do card
-					if (fase === "" || fase === null || fase === undefined) {
-						const [, , faseKey] = k.split('|');
-						const faseCard = chaveUnica.includes('_') ? chaveUnica.split('_')[1] : null;
-						if (faseCard && faseKey === faseCard && snapshot.hasOwnProperty(k)) {
+
+		// Verifica se há notas registradas para este TCC
+		const temNotasRegistradas = Object.keys(avaliacoesEdicao).some(k => {
+			if (k.startsWith(prefix)) {
+				const [, , faseKey] = k.split('|');
+				// Se for modo "Todas" as fases, verifica apenas pela fase específica do card
+				if (fase === "" || fase === null || fase === undefined) {
+					const faseCard = chaveUnica.includes('_') ? chaveUnica.split('_')[1] : null;
+					return faseCard && faseKey === faseCard;
+				}
+				return true;
+			}
+			return false;
+		});
+
+		if (temNotasRegistradas && Object.keys(snapshot).length > 0) {
+			// Se há notas registradas e backup, restaura os valores
+			setAvaliacoesEdicao((prev) => {
+				const novo = { ...prev };
+				Object.keys(novo).forEach((k) => {
+					if (k.startsWith(prefix)) {
+						// Se for modo "Todas" as fases, restaura apenas pela fase específica do card
+						if (fase === "" || fase === null || fase === undefined) {
+							const [, , faseKey] = k.split('|');
+							const faseCard = chaveUnica.includes('_') ? chaveUnica.split('_')[1] : null;
+							if (faseCard && faseKey === faseCard && snapshot.hasOwnProperty(k)) {
+								novo[k] = snapshot[k];
+							}
+						} else if (snapshot.hasOwnProperty(k)) {
 							novo[k] = snapshot[k];
 						}
-					} else if (snapshot.hasOwnProperty(k)) {
-						novo[k] = snapshot[k];
 					}
-				}
+				});
+				return novo;
 			});
-			return novo;
-		});
+		} else {
+			// Se não há notas registradas, apenas limpa os campos
+			setAvaliacoesEdicao((prev) => {
+				const novo = { ...prev };
+				Object.keys(novo).forEach((k) => {
+					if (k.startsWith(prefix)) {
+						// Se for modo "Todas" as fases, limpa apenas pela fase específica do card
+						if (fase === "" || fase === null || fase === undefined) {
+							const [, , faseKey] = k.split('|');
+							const faseCard = chaveUnica.includes('_') ? chaveUnica.split('_')[1] : null;
+							if (faseCard && faseKey === faseCard) {
+								novo[k] = "";
+							}
+						} else {
+							novo[k] = "";
+						}
+					}
+				});
+				return novo;
+			});
+		}
+
 		setBackupAvaliacoes((prev) => {
 			const novo = { ...prev };
 			delete novo[chaveUnica];
@@ -738,17 +777,50 @@ export default function AvaliarDefesasOrientador() {
 													</Button>
 												</Stack>
 											) : (
-												<Button
-													variant="outlined"
-													color="primary"
-													onClick={() =>
-														iniciarEdicao(
-															card.chaveUnica,
-														)
-													}
-												>
-													Editar
-												</Button>
+												<>
+													{/* Verifica se algum membro já tem avaliação salva */}
+													{card.membros.some(m => m.salvo) ? (
+														<Button
+															variant="outlined"
+															color="primary"
+															onClick={() =>
+																iniciarEdicao(
+																	card.chaveUnica,
+																)
+															}
+														>
+															Editar
+														</Button>
+													) : (
+														<Stack
+															direction="row"
+															spacing={1}
+														>
+															<Button
+																variant="contained"
+																color="primary"
+																onClick={() =>
+																	salvarAvaliacoesDoTcc(
+																		card.chaveUnica,
+																	)
+																}
+															>
+																Salvar
+															</Button>
+															<Button
+																variant="outlined"
+																color="error"
+																onClick={() =>
+																	cancelarEdicao(
+																		card.chaveUnica,
+																	)
+																}
+															>
+																Cancelar
+															</Button>
+														</Stack>
+													)}
+												</>
 											)}
 										</CardActions>
 									</Card>
