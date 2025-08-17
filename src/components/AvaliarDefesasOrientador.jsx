@@ -37,7 +37,7 @@ export default function AvaliarDefesasOrientador() {
 	const [cursoSelecionado, setCursoSelecionado] = useState("");
 	const [ano, setAno] = useState(getAnoSemestreAtual().ano);
 	const [semestre, setSemestre] = useState(getAnoSemestreAtual().semestre);
-	const [fase, setFase] = useState(1);
+	const [fase, setFase] = useState("");
 
 	const [orientacoes, setOrientacoes] = useState([]);
 	const [defesas, setDefesas] = useState([]);
@@ -118,7 +118,7 @@ export default function AvaliarDefesasOrientador() {
 			const idsTcc = new Set(orientacoesFiltradas.map((t) => t.id));
 			const defesasFiltradas = (respDefesas.defesas || [])
 				.filter((d) => idsTcc.has(d.id_tcc))
-				.filter((d) => parseInt(d.fase) === parseInt(fase));
+				.filter((d) => !fase || parseInt(d.fase) === parseInt(fase));
 			setDefesas(defesasFiltradas);
 
 			// Inicializar estados de edição conforme dados atuais
@@ -157,129 +157,244 @@ export default function AvaliarDefesasOrientador() {
 		setOpenMessage(false);
 	}
 
-	function iniciarEdicao(idTcc) {
+	function iniciarEdicao(chaveUnica) {
+		const idTcc = chaveUnica.includes('_') ? chaveUnica.split('_')[0] : chaveUnica;
 		const prefix = `${idTcc}|`;
 		const snapshot = {};
 		Object.entries(avaliacoesEdicao).forEach(([k, v]) => {
-			if (k.startsWith(prefix)) snapshot[k] = v;
+			if (k.startsWith(prefix)) {
+				// Se for modo "Todas" as fases, filtra apenas pela fase específica do card
+				if (fase === "" || fase === null || fase === undefined) {
+					const [, , faseKey] = k.split('|');
+					const faseCard = chaveUnica.includes('_') ? chaveUnica.split('_')[1] : null;
+					if (faseCard && faseKey === faseCard) {
+						snapshot[k] = v;
+					}
+				} else {
+					snapshot[k] = v;
+				}
+			}
 		});
-		setBackupAvaliacoes((prev) => ({ ...prev, [idTcc]: snapshot }));
-		setEditandoTcc((prev) => ({ ...prev, [idTcc]: true }));
+		setBackupAvaliacoes((prev) => ({ ...prev, [chaveUnica]: snapshot }));
+		setEditandoTcc((prev) => ({ ...prev, [chaveUnica]: true }));
 	}
 
-	function cancelarEdicao(idTcc) {
-		const snapshot = backupAvaliacoes[idTcc] || {};
+	function cancelarEdicao(chaveUnica) {
+		const snapshot = backupAvaliacoes[chaveUnica] || {};
+		const idTcc = chaveUnica.includes('_') ? chaveUnica.split('_')[0] : chaveUnica;
 		const prefix = `${idTcc}|`;
 		setAvaliacoesEdicao((prev) => {
 			const novo = { ...prev };
 			Object.keys(novo).forEach((k) => {
 				if (k.startsWith(prefix)) {
-					novo[k] = snapshot.hasOwnProperty(k)
-						? snapshot[k]
-						: novo[k];
+					// Se for modo "Todas" as fases, restaura apenas pela fase específica do card
+					if (fase === "" || fase === null || fase === undefined) {
+						const [, , faseKey] = k.split('|');
+						const faseCard = chaveUnica.includes('_') ? chaveUnica.split('_')[1] : null;
+						if (faseCard && faseKey === faseCard && snapshot.hasOwnProperty(k)) {
+							novo[k] = snapshot[k];
+						}
+					} else if (snapshot.hasOwnProperty(k)) {
+						novo[k] = snapshot[k];
+					}
 				}
 			});
 			return novo;
 		});
 		setBackupAvaliacoes((prev) => {
 			const novo = { ...prev };
-			delete novo[idTcc];
+			delete novo[chaveUnica];
 			return novo;
 		});
-		setEditandoTcc((prev) => ({ ...prev, [idTcc]: false }));
+		setEditandoTcc((prev) => ({ ...prev, [chaveUnica]: false }));
 	}
 
-	// Dados para Cards: um card por TCC com inputs para todos os membros da banca
+	// Dados para Cards: quando fase está vazia (Todas), um card por defesa/fase
+	// caso contrário, um card por TCC com inputs para todos os membros da banca
 	const cardsPorTcc = useMemo(() => {
 		const resultado = [];
-		const defesasPorTcc = new Map();
-		defesas.forEach((defesa) => {
-			if (!defesasPorTcc.has(defesa.id_tcc)) {
-				defesasPorTcc.set(defesa.id_tcc, []);
-			}
-			defesasPorTcc.get(defesa.id_tcc).push(defesa);
-		});
 
-		defesasPorTcc.forEach((defesasTcc, idTcc) => {
-			const tcc = mapaTcc.get(idTcc);
-			if (!tcc) return;
-
-			const notas = defesasTcc
-				.map((d) => {
-					const key = `${d.id_tcc}|${d.membro_banca}|${d.fase}`;
-					const v = avaliacoesEdicao[key];
-					const num =
-						v === "" || v === undefined || v === null
-							? null
-							: Number(v);
-					return Number.isFinite(num) ? num : null;
-				})
-				.filter((n) => n !== null);
-
-			const media =
-				notas.length > 0
-					? notas.reduce((s, n) => s + n, 0) / notas.length
-					: null;
-			const avaliacoesCompletas =
-				notas.length === defesasTcc.length && defesasTcc.length > 0;
-			const aprovadoAutomatico = avaliacoesCompletas && media >= 6;
-
-			const dataDefesaStr = defesasTcc[0]?.data_defesa
-				? new Date(defesasTcc[0].data_defesa).toLocaleString("pt-BR")
-				: "N/A";
-
-			const membros = defesasTcc
-				.map((d) => {
-					const chave = `${d.id_tcc}|${d.membro_banca}|${d.fase}`;
-					return {
-						chave,
-						idTcc: d.id_tcc,
-						membroBanca: d.membro_banca,
-						nomeMembroBanca: d.membroBanca?.nome || d.membro_banca,
-						valorAvaliacao: avaliacoesEdicao[chave] ?? "",
-						ehOrientador: d.orientador || false,
-						salvo:
-							d.avaliacao !== null && d.avaliacao !== undefined,
-					};
-				})
-				.sort((a, b) => {
-					if (a.ehOrientador !== b.ehOrientador) {
-						return a.ehOrientador ? -1 : 1;
-					}
-					return (a.nomeMembroBanca || "").localeCompare(
-						b.nomeMembroBanca || "",
-					);
-				});
-
-			resultado.push({
-				idTcc,
-				nomeDicente: tcc.Dicente?.nome || "N/A",
-				matriculaDicente: tcc.Dicente?.matricula || "N/A",
-				tituloTcc: tcc.titulo || "N/A",
-				nomeCurso: tcc.Curso?.nome || "N/A",
-				fase: defesasTcc[0]?.fase,
-				media,
-				avaliacoesCompletas,
-				aprovadoAutomatico,
-				notas,
-				dataDefesa: dataDefesaStr,
-				membros,
+		if (fase === "" || fase === null || fase === undefined) {
+			// Quando "Todas" as fases estão selecionadas, criar um card para cada defesa/fase
+			const defesasPorTccEFase = new Map();
+			defesas.forEach((defesa) => {
+				const chave = `${defesa.id_tcc}_${defesa.fase}`;
+				if (!defesasPorTccEFase.has(chave)) {
+					defesasPorTccEFase.set(chave, []);
+				}
+				defesasPorTccEFase.get(chave).push(defesa);
 			});
+
+			defesasPorTccEFase.forEach((defesasTccFase, chave) => {
+				const [idTcc, faseAtual] = chave.split('_');
+				const tcc = mapaTcc.get(parseInt(idTcc));
+				if (!tcc) return;
+
+				const notas = defesasTccFase
+					.map((d) => {
+						const key = `${d.id_tcc}|${d.membro_banca}|${d.fase}`;
+						const v = avaliacoesEdicao[key];
+						const num =
+							v === "" || v === undefined || v === null
+								? null
+								: Number(v);
+						return Number.isFinite(num) ? num : null;
+					})
+					.filter((n) => n !== null);
+
+				const media =
+					notas.length > 0
+						? notas.reduce((s, n) => s + n, 0) / notas.length
+						: null;
+				const avaliacoesCompletas =
+					notas.length === defesasTccFase.length && defesasTccFase.length > 0;
+				const aprovadoAutomatico = avaliacoesCompletas && media >= 6;
+
+				const dataDefesaStr = defesasTccFase[0]?.data_defesa
+					? new Date(defesasTccFase[0].data_defesa).toLocaleString("pt-BR")
+					: "N/A";
+
+				const membros = defesasTccFase
+					.map((d) => {
+						const chave = `${d.id_tcc}|${d.membro_banca}|${d.fase}`;
+						return {
+							chave,
+							idTcc: d.id_tcc,
+							membroBanca: d.membro_banca,
+							nomeMembroBanca: d.membroBanca?.nome || d.membro_banca,
+							valorAvaliacao: avaliacoesEdicao[chave] ?? "",
+							ehOrientador: d.orientador || false,
+							salvo:
+								d.avaliacao !== null && d.avaliacao !== undefined,
+						};
+					})
+					.sort((a, b) => {
+						if (a.ehOrientador !== b.ehOrientador) {
+							return a.ehOrientador ? -1 : 1;
+						}
+						return (a.nomeMembroBanca || "").localeCompare(
+							b.nomeMembroBanca || "",
+						);
+					});
+
+				resultado.push({
+					idTcc: parseInt(idTcc),
+					chaveUnica: chave, // Identificador único para cada card
+					nomeDicente: tcc.Dicente?.nome || "N/A",
+					matriculaDicente: tcc.Dicente?.matricula || "N/A",
+					tituloTcc: tcc.titulo || "N/A",
+					nomeCurso: tcc.Curso?.nome || "N/A",
+					fase: parseInt(faseAtual),
+					media,
+					avaliacoesCompletas,
+					aprovadoAutomatico,
+					notas,
+					dataDefesa: dataDefesaStr,
+					membros,
+				});
+			});
+		} else {
+			// Lógica original: agrupar por TCC quando uma fase específica está selecionada
+			const defesasPorTcc = new Map();
+			defesas.forEach((defesa) => {
+				if (!defesasPorTcc.has(defesa.id_tcc)) {
+					defesasPorTcc.set(defesa.id_tcc, []);
+				}
+				defesasPorTcc.get(defesa.id_tcc).push(defesa);
+			});
+
+			defesasPorTcc.forEach((defesasTcc, idTcc) => {
+				const tcc = mapaTcc.get(idTcc);
+				if (!tcc) return;
+
+				const notas = defesasTcc
+					.map((d) => {
+						const key = `${d.id_tcc}|${d.membro_banca}|${d.fase}`;
+						const v = avaliacoesEdicao[key];
+						const num =
+							v === "" || v === undefined || v === null
+								? null
+								: Number(v);
+						return Number.isFinite(num) ? num : null;
+					})
+					.filter((n) => n !== null);
+
+				const media =
+					notas.length > 0
+						? notas.reduce((s, n) => s + n, 0) / notas.length
+						: null;
+				const avaliacoesCompletas =
+					notas.length === defesasTcc.length && defesasTcc.length > 0;
+				const aprovadoAutomatico = avaliacoesCompletas && media >= 6;
+
+				const dataDefesaStr = defesasTcc[0]?.data_defesa
+					? new Date(defesasTcc[0].data_defesa).toLocaleString("pt-BR")
+					: "N/A";
+
+				const membros = defesasTcc
+					.map((d) => {
+						const chave = `${d.id_tcc}|${d.membro_banca}|${d.fase}`;
+						return {
+							chave,
+							idTcc: d.id_tcc,
+							membroBanca: d.membro_banca,
+							nomeMembroBanca: d.membroBanca?.nome || d.membro_banca,
+							valorAvaliacao: avaliacoesEdicao[chave] ?? "",
+							ehOrientador: d.orientador || false,
+							salvo:
+								d.avaliacao !== null && d.avaliacao !== undefined,
+						};
+					})
+					.sort((a, b) => {
+						if (a.ehOrientador !== b.ehOrientador) {
+							return a.ehOrientador ? -1 : 1;
+						}
+						return (a.nomeMembroBanca || "").localeCompare(
+							b.nomeMembroBanca || "",
+						);
+					});
+
+				resultado.push({
+					idTcc,
+					chaveUnica: `${idTcc}`, // Para compatibilidade
+					nomeDicente: tcc.Dicente?.nome || "N/A",
+					matriculaDicente: tcc.Dicente?.matricula || "N/A",
+					tituloTcc: tcc.titulo || "N/A",
+					nomeCurso: tcc.Curso?.nome || "N/A",
+					fase: defesasTcc[0]?.fase,
+					media,
+					avaliacoesCompletas,
+					aprovadoAutomatico,
+					notas,
+					dataDefesa: dataDefesaStr,
+					membros,
+				});
+			});
+		}
+
+		return resultado.sort((a, b) => {
+			// Primeiro ordena por nome do dicente, depois por fase se for o mesmo dicente
+			const nomeComparison = (a.nomeDicente || "").localeCompare(b.nomeDicente || "");
+			if (nomeComparison !== 0) return nomeComparison;
+			return (a.fase || 0) - (b.fase || 0);
 		});
+	}, [defesas, mapaTcc, avaliacoesEdicao, fase]);
 
-		return resultado.sort((a, b) =>
-			(a.nomeDicente || "").localeCompare(b.nomeDicente || ""),
-		);
-	}, [defesas, mapaTcc, avaliacoesEdicao]);
-
-	// Salvar avaliações apenas do TCC informado
-	async function salvarAvaliacoesDoTcc(idTccAlvo) {
+	// Salvar avaliações apenas do card informado (TCC ou TCC+Fase específica)
+	async function salvarAvaliacoesDoTcc(chaveUnicaAlvo) {
 		try {
 			const promises = [];
 			let total = 0;
+			const idTccAlvo = chaveUnicaAlvo.includes('_') ? chaveUnicaAlvo.split('_')[0] : chaveUnicaAlvo;
+			const faseAlvo = chaveUnicaAlvo.includes('_') ? chaveUnicaAlvo.split('_')[1] : null;
+
 			Object.entries(avaliacoesEdicao).forEach(([chave, valor]) => {
-				const [idTcc, membro] = chave.split("|");
+				const [idTcc, membro, faseKey] = chave.split("|");
 				if (String(idTcc) !== String(idTccAlvo)) return;
+
+				// Se for modo "Todas" as fases, filtra apenas pela fase específica do card
+				if (faseAlvo && String(faseKey) !== String(faseAlvo)) return;
+
 				const numero = valor === "" ? null : Number(valor);
 				if (numero !== null && !Number.isNaN(numero) && numero >= 0) {
 					total += 1;
@@ -293,26 +408,29 @@ export default function AvaliarDefesasOrientador() {
 
 			if (promises.length > 0) {
 				await Promise.all(promises);
+				const descricaoCard = faseAlvo
+					? `TCC ${idTccAlvo} (Fase ${faseAlvo})`
+					: `TCC ${idTccAlvo}`;
 				setMessageText(
-					`Avaliações do TCC ${idTccAlvo} salvas com sucesso. Total: ${total}`,
+					`Avaliações do ${descricaoCard} salvas com sucesso. Total: ${total}`,
 				);
 				setMessageSeverity("success");
 				setOpenMessage(true);
 				await carregarDados();
-				setEditandoTcc((prev) => ({ ...prev, [idTccAlvo]: false }));
+				setEditandoTcc((prev) => ({ ...prev, [chaveUnicaAlvo]: false }));
 				setBackupAvaliacoes((prev) => {
 					const novo = { ...prev };
-					delete novo[idTccAlvo];
+					delete novo[chaveUnicaAlvo];
 					return novo;
 				});
 			} else {
-				setMessageText("Nenhuma avaliação válida para este TCC.");
+				setMessageText("Nenhuma avaliação válida para este card.");
 				setMessageSeverity("warning");
 				setOpenMessage(true);
 			}
 		} catch (error) {
-			console.error("Erro ao salvar avaliações do TCC:", error);
-			setMessageText("Erro ao salvar avaliações do TCC.");
+			console.error("Erro ao salvar avaliações:", error);
+			setMessageText("Erro ao salvar avaliações.");
 			setMessageSeverity("error");
 			setOpenMessage(true);
 		}
@@ -339,6 +457,7 @@ export default function AvaliarDefesasOrientador() {
 					habilitarAno
 					habilitarSemestre
 					habilitarFase
+					habilitarFiltroOrientacao={false}
 					mostrarTodosCursos={false}
 					loading={loading}
 				/>
@@ -360,16 +479,16 @@ export default function AvaliarDefesasOrientador() {
 							</Typography>
 
 							<Stack spacing={2}>
-								{cardsPorTcc.map((card) => (
-									<Card
-										key={card.idTcc}
-										variant="outlined"
-										sx={{
-											backgroundColor:
-												theme.palette.background
-													.default,
-										}}
-									>
+															{cardsPorTcc.map((card) => (
+								<Card
+									key={card.chaveUnica}
+									variant="outlined"
+									sx={{
+										backgroundColor:
+											theme.palette.background
+												.default,
+									}}
+								>
 										<CardContent>
 											<Stack spacing={1}>
 												<Typography
@@ -573,7 +692,7 @@ export default function AvaliarDefesasOrientador() {
 																		) &&
 																		!editandoTcc[
 																			card
-																				.idTcc
+																				.chaveUnica
 																		]
 																	}
 																/>
@@ -586,19 +705,19 @@ export default function AvaliarDefesasOrientador() {
 										<CardActions
 											sx={{ justifyContent: "flex-end" }}
 										>
-											{editandoTcc[card.idTcc] ? (
+											{editandoTcc[card.chaveUnica] ? (
 												<Stack
 													direction="row"
 													spacing={1}
 												>
-													<Tooltip title="Salvar avaliações deste TCC">
+													<Tooltip title="Salvar avaliações deste card">
 														<span>
 															<Button
 																variant="contained"
 																color="primary"
 																onClick={() =>
 																	salvarAvaliacoesDoTcc(
-																		card.idTcc,
+																		card.chaveUnica,
 																	)
 																}
 															>
@@ -611,7 +730,7 @@ export default function AvaliarDefesasOrientador() {
 														color="error"
 														onClick={() =>
 															cancelarEdicao(
-																card.idTcc,
+																card.chaveUnica,
 															)
 														}
 													>
@@ -624,7 +743,7 @@ export default function AvaliarDefesasOrientador() {
 													color="primary"
 													onClick={() =>
 														iniciarEdicao(
-															card.idTcc,
+															card.chaveUnica,
 														)
 													}
 												>

@@ -22,6 +22,10 @@ export default function FiltrosPesquisa({
 	habilitarSemestre = true,
 	habilitarFase = true,
 	mostrarTodosCursos = false,
+	habilitarFiltroTodasFases = true,
+	habilitarFiltroOrientacao = true,
+	habilitarFiltroProjeto = true,
+	habilitarFiltroTcc = true,
 	loading = false,
 	anosDisponiveis = [],
 	semestresDisponiveis = [],
@@ -135,23 +139,28 @@ export default function FiltrosPesquisa({
 						label="Fase"
 						onChange={handleFaseChange}
 					>
-						<MenuItem value="">
-							<em>Todas</em>
-						</MenuItem>
-						{fasesDisponiveis.length > 0 ? (
-							// Usar fases das ofertas TCC se disponíveis
+						{habilitarFiltroTodasFases && (
+							<MenuItem value="">
+								<em>Todas</em>
+							</MenuItem>
+						)}
+						{habilitarFiltroOrientacao && (
+							<MenuItem key="0" value="0">Orientação</MenuItem>
+						)}
+						{habilitarFiltroProjeto && (
+							<MenuItem key="1" value="1">Projeto</MenuItem>
+						)}
+						{habilitarFiltroTcc && (
+							<MenuItem key="2" value="2">TCC</MenuItem>
+						)}
+						{fasesDisponiveis.length > 0 && (
+							// Usar fases das ofertas TCC se disponíveis (apenas se não houver filtros específicos)
+							!habilitarFiltroOrientacao && !habilitarFiltroProjeto && !habilitarFiltroTcc &&
 							fasesDisponiveis.map((f) => (
 								<MenuItem key={f} value={f}>
 									Fase {f}
 								</MenuItem>
 							))
-						) : (
-							// Fallback para fases padrão se não houver ofertas
-							<>
-								<MenuItem value="0">Orientação</MenuItem>
-								<MenuItem value="1">Projeto</MenuItem>
-								<MenuItem value="2">TCC</MenuItem>
-							</>
 						)}
 					</Select>
 				</FormControl>
