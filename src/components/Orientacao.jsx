@@ -363,11 +363,37 @@ export default function Orientacao() {
 		});
 
 		return orientacao
-			? orientacao.Docente || {
+			? {
+					id: orientacao.id,
 					codigo: orientacao.codigo_docente || orientacao.codigo || "",
-					nome: "Orientador"
+					nome: orientacao.Docente?.nome || "Orientador"
 				}
 			: null;
+	}
+
+	function getOrientacaoAtual(matricula) {
+		if (!cursoSelecionado || !ano || !semestre || !fase)
+			return null;
+
+		const orientacao = orientacoes.find((o) => {
+			const tcc = o.TrabalhoConclusao || o.trabalhoConclusao;
+			const mat = tcc?.matricula;
+			const cursoId = tcc?.Curso?.id || tcc?.id_curso || tcc?.idCurso;
+			const faseTcc = tcc?.fase != null ? parseInt(tcc.fase) : undefined;
+			const anoT = tcc?.ano;
+			const semestreT = tcc?.semestre;
+			const isOrientador = o.orientador === true;
+			return (
+				isOrientador &&
+				mat === matricula &&
+				anoT === parseInt(ano) &&
+				semestreT === parseInt(semestre) &&
+				cursoId === cursoSelecionado &&
+				faseTcc === parseInt(fase)
+			);
+		});
+
+		return orientacao || null;
 	}
 
 	function getOrientadorNome(matricula) {
@@ -571,7 +597,16 @@ export default function Orientacao() {
 
 			// Atualizar orientação se mudou
 			const orientadorAtual = getOrientadorAtual(selectedDicente.matricula);
-			if (editData.orientador !== (orientadorAtual?.codigo || "")) {
+			const orientacaoAtual = getOrientacaoAtual(selectedDicente.matricula);
+			const codigoOrientadorAtual = orientadorAtual?.codigo || "";
+
+			if (editData.orientador !== codigoOrientadorAtual) {
+				// Se havia orientador anterior, deletar a orientação
+				if (orientacaoAtual && orientacaoAtual.id) {
+					await axiosInstance.delete(`/orientacoes/${orientacaoAtual.id}`);
+				}
+
+				// Se foi definido um novo orientador, criar nova orientação
 				if (editData.orientador) {
 					const orientacaoPayload = {
 						codigo_docente: editData.orientador,
@@ -1374,6 +1409,9 @@ export default function Orientacao() {
 												label="Orientador"
 												displayEmpty
 											>
+												<MenuItem value="">
+													<em>Sem orientador</em>
+												</MenuItem>
 												{docentesDisponiveis.map((docente) => (
 													<MenuItem key={docente.codigo} value={docente.codigo}>
 														{docente.nome}
