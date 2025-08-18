@@ -595,19 +595,85 @@ export default function Orientacao() {
 
 			await axiosInstance.put(`/trabalho-conclusao/${tcc.id}`, tccData);
 
-			// Atualizar orientação se mudou
+			// Gerenciar orientação e convites
 			const orientadorAtual = getOrientadorAtual(selectedDicente.matricula);
 			const orientacaoAtual = getOrientacaoAtual(selectedDicente.matricula);
 			const codigoOrientadorAtual = orientadorAtual?.codigo || "";
 
 			if (editData.orientador !== codigoOrientadorAtual) {
+				// Buscar convites de orientação existentes para este TCC
+				const responseConvites = await axiosInstance.get("/convites", {
+					params: { id_tcc: tcc.id }
+				});
+				const convitesOrientacao = (responseConvites.data?.convites || responseConvites.convites || [])
+					.filter(c => c.orientacao === true && parseInt(c.fase) === parseInt(fase));
+
 				// Se havia orientador anterior, deletar a orientação
 				if (orientacaoAtual && orientacaoAtual.id) {
 					await axiosInstance.delete(`/orientacoes/${orientacaoAtual.id}`);
 				}
 
-				// Se foi definido um novo orientador, criar nova orientação
+								// Gerenciar convites conforme as regras especificadas
 				if (editData.orientador) {
+					const dataAtual = new Date().toISOString();
+
+					// Verificar convites existentes para o novo orientador
+					const conviteNovoOrientador = convitesOrientacao.find(c =>
+						c.codigo_docente === editData.orientador
+					);
+
+					// Verificar convites existentes para o orientador atual (se houver)
+					const conviteOrientadorAtual = codigoOrientadorAtual ?
+						convitesOrientacao.find(c => c.codigo_docente === codigoOrientadorAtual) : null;
+
+					if (!codigoOrientadorAtual) {
+						// Casos 1 e 2: Não há orientação atual
+						if (!conviteNovoOrientador || conviteNovoOrientador.aceito === false) {
+							// Caso 1: Não há convite OU Caso 2: Convite recusado - criar novo convite aceito
+							const mensagemPadrao = "Informado pelo professor do CCR";
+
+							const convitePayload = {
+								id_tcc: tcc.id,
+								codigo_docente: editData.orientador,
+								fase: parseInt(fase),
+								data_envio: dataAtual,
+								mensagem_envio: mensagemPadrao,
+								data_feedback: dataAtual,
+								aceito: true,
+								mensagem_feedback: mensagemPadrao,
+								orientacao: true
+							};
+
+							await axiosInstance.post("/convites", { formData: convitePayload });
+						}
+					} else {
+						// Caso 3: Há orientação atual e mudando para novo orientador
+						if (editData.orientador !== codigoOrientadorAtual) {
+							const mensagemAlteracao = `Alteração de orientação informada pelo professor do CCR de ${codigoOrientadorAtual} para ${editData.orientador}`;
+
+							// Se há convite do orientador atual, deletá-lo
+							if (conviteOrientadorAtual) {
+								await axiosInstance.delete(`/convites/${tcc.id}/${codigoOrientadorAtual}/${fase}`);
+							}
+
+							// Criar novo convite para o novo orientador
+							const convitePayload = {
+								id_tcc: tcc.id,
+								codigo_docente: editData.orientador,
+								fase: parseInt(fase),
+								data_envio: dataAtual,
+								mensagem_envio: mensagemAlteracao,
+								data_feedback: dataAtual,
+								aceito: true,
+								mensagem_feedback: mensagemAlteracao,
+								orientacao: true
+							};
+
+							await axiosInstance.post("/convites", { formData: convitePayload });
+						}
+					}
+
+					// Criar nova orientação
 					const orientacaoPayload = {
 						codigo_docente: editData.orientador,
 						id_tcc: tcc.id,
