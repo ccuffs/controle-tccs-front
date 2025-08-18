@@ -741,7 +741,7 @@ export default function Orientacao() {
 										? "Orientador definido"
 										: "Convite para orientação enviado";
 								}
-							} else if (etapa === 5 || etapa === 8) {
+							} else if (etapa === 5 || etapa === 7) {
 								const convitesBanca = Array.isArray(convites)
 									? convites.filter(
 											(c) => c.orientacao === false,
@@ -779,10 +779,10 @@ export default function Orientacao() {
 								}
 							} else if (
 								etapa === 6 ||
-								etapa === 7 ||
+								etapa === 8 ||
 								etapa === 9
 							) {
-								// Para etapas 6, 7 e 9, sucesso se existem convites de banca enviados na fase corrente
+								// Para etapas 6, 8 e 9, sucesso se existem convites de banca enviados na fase corrente
 								const convitesBanca = Array.isArray(convites)
 									? convites.filter(
 											(c) => c.orientacao === false,
