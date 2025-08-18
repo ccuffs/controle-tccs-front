@@ -34,6 +34,7 @@ import SaveIcon from "@mui/icons-material/Save";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import EditIcon from "@mui/icons-material/Edit";
 
 export default function Orientacao() {
 	const [dicentes, setDicentes] = useState([]);
@@ -66,6 +67,21 @@ export default function Orientacao() {
 	const [modalFase, setModalFase] = useState("");
 	const [modalCurso, setModalCurso] = useState(null);
 
+	// Estados para modal de edição de orientação
+	const [openEditModal, setOpenEditModal] = useState(false);
+	const [selectedDicente, setSelectedDicente] = useState(null);
+	const [editData, setEditData] = useState({
+		orientador: "",
+		tema: "",
+		titulo: "",
+		resumo: "",
+		seminarioAndamento: "",
+		etapa: 0
+	});
+	const [loadingEdit, setLoadingEdit] = useState(false);
+	const [areasTcc, setAreasTcc] = useState([]);
+	const [loadingAreas, setLoadingAreas] = useState(false);
+
 	const { permissoesUsuario, gruposUsuario, usuario } = useAuth();
 
 	// Função para verificar se o usuário é professor
@@ -83,6 +99,7 @@ export default function Orientacao() {
 	useEffect(() => {
 		getCursos();
 		getOfertasTcc();
+		getAreasTcc();
 		// Para admins, não carregar dicentes automaticamente
 		// Para professores, só carregar após o curso ser definido
 		if (!isAdmin && !isProfessor) {
@@ -310,9 +327,22 @@ export default function Orientacao() {
 		}
 	}
 
+	async function getAreasTcc() {
+		setLoadingAreas(true);
+		try {
+			const response = await axiosInstance.get("/areas-tcc");
+			setAreasTcc(response.areas || []);
+		} catch (error) {
+			console.log("Não foi possível retornar a lista de áreas TCC: ", error);
+			setAreasTcc([]);
+		} finally {
+			setLoadingAreas(false);
+		}
+	}
+
 	function getOrientadorAtual(matricula) {
 		if (!cursoSelecionado || !ano || !semestre || !fase)
-			return "";
+			return null;
 
 		const orientacao = orientacoes.find((o) => {
 			const tcc = o.TrabalhoConclusao || o.trabalhoConclusao;
@@ -333,69 +363,16 @@ export default function Orientacao() {
 		});
 
 		return orientacao
-			? orientacao.codigo_docente ||
-					orientacao.Docente?.codigo ||
-					orientacao.codigo ||
-					""
-			: "";
+			? orientacao.Docente || {
+					codigo: orientacao.codigo_docente || orientacao.codigo || "",
+					nome: "Orientador"
+				}
+			: null;
 	}
 
-	function handleOrientadorChange(matricula, codigoDocente) {
-		if (!cursoSelecionado || !ano || !semestre || !fase) return;
-
-		const chave = `${matricula}_${ano}_${semestre}_${cursoSelecionado}_${fase}`;
-
-		setOrientacoesAlteradas((prev) => ({
-			...prev,
-			[chave]: {
-				matricula: matricula,
-				ano: parseInt(ano),
-				semestre: parseInt(semestre),
-				id_curso: cursoSelecionado,
-				fase: parseInt(fase),
-				codigo_docente: codigoDocente || null,
-			},
-		}));
-	}
-
-	async function salvarOrientacoes() {
-		try {
-			const orientacoesParaSalvar = Object.values(orientacoesAlteradas);
-			for (const orientacao of orientacoesParaSalvar) {
-				// Ignora quando não há orientador selecionado
-				if (!orientacao.codigo_docente) {
-					continue;
-				}
-
-				// Identifica o TCC do dicente no contexto filtrado
-				const tcc = trabalhosPorMatricula[orientacao.matricula];
-				const idTcc = tcc?.id;
-				if (!idTcc) {
-					throw new Error(
-						`Não foi possível identificar o TCC do dicente ${orientacao.matricula}. Verifique os filtros.`,
-					);
-				}
-
-				const payload = {
-					codigo_docente: orientacao.codigo_docente,
-					id_tcc: idTcc,
-					orientador: true,
-				};
-
-				await axiosInstance.post("/orientacoes", { formData: payload });
-			}
-
-			setMessageText("Orientações salvas com sucesso!");
-			setMessageSeverity("success");
-			setOrientacoesAlteradas({});
-			await getOrientacoes();
-		} catch (error) {
-			console.error("Erro ao salvar orientações:", error);
-			setMessageText(`Falha ao salvar orientações: ${error.message}`);
-			setMessageSeverity("error");
-		} finally {
-			setOpenMessage(true);
-		}
+	function getOrientadorNome(matricula) {
+		const orientador = getOrientadorAtual(matricula);
+		return orientador?.nome || "Sem orientador";
 	}
 
 	// Função para limpar alterações quando qualquer filtro muda
@@ -515,13 +492,124 @@ export default function Orientacao() {
 		}
 	}
 
+	// Funções para o modal de edição
+	function handleOpenEditModal(dicente) {
+		setSelectedDicente(dicente);
+		setLoadingEdit(true);
+		setOpenEditModal(true);
+
+		// Carregar dados do TCC atual
+		loadTccData(dicente.matricula);
+	}
+
+	function handleCloseEditModal() {
+		setOpenEditModal(false);
+		setSelectedDicente(null);
+		setEditData({
+			orientador: "",
+			tema: "",
+			titulo: "",
+			resumo: "",
+			seminarioAndamento: "",
+			etapa: 0
+		});
+		setLoadingEdit(false);
+	}
+
+	async function loadTccData(matricula) {
+		try {
+			const tcc = trabalhosPorMatricula[matricula];
+			const orientador = getOrientadorAtual(matricula);
+
+			setEditData({
+				orientador: orientador?.codigo || "",
+				tema: tcc?.tema || "",
+				titulo: tcc?.titulo || "",
+				resumo: tcc?.resumo || "",
+				seminarioAndamento: tcc?.seminario_andamento || "",
+				etapa: tcc?.etapa || 0
+			});
+		} catch (error) {
+			console.log("Erro ao carregar dados do TCC:", error);
+		} finally {
+			setLoadingEdit(false);
+		}
+	}
+
+	function handleEditDataChange(field, value) {
+		setEditData(prev => ({
+			...prev,
+			[field]: value
+		}));
+	}
+
+	async function handleSaveEdit() {
+		if (!selectedDicente) return;
+
+		try {
+			setLoadingEdit(true);
+
+			const tcc = trabalhosPorMatricula[selectedDicente.matricula];
+			if (!tcc) {
+				throw new Error("TCC não encontrado para este dicente");
+			}
+
+			// Atualizar TCC
+			const tccData = {
+				tema: editData.tema,
+				titulo: editData.titulo,
+				resumo: editData.resumo,
+				etapa: parseInt(editData.etapa)
+			};
+
+			// Adicionar seminário de andamento se for fase 2
+			if (parseInt(fase) === 2) {
+				tccData.seminario_andamento = editData.seminarioAndamento;
+			}
+
+			await axiosInstance.put(`/trabalho-conclusao/${tcc.id}`, tccData);
+
+			// Atualizar orientação se mudou
+			const orientadorAtual = getOrientadorAtual(selectedDicente.matricula);
+			if (editData.orientador !== (orientadorAtual?.codigo || "")) {
+				if (editData.orientador) {
+					const orientacaoPayload = {
+						codigo_docente: editData.orientador,
+						id_tcc: tcc.id,
+						orientador: true,
+					};
+					await axiosInstance.post("/orientacoes", { formData: orientacaoPayload });
+				}
+			}
+
+			setMessageText("Dados salvos com sucesso!");
+			setMessageSeverity("success");
+
+			// Atualizar dados na tela
+			await Promise.all([
+				getOrientacoes(),
+				getTrabalhosComDetalhes()
+			]);
+
+			handleCloseEditModal();
+		} catch (error) {
+			console.error("Erro ao salvar dados:", error);
+			setMessageText(`Falha ao salvar dados: ${error.message}`);
+			setMessageSeverity("error");
+		} finally {
+			setLoadingEdit(false);
+			setOpenMessage(true);
+		}
+	}
+
 	// Filtrar apenas docentes que podem orientar no curso selecionado
 	const docentesDisponiveis = cursoSelecionado
 		? orientadoresCurso.map((oc) => oc.docente)
 		: [];
 
-	// Lista de dicentes a exibir
-	const dicentesFiltrados = dicentes;
+	// Lista de dicentes a exibir - só mostra quando todos os filtros estão selecionados
+	const todosOsFiltrosSelecionados = cursoSelecionado && ano && semestre && fase;
+	const dicentesFiltrados = todosOsFiltrosSelecionados ? dicentes : [];
 
 	// Configuração das colunas do DataGrid
 	const columns = [
@@ -534,61 +622,38 @@ export default function Orientacao() {
 			width: 250,
 			sortable: false,
 			renderCell: (params) => {
-				const orientadorAtual = getOrientadorAtual(
-					params.row.matricula,
-				);
-				const chave =
-					ano && semestre && fase
-						? `${params.row.matricula}_${ano}_${semestre}_${cursoSelecionado}_${fase}`
-						: null;
-				const orientadorSelecionado =
-					chave && orientacoesAlteradas[chave]
-						? orientacoesAlteradas[chave].codigo_docente || ""
-						: orientadorAtual;
-
+				const orientadorNome = getOrientadorNome(params.row.matricula);
 				return (
-					<FormControl
-						fullWidth
-						size="small"
-						disabled={!cursoSelecionado}
-						onClick={(e) => e.stopPropagation()}
+					<Typography variant="body2" color="text.secondary">
+						{orientadorNome}
+					</Typography>
+				);
+			},
+		},
+		{
+			field: "acoes",
+			headerName: "Ações",
+			width: 120,
+			sortable: false,
+			renderCell: (params) => {
+				return (
+					<PermissionContext
+						permissoes={[Permissoes.ORIENTACAO.EDITAR]}
+						showError={false}
 					>
-						{permissoesService.verificarPermissaoPorIds(
-							permissoesUsuario,
-							[Permissoes.ORIENTACAO.EDITAR],
-						) ? (
-							<Select
-								value={orientadorSelecionado}
-								onChange={(e) =>
-									handleOrientadorChange(
-										params.row.matricula,
-										e.target.value,
-									)
-								}
-								displayEmpty
-								onClick={(e) => e.stopPropagation()}
-								onMouseDown={(e) => e.stopPropagation()}
-								onFocus={(e) => e.stopPropagation()}
-							>
-								<MenuItem value="">
-									<em>Sem orientador</em>
-								</MenuItem>
-								{docentesDisponiveis.map((docente) => (
-									<MenuItem
-										key={docente.codigo}
-										value={docente.codigo}
-									>
-										{docente.nome}
-									</MenuItem>
-								))}
-							</Select>
-						) : (
-							<Typography variant="body2" color="text.secondary">
-								{orientadorSelecionado ||
-									"Sem orientador definido"}
-							</Typography>
-						)}
-					</FormControl>
+						<Button
+							variant="outlined"
+							size="small"
+							startIcon={<EditIcon />}
+															onClick={(e) => {
+									e.stopPropagation();
+									handleOpenEditModal(params.row);
+								}}
+								disabled={!todosOsFiltrosSelecionados}
+						>
+							Editar
+						</Button>
+					</PermissionContext>
 				);
 			},
 		},
@@ -838,6 +903,7 @@ export default function Orientacao() {
 					anosDisponiveis={anosUnicos}
 					semestresDisponiveis={semestresUnicos}
 					fasesDisponiveis={fasesUnicas}
+					habilitarFiltroOrientacao={false}
 				/>
 
 				{/* Contador de dicentes em uma nova linha abaixo dos filtros */}
@@ -849,13 +915,17 @@ export default function Orientacao() {
 								Carregando...
 							</Typography>
 						</Box>
-					) : (
+					) : todosOsFiltrosSelecionados ? (
 						<Typography variant="body2" color="text.secondary">
 							{`${dicentesFiltrados.length} dicente${
 								dicentesFiltrados.length !== 1 ? "s" : ""
 							} encontrado${
 								dicentesFiltrados.length !== 1 ? "s" : ""
 							}`}
+						</Typography>
+					) : (
+						<Typography variant="body2" color="text.secondary">
+							Selecione todos os filtros para visualizar dicentes
 						</Typography>
 					)}
 				</Box>
@@ -868,21 +938,6 @@ export default function Orientacao() {
 					showError={false}
 				>
 					<Stack direction="row" spacing={2}>
-						{Object.keys(orientacoesAlteradas).length > 0 &&
-							cursoSelecionado &&
-							ano &&
-							semestre &&
-							fase && (
-								<Button
-									variant="contained"
-									color="primary"
-									startIcon={<SaveIcon />}
-									onClick={salvarOrientacoes}
-								>
-									Salvar Alterações (
-									{Object.keys(orientacoesAlteradas).length})
-								</Button>
-							)}
 						<PermissionContext
 							permissoes={[Permissoes.DICENTE.CRIAR]}
 							showError={false}
@@ -1266,6 +1321,156 @@ export default function Orientacao() {
 					</DialogActions>
 				</Dialog>
 
+				{/* Modal de edição de orientação */}
+				<Dialog
+					open={openEditModal}
+					onClose={handleCloseEditModal}
+					aria-labelledby="edit-orientation-title"
+					maxWidth="md"
+					fullWidth
+				>
+					<DialogTitle id="edit-orientation-title">
+						Editar Orientação - {selectedDicente?.nome}
+					</DialogTitle>
+					<DialogContent>
+						{loadingEdit ? (
+							<Box display="flex" justifyContent="center" p={3}>
+								<CircularProgress />
+							</Box>
+						) : (
+							<Stack spacing={3} sx={{ mt: 1 }}>
+								{/* Informações do dicente */}
+								<Paper sx={{ p: 2, bgcolor: "background.default" }}>
+									<Typography variant="h6" gutterBottom>
+										Informações do Dicente
+									</Typography>
+									<Grid container spacing={2}>
+										<Grid item xs={12} md={4}>
+											<Typography variant="body2" color="text.secondary">
+												<strong>Matrícula:</strong> {selectedDicente?.matricula}
+											</Typography>
+										</Grid>
+										<Grid item xs={12} md={4}>
+											<Typography variant="body2" color="text.secondary">
+												<strong>Fase:</strong> {fase}
+											</Typography>
+										</Grid>
+										<Grid item xs={12} md={4}>
+											<Typography variant="body2" color="text.secondary">
+												<strong>Período:</strong> {ano}/{semestre}
+											</Typography>
+										</Grid>
+									</Grid>
+								</Paper>
+
+								{/* Orientador e Etapa */}
+								<Grid container spacing={3}>
+									<Grid item xs={12}>
+										<FormControl sx={{ width: 720, maxWidth: '100%' }}>
+											<InputLabel>Orientador</InputLabel>
+											<Select
+												value={editData.orientador}
+												onChange={(e) => handleEditDataChange('orientador', e.target.value)}
+												label="Orientador"
+												displayEmpty
+											>
+												{docentesDisponiveis.map((docente) => (
+													<MenuItem key={docente.codigo} value={docente.codigo}>
+														{docente.nome}
+													</MenuItem>
+												))}
+											</Select>
+										</FormControl>
+									</Grid>
+									<Grid item xs={12}>
+										<FormControl fullWidth>
+											<InputLabel>Etapa</InputLabel>
+											<Select
+												value={editData.etapa}
+												onChange={(e) => handleEditDataChange('etapa', e.target.value)}
+												label="Etapa"
+											>
+												{(() => {
+													const maxEtapa = parseInt(fase) === 2 ? 9 : 6;
+													const etapas = [];
+													for (let i = 0; i <= maxEtapa; i++) {
+														etapas.push(
+															<MenuItem key={i} value={i}>
+																Etapa {i}
+															</MenuItem>
+														);
+													}
+													return etapas;
+												})()}
+											</Select>
+										</FormControl>
+									</Grid>
+								</Grid>
+
+								{/* Tema */}
+								<TextField
+									fullWidth
+									label="Tema"
+									value={editData.tema}
+									onChange={(e) => handleEditDataChange('tema', e.target.value)}
+									multiline
+									rows={2}
+									helperText="Descreva o tema do trabalho de conclusão"
+								/>
+
+								{/* Título */}
+								<TextField
+									fullWidth
+									label="Título"
+									value={editData.titulo}
+									onChange={(e) => handleEditDataChange('titulo', e.target.value)}
+									multiline
+									rows={2}
+									helperText="Título do trabalho de conclusão"
+								/>
+
+								{/* Resumo */}
+								<TextField
+									fullWidth
+									label="Resumo"
+									value={editData.resumo}
+									onChange={(e) => handleEditDataChange('resumo', e.target.value)}
+									multiline
+									rows={4}
+									helperText="Resumo do trabalho de conclusão"
+								/>
+
+								{/* Seminário de Andamento - apenas para fase 2 */}
+								{parseInt(fase) === 2 && (
+									<TextField
+										fullWidth
+										label="Seminário de Andamento"
+										value={editData.seminarioAndamento}
+										onChange={(e) => handleEditDataChange('seminarioAndamento', e.target.value)}
+										multiline
+										rows={4}
+										helperText="Informações sobre o seminário de andamento (disponível apenas para Fase 2)"
+									/>
+								)}
+							</Stack>
+						)}
+					</DialogContent>
+					<DialogActions>
+						<Button onClick={handleCloseEditModal} disabled={loadingEdit}>
+							Cancelar
+						</Button>
+						<Button
+							onClick={handleSaveEdit}
+							variant="contained"
+							color="primary"
+							startIcon={<SaveIcon />}
+							disabled={loadingEdit}
+						>
+							{loadingEdit ? "Salvando..." : "Salvar"}
+						</Button>
+					</DialogActions>
+				</Dialog>
+
 				{/* (Opcional) Dica de filtros removida para exibir todos os dicentes por padrão */}
 
 				{/* DataGrid de dicentes e orientações */}
@@ -1275,42 +1480,23 @@ export default function Orientacao() {
 						Permissoes.ORIENTACAO.VISUALIZAR_TODAS,
 					]}
 				>
-					{(dicentesFiltrados.length > 0 || isAdmin) && (
-						<Box style={{ height: "500px" }}>
-							<DataGrid
-								rows={dicentesFiltrados}
-								columns={columns}
-								pageSize={10}
-								checkboxSelection={false}
-								disableRowSelectionOnClick
-								getRowId={(row) => row.matricula}
-								initialState={{
-									sorting: {
-										sortModel: [
-											{ field: "nome", sort: "asc" },
-										],
-									},
-								}}
-							/>
-						</Box>
-					)}
-				</PermissionContext>
-
-				<PermissionContext
-					permissoes={[
-						Permissoes.ORIENTACAO.VISUALIZAR,
-						Permissoes.ORIENTACAO.VISUALIZAR_TODAS,
-					]}
-				>
-					{dicentesFiltrados.length === 0 && !loadingDicentes && (
-						<Paper sx={{ p: 3, textAlign: "center" }}>
-							<Typography variant="body2" color="text.secondary">
-								{isAdmin && !cursoSelecionado
-									? "Selecione um curso para visualizar os dicentes."
-									: "Nenhum dicente encontrado."}
-							</Typography>
-						</Paper>
-					)}
+					<Box style={{ height: "500px" }}>
+						<DataGrid
+							rows={dicentesFiltrados}
+							columns={columns}
+							pageSize={10}
+							checkboxSelection={false}
+							disableRowSelectionOnClick
+							getRowId={(row) => row.matricula}
+							initialState={{
+								sorting: {
+									sortModel: [
+										{ field: "nome", sort: "asc" },
+									],
+								},
+							}}
+						/>
+					</Box>
 				</PermissionContext>
 
 				<Snackbar
