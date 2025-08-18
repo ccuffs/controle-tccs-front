@@ -66,17 +66,47 @@ export default function Orientacao() {
 	const [modalFase, setModalFase] = useState("");
 	const [modalCurso, setModalCurso] = useState(null);
 
-	const { permissoesUsuario } = useAuth();
+	const { permissoesUsuario, gruposUsuario, usuario } = useAuth();
+
+	// Função para verificar se o usuário é professor
+	const isProfessor = permissoesService.verificarPermissaoPorGrupos(
+		gruposUsuario,
+		[Permissoes.GRUPOS.PROFESSOR]
+	);
+
+	// Função para verificar se o usuário é admin
+	const isAdmin = permissoesService.verificarPermissaoPorGrupos(
+		gruposUsuario,
+		[Permissoes.GRUPOS.ADMIN]
+	);
 
 	useEffect(() => {
 		getCursos();
 		getOfertasTcc();
-		getDicentes();
-	}, []); // eslint-disable-line react-hooks/exhaustive-deps
+		// Para admins, não carregar dicentes automaticamente
+		// Para professores, só carregar após o curso ser definido
+		if (!isAdmin && !isProfessor) {
+			getDicentes();
+		}
+	}, [isAdmin, isProfessor]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	useEffect(() => {
-		// Atualiza dicentes conforme filtros (ano, semestre, fase)
-		getDicentes();
+		// Para professores: carrega dicentes assim que curso estiver selecionado
+		// Para admins: carrega dicentes apenas quando curso estiver selecionado
+		if (isProfessor) {
+			if (cursoSelecionado) {
+				getDicentes();
+			}
+		} else if (isAdmin) {
+			if (cursoSelecionado) {
+				getDicentes();
+			} else {
+				setDicentes([]);
+			}
+		} else {
+			// Para outros tipos de usuário, comportamento original
+			getDicentes();
+		}
 
 		// Busca orientações quando todos os filtros estão preenchidos
 		if (cursoSelecionado && ano && semestre && fase) {
@@ -91,7 +121,7 @@ export default function Orientacao() {
 		} else {
 			setTrabalhosPorMatricula({});
 		}
-	}, [cursoSelecionado, ano, semestre, fase]); // eslint-disable-line react-hooks/exhaustive-deps
+	}, [cursoSelecionado, ano, semestre, fase, isProfessor, isAdmin]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	useEffect(() => {
 		// Busca orientadores do curso selecionado
@@ -105,8 +135,30 @@ export default function Orientacao() {
 	async function getCursos() {
 		setLoadingCursos(true);
 		try {
-			const response = await axiosInstance.get("/cursos");
-			setCursos(response.cursos || []);
+			if (isProfessor) {
+				// Para professores, buscar apenas seus cursos
+				const codigoDocente = usuario?.codigo || usuario?.id;
+				if (!codigoDocente) {
+					setCursos([]);
+					return;
+				}
+
+				const response = await axiosInstance.get(
+					`/orientadores/docente/${codigoDocente}`,
+				);
+				const cursosOrientador = response.orientacoes || [];
+				const cursosUnicos = cursosOrientador.map((orientacao) => orientacao.curso);
+				setCursos(cursosUnicos);
+
+				// Se o professor possui apenas 1 curso, pré-selecionar
+				if (cursosUnicos.length === 1) {
+					setCursoSelecionado(cursosUnicos[0].id);
+				}
+			} else {
+				// Para admins, buscar todos os cursos
+				const response = await axiosInstance.get("/cursos");
+				setCursos(response.cursos || []);
+			}
 		} catch (error) {
 			console.log("Não foi possível retornar a lista de cursos: ", error);
 			setCursos([]);
@@ -120,6 +172,7 @@ export default function Orientacao() {
 			const response = await axiosInstance.get(
 				`/orientadores/curso/${idCurso}`,
 			);
+			console.log("response.orientacoes", response.orientacoes);
 			setOrientadoresCurso(response.orientacoes || []);
 		} catch (error) {
 			console.log(
@@ -497,7 +550,8 @@ export default function Orientacao() {
 					<FormControl
 						fullWidth
 						size="small"
-						disabled={!ano || !semestre || !fase}
+						disabled={!cursoSelecionado}
+						onClick={(e) => e.stopPropagation()}
 					>
 						{permissoesService.verificarPermissaoPorIds(
 							permissoesUsuario,
@@ -512,6 +566,9 @@ export default function Orientacao() {
 									)
 								}
 								displayEmpty
+								onClick={(e) => e.stopPropagation()}
+								onMouseDown={(e) => e.stopPropagation()}
+								onFocus={(e) => e.stopPropagation()}
 							>
 								<MenuItem value="">
 									<em>Sem orientador</em>
@@ -1218,14 +1275,14 @@ export default function Orientacao() {
 						Permissoes.ORIENTACAO.VISUALIZAR_TODAS,
 					]}
 				>
-					{dicentesFiltrados.length > 0 && (
+					{(dicentesFiltrados.length > 0 || isAdmin) && (
 						<Box style={{ height: "500px" }}>
 							<DataGrid
 								rows={dicentesFiltrados}
 								columns={columns}
 								pageSize={10}
 								checkboxSelection={false}
-								disableSelectionOnClick
+								disableRowSelectionOnClick
 								getRowId={(row) => row.matricula}
 								initialState={{
 									sorting: {
@@ -1248,7 +1305,9 @@ export default function Orientacao() {
 					{dicentesFiltrados.length === 0 && !loadingDicentes && (
 						<Paper sx={{ p: 3, textAlign: "center" }}>
 							<Typography variant="body2" color="text.secondary">
-								Nenhum dicente encontrado.
+								{isAdmin && !cursoSelecionado
+									? "Selecione um curso para visualizar os dicentes."
+									: "Nenhum dicente encontrado."}
 							</Typography>
 						</Paper>
 					)}
