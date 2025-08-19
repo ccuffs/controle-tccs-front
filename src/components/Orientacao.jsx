@@ -372,7 +372,7 @@ export default function Orientacao() {
 					codigo:
 						orientacao.codigo_docente || orientacao.codigo || "",
 					nome: orientacao.Docente?.nome || "Orientador",
-			  }
+				}
 			: null;
 	}
 
@@ -644,7 +644,7 @@ export default function Orientacao() {
 						? convitesOrientacao.find(
 								(c) =>
 									c.codigo_docente === codigoOrientadorAtual,
-						  )
+							)
 						: null;
 
 					if (!codigoOrientadorAtual) {
@@ -818,7 +818,7 @@ export default function Orientacao() {
 								)
 									? convites.some(
 											(c) => c.orientacao === true,
-									  )
+										)
 									: false;
 								const temOrientadorDefinido =
 									!!getOrientadorAtual(params.row.matricula);
@@ -842,7 +842,7 @@ export default function Orientacao() {
 								const convitesBanca = Array.isArray(convites)
 									? convites.filter(
 											(c) => c.orientacao === false,
-									  )
+										)
 									: [];
 								// Considera a fase corrente do TCC para validar convites corretos
 								const faseAtualTcc =
@@ -854,8 +854,9 @@ export default function Orientacao() {
 										faseAtualTcc == null
 											? true
 											: fase
-											? parseInt(c.fase) === faseAtualTcc
-											: true, // Se fase não estiver filtrada, aceita qualquer fase
+												? parseInt(c.fase) ===
+													faseAtualTcc
+												: true, // Se fase não estiver filtrada, aceita qualquer fase
 								);
 								if (!temConviteBancaFase) {
 									showWarn = true;
@@ -883,7 +884,7 @@ export default function Orientacao() {
 								const convitesBanca = Array.isArray(convites)
 									? convites.filter(
 											(c) => c.orientacao === false,
-									  )
+										)
 									: [];
 								const faseAtualTcc =
 									tcc?.fase != null
@@ -894,8 +895,9 @@ export default function Orientacao() {
 										faseAtualTcc == null
 											? true
 											: fase
-											? parseInt(c.fase) === faseAtualTcc
-											: true, // Se fase não estiver filtrada, aceita qualquer fase
+												? parseInt(c.fase) ===
+													faseAtualTcc
+												: true, // Se fase não estiver filtrada, aceita qualquer fase
 								);
 								if (temConviteBancaFase) {
 									showSuccess = true;
@@ -912,7 +914,7 @@ export default function Orientacao() {
 											fase
 												? parseInt(d.fase) === faseAtual
 												: true, // Se fase não estiver filtrada, aceita todas as defesas
-								  )
+									)
 								: [];
 							const notas = defesasFase
 								.map((d) => d.avaliacao)
@@ -920,7 +922,7 @@ export default function Orientacao() {
 							const media =
 								notas.length > 0
 									? notas.reduce((a, b) => a + Number(b), 0) /
-									  notas.length
+										notas.length
 									: null;
 
 							return (
@@ -968,7 +970,7 @@ export default function Orientacao() {
 							);
 						},
 					},
-			  ]
+				]
 			: []),
 	];
 
@@ -1368,24 +1370,24 @@ export default function Orientacao() {
 																	"dicente_e_orientacao_inseridos"
 																		? "Novo dicente + orientação"
 																		: detalhe.status ===
-																		  "orientacao_inserida"
-																		? "Orientação criada"
-																		: detalhe.status ===
-																		  "dicente_inserido_orientacao_ja_existe"
-																		? "Novo dicente (orientação já existe)"
-																		: detalhe.status ===
-																		  "orientacao_ja_existe"
-																		? "Orientação já existe"
-																		: detalhe.status ===
-																		  "dicente_ja_existe"
-																		? "Dicente já existe"
-																		: detalhe.status ===
-																		  "inserido"
-																		? "Inserido"
-																		: detalhe.status ===
-																		  "já_existe"
-																		? "Já existe"
-																		: detalhe.status
+																			  "orientacao_inserida"
+																			? "Orientação criada"
+																			: detalhe.status ===
+																				  "dicente_inserido_orientacao_ja_existe"
+																				? "Novo dicente (orientação já existe)"
+																				: detalhe.status ===
+																					  "orientacao_ja_existe"
+																					? "Orientação já existe"
+																					: detalhe.status ===
+																						  "dicente_ja_existe"
+																						? "Dicente já existe"
+																						: detalhe.status ===
+																							  "inserido"
+																							? "Inserido"
+																							: detalhe.status ===
+																								  "já_existe"
+																								? "Já existe"
+																								: detalhe.status
 																}
 																size="small"
 																color={
@@ -1393,24 +1395,24 @@ export default function Orientacao() {
 																	"dicente_e_orientacao_inseridos"
 																		? "success"
 																		: detalhe.status ===
-																		  "orientacao_inserida"
-																		? "success"
-																		: detalhe.status ===
-																		  "dicente_inserido_orientacao_ja_existe"
-																		? "info"
-																		: detalhe.status ===
-																		  "orientacao_ja_existe"
-																		? "warning"
-																		: detalhe.status ===
-																		  "dicente_ja_existe"
-																		? "warning"
-																		: detalhe.status ===
-																		  "inserido"
-																		? "success"
-																		: detalhe.status ===
-																		  "já_existe"
-																		? "warning"
-																		: "error"
+																			  "orientacao_inserida"
+																			? "success"
+																			: detalhe.status ===
+																				  "dicente_inserido_orientacao_ja_existe"
+																				? "info"
+																				: detalhe.status ===
+																					  "orientacao_ja_existe"
+																					? "warning"
+																					: detalhe.status ===
+																						  "dicente_ja_existe"
+																						? "warning"
+																						: detalhe.status ===
+																							  "inserido"
+																							? "success"
+																							: detalhe.status ===
+																								  "já_existe"
+																								? "warning"
+																								: "error"
 																}
 															/>
 														</Box>
