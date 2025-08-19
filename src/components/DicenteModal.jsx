@@ -82,9 +82,7 @@ export default function DicenteModal({
 						required
 						disabled={isEditing}
 						helperText={
-							isEditing
-								? "A matrícula não pode ser alterada"
-								: ""
+							isEditing ? "A matrícula não pode ser alterada" : ""
 						}
 					/>
 					<TextField
@@ -109,9 +107,7 @@ export default function DicenteModal({
 				</Stack>
 			</DialogContent>
 			<DialogActions>
-				<Button onClick={handleClose}>
-					Cancelar
-				</Button>
+				<Button onClick={handleClose}>Cancelar</Button>
 				<Button
 					onClick={handleSubmit}
 					variant="contained"

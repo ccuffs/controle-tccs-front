@@ -1,13 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axiosInstance from "../auth/axios";
 import { useAuth } from "../contexts/AuthContext";
-import {
-	Box,
-	Stack,
-	Typography,
-	Snackbar,
-	Alert,
-} from "@mui/material";
+import { Box, Stack, Typography, Snackbar, Alert } from "@mui/material";
 import CustomDataGrid from "./CustomDataGrid";
 import FiltrosPesquisa from "./FiltrosPesquisa";
 
@@ -77,7 +71,8 @@ export default function TrabalhosOrientador() {
 							parseInt(cursoSelecionado) &&
 						o.TrabalhoConclusao.ano === parseInt(ano) &&
 						o.TrabalhoConclusao.semestre === parseInt(semestre) &&
-						(fase === "" || o.TrabalhoConclusao.fase === parseInt(fase)),
+						(fase === "" ||
+							o.TrabalhoConclusao.fase === parseInt(fase)),
 				)
 				.map((o) => ({
 					...o.TrabalhoConclusao,
@@ -92,7 +87,6 @@ export default function TrabalhosOrientador() {
 			setOpenMessage(true);
 		}
 	}
-
 
 	function handleCloseMessage(_, reason) {
 		if (reason === "clickaway") return;

@@ -228,10 +228,12 @@ export default function TemasDataGrid({
 	const columnVisibilityModel = {
 		docenteNome: !isOrientadorView, // Ocultar coluna docente no modo orientador
 		ativo: !isDiscenteView,
-		actions: !isDiscenteView && hasPermission([
-			Permissoes.GRUPOS.ADMIN,
-			Permissoes.GRUPOS.PROFESSOR,
-		]),
+		actions:
+			!isDiscenteView &&
+			hasPermission([
+				Permissoes.GRUPOS.ADMIN,
+				Permissoes.GRUPOS.PROFESSOR,
+			]),
 	};
 
 	return (
@@ -244,7 +246,7 @@ export default function TemasDataGrid({
 			rowSpanning
 			getRowId={(row) => row.id}
 			getRowClassName={getRowClassName}
-			getRowHeight={() => 'auto'}
+			getRowHeight={() => "auto"}
 			columnVisibilityModel={columnVisibilityModel}
 			sx={{
 				"& .row-with-bottom-border": {

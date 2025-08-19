@@ -93,8 +93,6 @@ export default function Dicentes() {
 		setSelectedCurso(curso || null);
 	}
 
-
-
 	function handleOpenDicenteModal() {
 		setIsEditing(false);
 		setDicenteToEdit(null);
@@ -109,11 +107,7 @@ export default function Dicentes() {
 
 	async function handleCreateDicente(formData) {
 		try {
-			if (
-				!formData.matricula ||
-				!formData.nome ||
-				!formData.email
-			) {
+			if (!formData.matricula || !formData.nome || !formData.email) {
 				setMessageText(
 					"Por favor, preencha todos os campos obrigatórios!",
 				);

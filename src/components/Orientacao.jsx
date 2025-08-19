@@ -76,7 +76,7 @@ export default function Orientacao() {
 		titulo: "",
 		resumo: "",
 		seminarioAndamento: "",
-		etapa: 0
+		etapa: 0,
 	});
 	const [loadingEdit, setLoadingEdit] = useState(false);
 	const [areasTcc, setAreasTcc] = useState([]);
@@ -87,13 +87,13 @@ export default function Orientacao() {
 	// Função para verificar se o usuário é professor
 	const isProfessor = permissoesService.verificarPermissaoPorGrupos(
 		gruposUsuario,
-		[Permissoes.GRUPOS.PROFESSOR]
+		[Permissoes.GRUPOS.PROFESSOR],
 	);
 
 	// Função para verificar se o usuário é admin
 	const isAdmin = permissoesService.verificarPermissaoPorGrupos(
 		gruposUsuario,
-		[Permissoes.GRUPOS.ADMIN]
+		[Permissoes.GRUPOS.ADMIN],
 	);
 
 	useEffect(() => {
@@ -164,7 +164,9 @@ export default function Orientacao() {
 					`/orientadores/docente/${codigoDocente}`,
 				);
 				const cursosOrientador = response.orientacoes || [];
-				const cursosUnicos = cursosOrientador.map((orientacao) => orientacao.curso);
+				const cursosUnicos = cursosOrientador.map(
+					(orientacao) => orientacao.curso,
+				);
 				setCursos(cursosUnicos);
 
 				// Se o professor possui apenas 1 curso, pré-selecionar
@@ -333,7 +335,10 @@ export default function Orientacao() {
 			const response = await axiosInstance.get("/areas-tcc");
 			setAreasTcc(response.areas || []);
 		} catch (error) {
-			console.log("Não foi possível retornar a lista de áreas TCC: ", error);
+			console.log(
+				"Não foi possível retornar a lista de áreas TCC: ",
+				error,
+			);
 			setAreasTcc([]);
 		} finally {
 			setLoadingAreas(false);
@@ -341,8 +346,7 @@ export default function Orientacao() {
 	}
 
 	function getOrientadorAtual(matricula) {
-		if (!cursoSelecionado || !ano || !semestre || !fase)
-			return null;
+		if (!cursoSelecionado || !ano || !semestre || !fase) return null;
 
 		const orientacao = orientacoes.find((o) => {
 			const tcc = o.TrabalhoConclusao || o.trabalhoConclusao;
@@ -365,15 +369,15 @@ export default function Orientacao() {
 		return orientacao
 			? {
 					id: orientacao.id,
-					codigo: orientacao.codigo_docente || orientacao.codigo || "",
-					nome: orientacao.Docente?.nome || "Orientador"
+					codigo:
+						orientacao.codigo_docente || orientacao.codigo || "",
+					nome: orientacao.Docente?.nome || "Orientador",
 				}
 			: null;
 	}
 
 	function getOrientacaoAtual(matricula) {
-		if (!cursoSelecionado || !ano || !semestre || !fase)
-			return null;
+		if (!cursoSelecionado || !ano || !semestre || !fase) return null;
 
 		const orientacao = orientacoes.find((o) => {
 			const tcc = o.TrabalhoConclusao || o.trabalhoConclusao;
@@ -537,7 +541,7 @@ export default function Orientacao() {
 			titulo: "",
 			resumo: "",
 			seminarioAndamento: "",
-			etapa: 0
+			etapa: 0,
 		});
 		setLoadingEdit(false);
 	}
@@ -553,7 +557,7 @@ export default function Orientacao() {
 				titulo: tcc?.titulo || "",
 				resumo: tcc?.resumo || "",
 				seminarioAndamento: tcc?.seminario_andamento || "",
-				etapa: tcc?.etapa || 0
+				etapa: tcc?.etapa || 0,
 			});
 		} catch (error) {
 			console.log("Erro ao carregar dados do TCC:", error);
@@ -563,9 +567,9 @@ export default function Orientacao() {
 	}
 
 	function handleEditDataChange(field, value) {
-		setEditData(prev => ({
+		setEditData((prev) => ({
 			...prev,
-			[field]: value
+			[field]: value,
 		}));
 	}
 
@@ -585,7 +589,7 @@ export default function Orientacao() {
 				tema: editData.tema,
 				titulo: editData.titulo,
 				resumo: editData.resumo,
-				etapa: parseInt(editData.etapa)
+				etapa: parseInt(editData.etapa),
 			};
 
 			// Adicionar seminário de andamento se for fase 2
@@ -596,41 +600,62 @@ export default function Orientacao() {
 			await axiosInstance.put(`/trabalho-conclusao/${tcc.id}`, tccData);
 
 			// Gerenciar orientação e convites
-			const orientadorAtual = getOrientadorAtual(selectedDicente.matricula);
-			const orientacaoAtual = getOrientacaoAtual(selectedDicente.matricula);
+			const orientadorAtual = getOrientadorAtual(
+				selectedDicente.matricula,
+			);
+			const orientacaoAtual = getOrientacaoAtual(
+				selectedDicente.matricula,
+			);
 			const codigoOrientadorAtual = orientadorAtual?.codigo || "";
 
 			if (editData.orientador !== codigoOrientadorAtual) {
 				// Buscar convites de orientação existentes para este TCC
 				const responseConvites = await axiosInstance.get("/convites", {
-					params: { id_tcc: tcc.id }
+					params: { id_tcc: tcc.id },
 				});
-				const convitesOrientacao = (responseConvites.data?.convites || responseConvites.convites || [])
-					.filter(c => c.orientacao === true && parseInt(c.fase) === parseInt(fase));
+				const convitesOrientacao = (
+					responseConvites.data?.convites ||
+					responseConvites.convites ||
+					[]
+				).filter(
+					(c) =>
+						c.orientacao === true &&
+						parseInt(c.fase) === parseInt(fase),
+				);
 
 				// Se havia orientador anterior, deletar a orientação
 				if (orientacaoAtual && orientacaoAtual.id) {
-					await axiosInstance.delete(`/orientacoes/${orientacaoAtual.id}`);
+					await axiosInstance.delete(
+						`/orientacoes/${orientacaoAtual.id}`,
+					);
 				}
 
-								// Gerenciar convites conforme as regras especificadas
+				// Gerenciar convites conforme as regras especificadas
 				if (editData.orientador) {
 					const dataAtual = new Date().toISOString();
 
 					// Verificar convites existentes para o novo orientador
-					const conviteNovoOrientador = convitesOrientacao.find(c =>
-						c.codigo_docente === editData.orientador
+					const conviteNovoOrientador = convitesOrientacao.find(
+						(c) => c.codigo_docente === editData.orientador,
 					);
 
 					// Verificar convites existentes para o orientador atual (se houver)
-					const conviteOrientadorAtual = codigoOrientadorAtual ?
-						convitesOrientacao.find(c => c.codigo_docente === codigoOrientadorAtual) : null;
+					const conviteOrientadorAtual = codigoOrientadorAtual
+						? convitesOrientacao.find(
+								(c) =>
+									c.codigo_docente === codigoOrientadorAtual,
+							)
+						: null;
 
 					if (!codigoOrientadorAtual) {
 						// Casos 1 e 2: Não há orientação atual
-						if (!conviteNovoOrientador || conviteNovoOrientador.aceito === false) {
+						if (
+							!conviteNovoOrientador ||
+							conviteNovoOrientador.aceito === false
+						) {
 							// Caso 1: Não há convite OU Caso 2: Convite recusado - criar novo convite aceito
-							const mensagemPadrao = "Informado pelo professor do CCR";
+							const mensagemPadrao =
+								"Informado pelo professor do CCR";
 
 							const convitePayload = {
 								id_tcc: tcc.id,
@@ -641,10 +666,12 @@ export default function Orientacao() {
 								data_feedback: dataAtual,
 								aceito: true,
 								mensagem_feedback: mensagemPadrao,
-								orientacao: true
+								orientacao: true,
 							};
 
-							await axiosInstance.post("/convites", { formData: convitePayload });
+							await axiosInstance.post("/convites", {
+								formData: convitePayload,
+							});
 						}
 					} else {
 						// Caso 3: Há orientação atual e mudando para novo orientador
@@ -653,7 +680,9 @@ export default function Orientacao() {
 
 							// Se há convite do orientador atual, deletá-lo
 							if (conviteOrientadorAtual) {
-								await axiosInstance.delete(`/convites/${tcc.id}/${codigoOrientadorAtual}/${fase}`);
+								await axiosInstance.delete(
+									`/convites/${tcc.id}/${codigoOrientadorAtual}/${fase}`,
+								);
 							}
 
 							// Criar novo convite para o novo orientador
@@ -666,10 +695,12 @@ export default function Orientacao() {
 								data_feedback: dataAtual,
 								aceito: true,
 								mensagem_feedback: mensagemAlteracao,
-								orientacao: true
+								orientacao: true,
 							};
 
-							await axiosInstance.post("/convites", { formData: convitePayload });
+							await axiosInstance.post("/convites", {
+								formData: convitePayload,
+							});
 						}
 					}
 
@@ -679,7 +710,9 @@ export default function Orientacao() {
 						id_tcc: tcc.id,
 						orientador: true,
 					};
-					await axiosInstance.post("/orientacoes", { formData: orientacaoPayload });
+					await axiosInstance.post("/orientacoes", {
+						formData: orientacaoPayload,
+					});
 				}
 			}
 
@@ -687,10 +720,7 @@ export default function Orientacao() {
 			setMessageSeverity("success");
 
 			// Atualizar dados na tela
-			await Promise.all([
-				getOrientacoes(),
-				getTrabalhosComDetalhes()
-			]);
+			await Promise.all([getOrientacoes(), getTrabalhosComDetalhes()]);
 
 			handleCloseEditModal();
 		} catch (error) {
@@ -709,7 +739,8 @@ export default function Orientacao() {
 		: [];
 
 	// Lista de dicentes a exibir - só mostra quando todos os filtros estão selecionados
-	const todosOsFiltrosSelecionados = cursoSelecionado && ano && semestre && fase;
+	const todosOsFiltrosSelecionados =
+		cursoSelecionado && ano && semestre && fase;
 	const dicentesFiltrados = todosOsFiltrosSelecionados ? dicentes : [];
 
 	// Configuração das colunas do DataGrid
@@ -746,11 +777,11 @@ export default function Orientacao() {
 							variant="outlined"
 							size="small"
 							startIcon={<EditIcon />}
-															onClick={(e) => {
-									e.stopPropagation();
-									handleOpenEditModal(params.row);
-								}}
-								disabled={!todosOsFiltrosSelecionados}
+							onClick={(e) => {
+								e.stopPropagation();
+								handleOpenEditModal(params.row);
+							}}
+							disabled={!todosOsFiltrosSelecionados}
 						>
 							Editar
 						</Button>
@@ -823,8 +854,9 @@ export default function Orientacao() {
 										faseAtualTcc == null
 											? true
 											: fase
-											? parseInt(c.fase) === faseAtualTcc
-											: true, // Se fase não estiver filtrada, aceita qualquer fase
+												? parseInt(c.fase) ===
+													faseAtualTcc
+												: true, // Se fase não estiver filtrada, aceita qualquer fase
 								);
 								if (!temConviteBancaFase) {
 									showWarn = true;
@@ -863,8 +895,9 @@ export default function Orientacao() {
 										faseAtualTcc == null
 											? true
 											: fase
-											? parseInt(c.fase) === faseAtualTcc
-											: true, // Se fase não estiver filtrada, aceita qualquer fase
+												? parseInt(c.fase) ===
+													faseAtualTcc
+												: true, // Se fase não estiver filtrada, aceita qualquer fase
 								);
 								if (temConviteBancaFase) {
 									showSuccess = true;
@@ -877,9 +910,10 @@ export default function Orientacao() {
 								tcc?.fase != null ? parseInt(tcc.fase) : null;
 							const defesasFase = Array.isArray(defesas)
 								? defesas.filter(
-										(d) => fase
-											? parseInt(d.fase) === faseAtual
-											: true, // Se fase não estiver filtrada, aceita todas as defesas
+										(d) =>
+											fase
+												? parseInt(d.fase) === faseAtual
+												: true, // Se fase não estiver filtrada, aceita todas as defesas
 									)
 								: [];
 							const notas = defesasFase
@@ -999,7 +1033,9 @@ export default function Orientacao() {
 					fase={fase}
 					setFase={setFase}
 					cursos={cursos}
-					loading={loadingCursos || loadingOfertasTcc || loadingDicentes}
+					loading={
+						loadingCursos || loadingOfertasTcc || loadingDicentes
+					}
 					// Passar os anos e semestres únicos das ofertas TCC
 					anosDisponiveis={anosUnicos}
 					semestresDisponiveis={semestresUnicos}
@@ -1334,24 +1370,24 @@ export default function Orientacao() {
 																	"dicente_e_orientacao_inseridos"
 																		? "Novo dicente + orientação"
 																		: detalhe.status ===
-																		  "orientacao_inserida"
-																		? "Orientação criada"
-																		: detalhe.status ===
-																		  "dicente_inserido_orientacao_ja_existe"
-																		? "Novo dicente (orientação já existe)"
-																		: detalhe.status ===
-																		  "orientacao_ja_existe"
-																		? "Orientação já existe"
-																		: detalhe.status ===
-																		  "dicente_ja_existe"
-																		? "Dicente já existe"
-																		: detalhe.status ===
-																		  "inserido"
-																		? "Inserido"
-																		: detalhe.status ===
-																		  "já_existe"
-																		? "Já existe"
-																		: detalhe.status
+																			  "orientacao_inserida"
+																			? "Orientação criada"
+																			: detalhe.status ===
+																				  "dicente_inserido_orientacao_ja_existe"
+																				? "Novo dicente (orientação já existe)"
+																				: detalhe.status ===
+																					  "orientacao_ja_existe"
+																					? "Orientação já existe"
+																					: detalhe.status ===
+																						  "dicente_ja_existe"
+																						? "Dicente já existe"
+																						: detalhe.status ===
+																							  "inserido"
+																							? "Inserido"
+																							: detalhe.status ===
+																								  "já_existe"
+																								? "Já existe"
+																								: detalhe.status
 																}
 																size="small"
 																color={
@@ -1359,24 +1395,24 @@ export default function Orientacao() {
 																	"dicente_e_orientacao_inseridos"
 																		? "success"
 																		: detalhe.status ===
-																		  "orientacao_inserida"
-																		? "success"
-																		: detalhe.status ===
-																		  "dicente_inserido_orientacao_ja_existe"
-																		? "info"
-																		: detalhe.status ===
-																		  "orientacao_ja_existe"
-																		? "warning"
-																		: detalhe.status ===
-																		  "dicente_ja_existe"
-																		? "warning"
-																		: detalhe.status ===
-																		  "inserido"
-																		? "success"
-																		: detalhe.status ===
-																		  "já_existe"
-																		? "warning"
-																		: "error"
+																			  "orientacao_inserida"
+																			? "success"
+																			: detalhe.status ===
+																				  "dicente_inserido_orientacao_ja_existe"
+																				? "info"
+																				: detalhe.status ===
+																					  "orientacao_ja_existe"
+																					? "warning"
+																					: detalhe.status ===
+																						  "dicente_ja_existe"
+																						? "warning"
+																						: detalhe.status ===
+																							  "inserido"
+																							? "success"
+																							: detalhe.status ===
+																								  "já_existe"
+																								? "warning"
+																								: "error"
 																}
 															/>
 														</Box>
@@ -1441,24 +1477,37 @@ export default function Orientacao() {
 						) : (
 							<Stack spacing={3} sx={{ mt: 1 }}>
 								{/* Informações do dicente */}
-								<Paper sx={{ p: 2, bgcolor: "background.default" }}>
+								<Paper
+									sx={{ p: 2, bgcolor: "background.default" }}
+								>
 									<Typography variant="h6" gutterBottom>
 										Informações do Dicente
 									</Typography>
 									<Grid container spacing={2}>
 										<Grid item xs={12} md={4}>
-											<Typography variant="body2" color="text.secondary">
-												<strong>Matrícula:</strong> {selectedDicente?.matricula}
+											<Typography
+												variant="body2"
+												color="text.secondary"
+											>
+												<strong>Matrícula:</strong>{" "}
+												{selectedDicente?.matricula}
 											</Typography>
 										</Grid>
 										<Grid item xs={12} md={4}>
-											<Typography variant="body2" color="text.secondary">
+											<Typography
+												variant="body2"
+												color="text.secondary"
+											>
 												<strong>Fase:</strong> {fase}
 											</Typography>
 										</Grid>
 										<Grid item xs={12} md={4}>
-											<Typography variant="body2" color="text.secondary">
-												<strong>Período:</strong> {ano}/{semestre}
+											<Typography
+												variant="body2"
+												color="text.secondary"
+											>
+												<strong>Período:</strong> {ano}/
+												{semestre}
 											</Typography>
 										</Grid>
 									</Grid>
@@ -1467,22 +1516,39 @@ export default function Orientacao() {
 								{/* Orientador e Etapa */}
 								<Grid container spacing={3}>
 									<Grid item xs={12}>
-										<FormControl sx={{ width: 720, maxWidth: '100%' }}>
+										<FormControl
+											sx={{
+												width: 720,
+												maxWidth: "100%",
+											}}
+										>
 											<InputLabel>Orientador</InputLabel>
 											<Select
 												value={editData.orientador}
-												onChange={(e) => handleEditDataChange('orientador', e.target.value)}
+												onChange={(e) =>
+													handleEditDataChange(
+														"orientador",
+														e.target.value,
+													)
+												}
 												label="Orientador"
 												displayEmpty
 											>
 												<MenuItem value="">
 													<em>Sem orientador</em>
 												</MenuItem>
-												{docentesDisponiveis.map((docente) => (
-													<MenuItem key={docente.codigo} value={docente.codigo}>
-														{docente.nome}
-													</MenuItem>
-												))}
+												{docentesDisponiveis.map(
+													(docente) => (
+														<MenuItem
+															key={docente.codigo}
+															value={
+																docente.codigo
+															}
+														>
+															{docente.nome}
+														</MenuItem>
+													),
+												)}
 											</Select>
 										</FormControl>
 									</Grid>
@@ -1491,17 +1557,32 @@ export default function Orientacao() {
 											<InputLabel>Etapa</InputLabel>
 											<Select
 												value={editData.etapa}
-												onChange={(e) => handleEditDataChange('etapa', e.target.value)}
+												onChange={(e) =>
+													handleEditDataChange(
+														"etapa",
+														e.target.value,
+													)
+												}
 												label="Etapa"
 											>
 												{(() => {
-													const maxEtapa = parseInt(fase) === 2 ? 9 : 6;
+													const maxEtapa =
+														parseInt(fase) === 2
+															? 9
+															: 6;
 													const etapas = [];
-													for (let i = 0; i <= maxEtapa; i++) {
+													for (
+														let i = 0;
+														i <= maxEtapa;
+														i++
+													) {
 														etapas.push(
-															<MenuItem key={i} value={i}>
+															<MenuItem
+																key={i}
+																value={i}
+															>
 																Etapa {i}
-															</MenuItem>
+															</MenuItem>,
 														);
 													}
 													return etapas;
@@ -1516,7 +1597,12 @@ export default function Orientacao() {
 									fullWidth
 									label="Tema"
 									value={editData.tema}
-									onChange={(e) => handleEditDataChange('tema', e.target.value)}
+									onChange={(e) =>
+										handleEditDataChange(
+											"tema",
+											e.target.value,
+										)
+									}
 									multiline
 									rows={2}
 									helperText="Descreva o tema do trabalho de conclusão"
@@ -1527,7 +1613,12 @@ export default function Orientacao() {
 									fullWidth
 									label="Título"
 									value={editData.titulo}
-									onChange={(e) => handleEditDataChange('titulo', e.target.value)}
+									onChange={(e) =>
+										handleEditDataChange(
+											"titulo",
+											e.target.value,
+										)
+									}
 									multiline
 									rows={2}
 									helperText="Título do trabalho de conclusão"
@@ -1538,7 +1629,12 @@ export default function Orientacao() {
 									fullWidth
 									label="Resumo"
 									value={editData.resumo}
-									onChange={(e) => handleEditDataChange('resumo', e.target.value)}
+									onChange={(e) =>
+										handleEditDataChange(
+											"resumo",
+											e.target.value,
+										)
+									}
 									multiline
 									rows={4}
 									helperText="Resumo do trabalho de conclusão"
@@ -1550,7 +1646,12 @@ export default function Orientacao() {
 										fullWidth
 										label="Seminário de Andamento"
 										value={editData.seminarioAndamento}
-										onChange={(e) => handleEditDataChange('seminarioAndamento', e.target.value)}
+										onChange={(e) =>
+											handleEditDataChange(
+												"seminarioAndamento",
+												e.target.value,
+											)
+										}
 										multiline
 										rows={4}
 										helperText="Informações sobre o seminário de andamento (disponível apenas para Fase 2)"
@@ -1560,7 +1661,10 @@ export default function Orientacao() {
 						)}
 					</DialogContent>
 					<DialogActions>
-						<Button onClick={handleCloseEditModal} disabled={loadingEdit}>
+						<Button
+							onClick={handleCloseEditModal}
+							disabled={loadingEdit}
+						>
 							Cancelar
 						</Button>
 						<Button
@@ -1594,9 +1698,7 @@ export default function Orientacao() {
 							getRowId={(row) => row.matricula}
 							initialState={{
 								sorting: {
-									sortModel: [
-										{ field: "nome", sort: "asc" },
-									],
+									sortModel: [{ field: "nome", sort: "asc" }],
 								},
 							}}
 						/>

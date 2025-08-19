@@ -1,10 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import {
-	Box,
-	Grid,
-	Typography,
-	Stack,
-} from "@mui/material";
+import { Box, Grid, Typography, Stack } from "@mui/material";
 import axios from "../auth/axios";
 import { useAuth } from "../contexts/AuthContext";
 import { Permissoes } from "../enums/permissoes";
@@ -380,7 +375,11 @@ export default function Dashboard({ forceOrientador = false }) {
 					fase={filtroFase}
 					setFase={setFiltroFase}
 					cursos={isAdmin ? todosCursos : cursosUsuario}
-					habilitarCurso={isAdmin || (isProfessor && cursosUsuario?.length > 0) || isOrientadorView}
+					habilitarCurso={
+						isAdmin ||
+						(isProfessor && cursosUsuario?.length > 0) ||
+						isOrientadorView
+					}
 					habilitarAno
 					habilitarSemestre
 					habilitarFase={isAdmin || isProfessor || isOrientadorView}

@@ -34,7 +34,9 @@ export default function TemasTcc({ isOrientadorView = false }) {
 	const [formData, setFormData] = useState({
 		descricao: "",
 		id_area_tcc: "",
-		codigo_docente: isOrientadorView ? (usuario?.codigo || usuario?.id || "") : "",
+		codigo_docente: isOrientadorView
+			? usuario?.codigo || usuario?.id || ""
+			: "",
 	});
 	const [openMessage, setOpenMessage] = React.useState(false);
 	const [openDialog, setOpenDialog] = React.useState(false);
@@ -209,11 +211,9 @@ export default function TemasTcc({ isOrientadorView = false }) {
 
 	function handleOpenVagasModal(tema) {
 		const codigoDocente = isOrientadorView
-			? (usuario?.codigo || usuario?.id)
+			? usuario?.codigo || usuario?.id
 			: tema.codigo_docente;
-		const docenteNome = isOrientadorView
-			? usuario?.nome
-			: tema.docenteNome;
+		const docenteNome = isOrientadorView ? usuario?.nome : tema.docenteNome;
 
 		setTemaVagas({
 			id: tema.id,
@@ -279,7 +279,9 @@ export default function TemasTcc({ isOrientadorView = false }) {
 		setFormData({
 			descricao: "",
 			id_area_tcc: "",
-			codigo_docente: isOrientadorView ? (usuario?.codigo || usuario?.id || "") : "",
+			codigo_docente: isOrientadorView
+				? usuario?.codigo || usuario?.id || ""
+				: "",
 		});
 	}
 
@@ -289,7 +291,7 @@ export default function TemasTcc({ isOrientadorView = false }) {
 
 	function handleOpenAreaModal() {
 		const codigoDocente = isOrientadorView
-			? (usuario?.codigo || usuario?.id)
+			? usuario?.codigo || usuario?.id
 			: formData.codigo_docente;
 
 		if (!codigoDocente) {
@@ -372,7 +374,9 @@ export default function TemasTcc({ isOrientadorView = false }) {
 			setFormData({
 				descricao: "",
 				id_area_tcc: "",
-				codigo_docente: isOrientadorView ? (usuario?.codigo || usuario?.id || "") : "",
+				codigo_docente: isOrientadorView
+					? usuario?.codigo || usuario?.id || ""
+					: "",
 			});
 
 			// Atualiza a lista
@@ -396,7 +400,9 @@ export default function TemasTcc({ isOrientadorView = false }) {
 		setFormData({
 			descricao: "",
 			id_area_tcc: "",
-			codigo_docente: isOrientadorView ? (usuario?.codigo || usuario?.id || "") : "",
+			codigo_docente: isOrientadorView
+				? usuario?.codigo || usuario?.id || ""
+				: "",
 		});
 	}
 
@@ -503,9 +509,13 @@ export default function TemasTcc({ isOrientadorView = false }) {
 
 				{cursoSelecionado && (
 					<PermissionContext
-						grupos={isOrientadorView
-							? [Permissoes.GRUPOS.ORIENTADOR]
-							: [Permissoes.GRUPOS.ADMIN, Permissoes.GRUPOS.PROFESSOR]
+						grupos={
+							isOrientadorView
+								? [Permissoes.GRUPOS.ORIENTADOR]
+								: [
+										Permissoes.GRUPOS.ADMIN,
+										Permissoes.GRUPOS.PROFESSOR,
+									]
 						}
 						showError={false}
 					>
@@ -523,15 +533,24 @@ export default function TemasTcc({ isOrientadorView = false }) {
 										label="Docente Orientador"
 										onChange={handleInputChange}
 									>
-										{docentesOrientadores.map((orientacao) => (
-											<MenuItem
-												key={orientacao.docente?.codigo}
-												value={orientacao.docente?.codigo}
-											>
-												{orientacao.docente?.nome} (
-												{orientacao.docente?.codigo})
-											</MenuItem>
-										))}
+										{docentesOrientadores.map(
+											(orientacao) => (
+												<MenuItem
+													key={
+														orientacao.docente
+															?.codigo
+													}
+													value={
+														orientacao.docente
+															?.codigo
+													}
+												>
+													{orientacao.docente?.nome} (
+													{orientacao.docente?.codigo}
+													)
+												</MenuItem>
+											),
+										)}
 									</Select>
 								</FormControl>
 							)}
@@ -661,8 +680,7 @@ export default function TemasTcc({ isOrientadorView = false }) {
 							<Typography variant="body2" color="text.secondary">
 								{isOrientadorView
 									? "Editando vagas da sua oferta no curso selecionado."
-									: `Editando vagas da oferta do docente: ${temaVagas.docenteNome}`
-								}
+									: `Editando vagas da oferta do docente: ${temaVagas.docenteNome}`}
 							</Typography>
 							<Typography
 								variant="caption"
@@ -670,7 +688,9 @@ export default function TemasTcc({ isOrientadorView = false }) {
 							>
 								Nota: As vagas são por oferta do docente, não
 								por tema individual. Alterar aqui afetará todos
-								{isOrientadorView ? " os seus temas neste curso." : " os temas deste docente."}
+								{isOrientadorView
+									? " os seus temas neste curso."
+									: " os temas deste docente."}
 							</Typography>
 							<TextField
 								label="Número de Vagas da Oferta"

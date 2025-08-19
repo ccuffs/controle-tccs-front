@@ -25,7 +25,9 @@ const GerenciarDisponibilidadeBanca = () => {
 	const [fase, setFase] = useState(1);
 	const [grade, setGrade] = useState(null);
 	const [disponibilidades, setDisponibilidades] = useState({});
-	const [disponibilidadesOriginais, setDisponibilidadesOriginais] = useState({});
+	const [disponibilidadesOriginais, setDisponibilidadesOriginais] = useState(
+		{},
+	);
 	// Mapa de slots ("YYYY-MM-DD-HH:mm:ss") bloqueados -> tipo ("banca" | "indisp")
 	const [bloqueados, setBloqueados] = useState(new Map());
 	const [rows, setRows] = useState([]);
@@ -247,8 +249,6 @@ const GerenciarDisponibilidadeBanca = () => {
 		}
 	};
 
-
-
 	const handleCheckboxChange = async (data, hora, checked) => {
 		if (!cursoSelecionado) return;
 		// Impedir alteração em slots bloqueados por defesa
@@ -401,7 +401,7 @@ const GerenciarDisponibilidadeBanca = () => {
 		let alteracoes = 0;
 
 		// Verificar alterações nas disponibilidades
-		Object.keys(disponibilidades).forEach(key => {
+		Object.keys(disponibilidades).forEach((key) => {
 			const valorAtual = disponibilidades[key];
 			const valorOriginal = disponibilidadesOriginais[key];
 
@@ -412,7 +412,7 @@ const GerenciarDisponibilidadeBanca = () => {
 		});
 
 		// Verificar se há novas disponibilidades que não existiam no original
-		Object.keys(disponibilidades).forEach(key => {
+		Object.keys(disponibilidades).forEach((key) => {
 			if (!(key in disponibilidadesOriginais)) {
 				alteracoes++;
 			}
@@ -560,7 +560,7 @@ const GerenciarDisponibilidadeBanca = () => {
 	}
 
 	return (
-		<Box >
+		<Box>
 			<Typography variant="h6" component="h3" gutterBottom>
 				Gerenciar Disponibilidade para Bancas
 			</Typography>
@@ -582,7 +582,6 @@ const GerenciarDisponibilidadeBanca = () => {
 				spacing={2}
 				// alignItems="center"
 				sx={{ mb: 3 }}
-
 			>
 				<FiltrosPesquisa
 					cursoSelecionado={cursoSelecionado}
@@ -616,7 +615,9 @@ const GerenciarDisponibilidadeBanca = () => {
 					}
 					sx={{ maxWidth: 180 }}
 				>
-					{loading ? "Sincronizando..." : `Sincronizar${calcularNumeroAlteracoes() > 0 ? ` (${calcularNumeroAlteracoes()})` : ''}`}
+					{loading
+						? "Sincronizando..."
+						: `Sincronizar${calcularNumeroAlteracoes() > 0 ? ` (${calcularNumeroAlteracoes()})` : ""}`}
 				</Button>
 			</Stack>
 

@@ -246,7 +246,7 @@ export default function SelecionarHorarioBanca({
 														? {
 																fontWeight: 700,
 																boxShadow: 2,
-														  }
+															}
 														: {}
 												}
 											/>

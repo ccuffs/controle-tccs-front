@@ -72,37 +72,43 @@ export default function FiltrosPesquisa({
 			)}
 
 			{habilitarAno && (
-				<FormControl sx={{ minWidth: 100 }} size="small" disabled={loading}>
+				<FormControl
+					sx={{ minWidth: 100 }}
+					size="small"
+					disabled={loading}
+				>
 					<InputLabel>Ano</InputLabel>
-					<Select
-						value={ano}
-						label="Ano"
-						onChange={handleAnoChange}
-					>
+					<Select value={ano} label="Ano" onChange={handleAnoChange}>
 						<MenuItem value="">
 							<em>Todos</em>
 						</MenuItem>
-						{anosDisponiveis.length > 0 ? (
-							// Usar anos das ofertas TCC se disponíveis
-							anosDisponiveis.map((a) => (
-								<MenuItem key={a} value={a}>
-									{a}
-								</MenuItem>
-							))
-						) : (
-							// Fallback para anos padrão se não houver ofertas
-							[new Date().getFullYear() - 1, new Date().getFullYear(), new Date().getFullYear() + 1].map((a) => (
-								<MenuItem key={a} value={a}>
-									{a}
-								</MenuItem>
-							))
-						)}
+						{anosDisponiveis.length > 0
+							? // Usar anos das ofertas TCC se disponíveis
+								anosDisponiveis.map((a) => (
+									<MenuItem key={a} value={a}>
+										{a}
+									</MenuItem>
+								))
+							: // Fallback para anos padrão se não houver ofertas
+								[
+									new Date().getFullYear() - 1,
+									new Date().getFullYear(),
+									new Date().getFullYear() + 1,
+								].map((a) => (
+									<MenuItem key={a} value={a}>
+										{a}
+									</MenuItem>
+								))}
 					</Select>
 				</FormControl>
 			)}
 
 			{habilitarSemestre && (
-				<FormControl sx={{ minWidth: 100 }} size="small" disabled={loading}>
+				<FormControl
+					sx={{ minWidth: 100 }}
+					size="small"
+					disabled={loading}
+				>
 					<InputLabel>Semestre</InputLabel>
 					<Select
 						value={semestre}
@@ -112,27 +118,29 @@ export default function FiltrosPesquisa({
 						<MenuItem value="">
 							<em>Todos</em>
 						</MenuItem>
-						{semestresDisponiveis.length > 0 ? (
-							// Usar semestres das ofertas TCC se disponíveis
-							semestresDisponiveis.map((s) => (
-								<MenuItem key={s} value={s}>
-									{s}º Semestre
-								</MenuItem>
-							))
-						) : (
-							// Fallback para semestres padrão se não houver ofertas
-							[1, 2].map((s) => (
-								<MenuItem key={s} value={s}>
-									{s}º Semestre
-								</MenuItem>
-							))
-						)}
+						{semestresDisponiveis.length > 0
+							? // Usar semestres das ofertas TCC se disponíveis
+								semestresDisponiveis.map((s) => (
+									<MenuItem key={s} value={s}>
+										{s}º Semestre
+									</MenuItem>
+								))
+							: // Fallback para semestres padrão se não houver ofertas
+								[1, 2].map((s) => (
+									<MenuItem key={s} value={s}>
+										{s}º Semestre
+									</MenuItem>
+								))}
 					</Select>
 				</FormControl>
 			)}
 
 			{habilitarFase && (
-				<FormControl sx={{ minWidth: 100 }} size="small" disabled={loading}>
+				<FormControl
+					sx={{ minWidth: 100 }}
+					size="small"
+					disabled={loading}
+				>
 					<InputLabel>Fase</InputLabel>
 					<Select
 						value={fase}
@@ -145,23 +153,30 @@ export default function FiltrosPesquisa({
 							</MenuItem>
 						)}
 						{habilitarFiltroOrientacao && (
-							<MenuItem key="0" value="0">Orientação</MenuItem>
+							<MenuItem key="0" value="0">
+								Orientação
+							</MenuItem>
 						)}
 						{habilitarFiltroProjeto && (
-							<MenuItem key="1" value="1">Projeto</MenuItem>
+							<MenuItem key="1" value="1">
+								Projeto
+							</MenuItem>
 						)}
 						{habilitarFiltroTcc && (
-							<MenuItem key="2" value="2">TCC</MenuItem>
+							<MenuItem key="2" value="2">
+								TCC
+							</MenuItem>
 						)}
-						{fasesDisponiveis.length > 0 && (
+						{fasesDisponiveis.length > 0 &&
 							// Usar fases das ofertas TCC se disponíveis (apenas se não houver filtros específicos)
-							!habilitarFiltroOrientacao && !habilitarFiltroProjeto && !habilitarFiltroTcc &&
+							!habilitarFiltroOrientacao &&
+							!habilitarFiltroProjeto &&
+							!habilitarFiltroTcc &&
 							fasesDisponiveis.map((f) => (
 								<MenuItem key={f} value={f}>
 									Fase {f}
 								</MenuItem>
-							))
-						)}
+							))}
 					</Select>
 				</FormControl>
 			)}
