@@ -1533,7 +1533,7 @@ export default function Orientacao() {
 												displayEmpty
 											>
 												<MenuItem value="">
-
+													<em></em>
 												</MenuItem>
 												{docentesDisponiveis.map(
 													(docente) => (
