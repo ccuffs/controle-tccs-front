@@ -77,10 +77,14 @@ export default function Orientacao() {
 		resumo: "",
 		seminarioAndamento: "",
 		etapa: 0,
+		membroBanca1: "",
+		membroBanca2: "",
 	});
 	const [loadingEdit, setLoadingEdit] = useState(false);
 	const [areasTcc, setAreasTcc] = useState([]);
 	const [loadingAreas, setLoadingAreas] = useState(false);
+	const [defesasAtual, setDefesasAtual] = useState([]);
+	const [convitesBancaAtual, setConvitesBancaAtual] = useState([]);
 
 	const { permissoesUsuario, gruposUsuario, usuario } = useAuth();
 
@@ -372,7 +376,7 @@ export default function Orientacao() {
 					codigo:
 						orientacao.codigo_docente || orientacao.codigo || "",
 					nome: orientacao.Docente?.nome || "Orientador",
-				}
+			  }
 			: null;
 	}
 
@@ -542,14 +546,75 @@ export default function Orientacao() {
 			resumo: "",
 			seminarioAndamento: "",
 			etapa: 0,
+			membroBanca1: "",
+			membroBanca2: "",
 		});
 		setLoadingEdit(false);
+		setDefesasAtual([]);
+		setConvitesBancaAtual([]);
 	}
 
 	async function loadTccData(matricula) {
 		try {
 			const tcc = trabalhosPorMatricula[matricula];
 			const orientador = getOrientadorAtual(matricula);
+
+			// Carregar dados da banca de defesa se existir TCC
+			let membroBanca1 = "";
+			let membroBanca2 = "";
+
+			if (tcc?.id) {
+				try {
+					// Carregar defesas
+					const responseDefesas = await axiosInstance.get(
+						`/defesas/tcc/${tcc.id}`,
+					);
+					const defesas =
+						responseDefesas.data?.defesas ||
+						responseDefesas.defesas ||
+						[];
+
+					// Filtrar defesas da fase atual e que não são orientador
+					const defesasFaseAtual = defesas.filter(
+						(defesa) =>
+							parseInt(defesa.fase) === parseInt(fase) &&
+							!defesa.orientador,
+					);
+
+					setDefesasAtual(defesasFaseAtual);
+
+					// Carregar convites de banca
+					const responseConvites = await axiosInstance.get(
+						"/convites",
+						{
+							params: { id_tcc: tcc.id },
+						},
+					);
+					const convitesBanca = (
+						responseConvites.data?.convites ||
+						responseConvites.convites ||
+						[]
+					).filter(
+						(c) =>
+							c.orientacao === false &&
+							parseInt(c.fase) === parseInt(fase),
+					);
+
+					setConvitesBancaAtual(convitesBanca);
+
+					// Pegar os dois primeiros membros da banca
+					if (defesasFaseAtual.length > 0) {
+						membroBanca1 = defesasFaseAtual[0]?.membro_banca || "";
+					}
+					if (defesasFaseAtual.length > 1) {
+						membroBanca2 = defesasFaseAtual[1]?.membro_banca || "";
+					}
+				} catch (error) {
+					console.log("Erro ao carregar defesas:", error);
+					setDefesasAtual([]);
+					setConvitesBancaAtual([]);
+				}
+			}
 
 			setEditData({
 				orientador: orientador?.codigo || "",
@@ -558,6 +623,8 @@ export default function Orientacao() {
 				resumo: tcc?.resumo || "",
 				seminarioAndamento: tcc?.seminario_andamento || "",
 				etapa: tcc?.etapa || 0,
+				membroBanca1,
+				membroBanca2,
 			});
 		} catch (error) {
 			console.log("Erro ao carregar dados do TCC:", error);
@@ -571,6 +638,69 @@ export default function Orientacao() {
 			...prev,
 			[field]: value,
 		}));
+	}
+
+	async function gerenciarBancaDefesa(idTcc) {
+		try {
+			// Membros selecionados atualmente
+			const membrosNovos = [
+				editData.membroBanca1,
+				editData.membroBanca2,
+			].filter(Boolean);
+
+			// Membros que já existem na defesa
+			const membrosExistentes = defesasAtual.map(
+				(defesa) => defesa.membro_banca,
+			);
+
+			// Identificar alterações (quando um membro específico é trocado por outro)
+			const alteracoes = [];
+			for (const membroExistente of membrosExistentes) {
+				if (
+					!membrosNovos.includes(membroExistente) &&
+					membrosNovos.length > 0
+				) {
+					// Verificar se há um novo membro que substitui este
+					const membroSubstituto = membrosNovos.find(
+						(novoMembro) => !membrosExistentes.includes(novoMembro),
+					);
+
+					if (membroSubstituto) {
+						const conviteAntigo = convitesBancaAtual.find(
+							(c) => c.codigo_docente === membroExistente,
+						);
+
+						if (conviteAntigo && conviteAntigo.aceito === true) {
+							alteracoes.push({
+								membro_antigo: membroExistente,
+								membro_novo: membroSubstituto,
+							});
+						}
+					}
+				}
+			}
+
+			// Fazer chamada única para a API transacional
+			const payload = {
+				id_tcc: idTcc,
+				fase: parseInt(fase),
+				membros_novos: membrosNovos,
+				membros_existentes: membrosExistentes,
+				convites_banca_existentes: convitesBancaAtual,
+				alteracoes: alteracoes,
+				orientador_codigo: editData.orientador, // Incluir código do orientador
+			};
+
+			const response = await axiosInstance.post(
+				"/defesas/gerenciar-banca",
+				payload,
+			);
+
+			console.log("Banca gerenciada com sucesso:", response.data);
+		} catch (error) {
+			console.log("Erro ao gerenciar banca de defesa:", error);
+			throw new Error("Falha ao atualizar banca de defesa e convites");
+		}
 	}
 
 	async function handleSaveEdit() {
@@ -644,7 +774,7 @@ export default function Orientacao() {
 						? convitesOrientacao.find(
 								(c) =>
 									c.codigo_docente === codigoOrientadorAtual,
-							)
+						  )
 						: null;
 
 					if (!codigoOrientadorAtual) {
@@ -714,6 +844,14 @@ export default function Orientacao() {
 						formData: orientacaoPayload,
 					});
 				}
+			}
+
+			// Gerenciar banca de defesa se estivermos nas etapas corretas
+			const etapaAtual = parseInt(editData.etapa);
+			const precisaBanca = etapaAtual === 5 || etapaAtual === 7; // Etapas onde é necessário ter banca
+
+			if (precisaBanca) {
+				await gerenciarBancaDefesa(tcc.id);
 			}
 
 			setMessageText("Dados salvos com sucesso!");
@@ -818,7 +956,7 @@ export default function Orientacao() {
 								)
 									? convites.some(
 											(c) => c.orientacao === true,
-										)
+									  )
 									: false;
 								const temOrientadorDefinido =
 									!!getOrientadorAtual(params.row.matricula);
@@ -842,7 +980,7 @@ export default function Orientacao() {
 								const convitesBanca = Array.isArray(convites)
 									? convites.filter(
 											(c) => c.orientacao === false,
-										)
+									  )
 									: [];
 								// Considera a fase corrente do TCC para validar convites corretos
 								const faseAtualTcc =
@@ -854,9 +992,8 @@ export default function Orientacao() {
 										faseAtualTcc == null
 											? true
 											: fase
-												? parseInt(c.fase) ===
-													faseAtualTcc
-												: true, // Se fase não estiver filtrada, aceita qualquer fase
+											? parseInt(c.fase) === faseAtualTcc
+											: true, // Se fase não estiver filtrada, aceita qualquer fase
 								);
 								if (!temConviteBancaFase) {
 									showWarn = true;
@@ -884,7 +1021,7 @@ export default function Orientacao() {
 								const convitesBanca = Array.isArray(convites)
 									? convites.filter(
 											(c) => c.orientacao === false,
-										)
+									  )
 									: [];
 								const faseAtualTcc =
 									tcc?.fase != null
@@ -895,9 +1032,8 @@ export default function Orientacao() {
 										faseAtualTcc == null
 											? true
 											: fase
-												? parseInt(c.fase) ===
-													faseAtualTcc
-												: true, // Se fase não estiver filtrada, aceita qualquer fase
+											? parseInt(c.fase) === faseAtualTcc
+											: true, // Se fase não estiver filtrada, aceita qualquer fase
 								);
 								if (temConviteBancaFase) {
 									showSuccess = true;
@@ -914,7 +1050,7 @@ export default function Orientacao() {
 											fase
 												? parseInt(d.fase) === faseAtual
 												: true, // Se fase não estiver filtrada, aceita todas as defesas
-									)
+								  )
 								: [];
 							const notas = defesasFase
 								.map((d) => d.avaliacao)
@@ -922,7 +1058,7 @@ export default function Orientacao() {
 							const media =
 								notas.length > 0
 									? notas.reduce((a, b) => a + Number(b), 0) /
-										notas.length
+									  notas.length
 									: null;
 
 							return (
@@ -970,7 +1106,7 @@ export default function Orientacao() {
 							);
 						},
 					},
-				]
+			  ]
 			: []),
 	];
 
@@ -1370,24 +1506,24 @@ export default function Orientacao() {
 																	"dicente_e_orientacao_inseridos"
 																		? "Novo dicente + orientação"
 																		: detalhe.status ===
-																			  "orientacao_inserida"
-																			? "Orientação criada"
-																			: detalhe.status ===
-																				  "dicente_inserido_orientacao_ja_existe"
-																				? "Novo dicente (orientação já existe)"
-																				: detalhe.status ===
-																					  "orientacao_ja_existe"
-																					? "Orientação já existe"
-																					: detalhe.status ===
-																						  "dicente_ja_existe"
-																						? "Dicente já existe"
-																						: detalhe.status ===
-																							  "inserido"
-																							? "Inserido"
-																							: detalhe.status ===
-																								  "já_existe"
-																								? "Já existe"
-																								: detalhe.status
+																		  "orientacao_inserida"
+																		? "Orientação criada"
+																		: detalhe.status ===
+																		  "dicente_inserido_orientacao_ja_existe"
+																		? "Novo dicente (orientação já existe)"
+																		: detalhe.status ===
+																		  "orientacao_ja_existe"
+																		? "Orientação já existe"
+																		: detalhe.status ===
+																		  "dicente_ja_existe"
+																		? "Dicente já existe"
+																		: detalhe.status ===
+																		  "inserido"
+																		? "Inserido"
+																		: detalhe.status ===
+																		  "já_existe"
+																		? "Já existe"
+																		: detalhe.status
 																}
 																size="small"
 																color={
@@ -1395,24 +1531,24 @@ export default function Orientacao() {
 																	"dicente_e_orientacao_inseridos"
 																		? "success"
 																		: detalhe.status ===
-																			  "orientacao_inserida"
-																			? "success"
-																			: detalhe.status ===
-																				  "dicente_inserido_orientacao_ja_existe"
-																				? "info"
-																				: detalhe.status ===
-																					  "orientacao_ja_existe"
-																					? "warning"
-																					: detalhe.status ===
-																						  "dicente_ja_existe"
-																						? "warning"
-																						: detalhe.status ===
-																							  "inserido"
-																							? "success"
-																							: detalhe.status ===
-																								  "já_existe"
-																								? "warning"
-																								: "error"
+																		  "orientacao_inserida"
+																		? "success"
+																		: detalhe.status ===
+																		  "dicente_inserido_orientacao_ja_existe"
+																		? "info"
+																		: detalhe.status ===
+																		  "orientacao_ja_existe"
+																		? "warning"
+																		: detalhe.status ===
+																		  "dicente_ja_existe"
+																		? "warning"
+																		: detalhe.status ===
+																		  "inserido"
+																		? "success"
+																		: detalhe.status ===
+																		  "já_existe"
+																		? "warning"
+																		: "error"
 																}
 															/>
 														</Box>
@@ -1534,9 +1670,7 @@ export default function Orientacao() {
 												label="Orientador"
 												displayEmpty
 											>
-												<MenuItem value="">
-													<em></em>
-												</MenuItem>
+												<MenuItem value=""> </MenuItem>
 												{docentesDisponiveis.map(
 													(docente) => (
 														<MenuItem
@@ -1591,6 +1725,170 @@ export default function Orientacao() {
 										</FormControl>
 									</Grid>
 								</Grid>
+
+								{/* Banca de Defesa - apenas para etapas que necessitam banca */}
+								{(parseInt(editData.etapa) === 5 ||
+									parseInt(editData.etapa) === 7) && (
+									<Paper
+										sx={{
+											p: 2,
+											bgcolor: "background.default",
+										}}
+									>
+										<Typography variant="h6" gutterBottom>
+											Banca de Defesa
+										</Typography>
+										<Typography
+											variant="body2"
+											color="text.secondary"
+											gutterBottom
+										>
+											Selecione 2 docentes para compor a
+											banca de defesa (além do orientador)
+										</Typography>
+
+										{/* Informações sobre convites existentes */}
+										{convitesBancaAtual.length > 0 && (
+											<Box
+												sx={{
+													mb: 2,
+													p: 1,
+													bgcolor: "info.light",
+													borderRadius: 1,
+												}}
+											>
+												<Typography
+													variant="body2"
+													color="info.contrastText"
+												>
+													<strong>
+														Convites de banca
+														existentes:
+													</strong>
+												</Typography>
+												{convitesBancaAtual.map(
+													(convite, index) => (
+														<Typography
+															key={index}
+															variant="body2"
+															color="info.contrastText"
+														>
+															•{" "}
+															{docentesDisponiveis.find(
+																(d) =>
+																	d.codigo ===
+																	convite.codigo_docente,
+															)?.nome ||
+																convite.codigo_docente}{" "}
+															-
+															{convite.aceito
+																? " Aceito"
+																: " Pendente"}
+															{convite.aceito &&
+																` (${new Date(
+																	convite.data_feedback,
+																).toLocaleDateString()})`}
+														</Typography>
+													),
+												)}
+											</Box>
+										)}
+										<Grid container spacing={3}>
+											<Grid item xs={12} md={6}>
+												<FormControl fullWidth>
+													<InputLabel>
+														{}
+													</InputLabel>
+													<Select
+														value={
+															editData.membroBanca1
+														}
+														onChange={(e) =>
+															handleEditDataChange(
+																"membroBanca1",
+																e.target.value,
+															)
+														}
+														label="1º Membro da Banca"
+														displayEmpty
+													>
+														<MenuItem value="">
+															Selecione um docente
+														</MenuItem>
+														{docentesDisponiveis
+															.filter(
+																(docente) =>
+																	docente.codigo !==
+																		editData.orientador &&
+																	docente.codigo !==
+																		editData.membroBanca2,
+															)
+															.map((docente) => (
+																<MenuItem
+																	key={
+																		docente.codigo
+																	}
+																	value={
+																		docente.codigo
+																	}
+																>
+																	{
+																		docente.nome
+																	}
+																</MenuItem>
+															))}
+													</Select>
+												</FormControl>
+											</Grid>
+											<Grid item xs={12} md={6}>
+												<FormControl fullWidth>
+													<InputLabel>
+														{}
+													</InputLabel>
+													<Select
+														value={
+															editData.membroBanca2
+														}
+														onChange={(e) =>
+															handleEditDataChange(
+																"membroBanca2",
+																e.target.value,
+															)
+														}
+														label="2º Membro da Banca"
+														displayEmpty
+													>
+														<MenuItem value="">
+															Selecione um docente
+														</MenuItem>
+														{docentesDisponiveis
+															.filter(
+																(docente) =>
+																	docente.codigo !==
+																		editData.orientador &&
+																	docente.codigo !==
+																		editData.membroBanca1,
+															)
+															.map((docente) => (
+																<MenuItem
+																	key={
+																		docente.codigo
+																	}
+																	value={
+																		docente.codigo
+																	}
+																>
+																	{
+																		docente.nome
+																	}
+																</MenuItem>
+															))}
+													</Select>
+												</FormControl>
+											</Grid>
+										</Grid>
+									</Paper>
+								)}
 
 								{/* Tema */}
 								<TextField
