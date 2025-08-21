@@ -153,8 +153,10 @@ export default function Orientacao() {
 		// Busca orientadores do curso selecionado
 		if (cursoSelecionado) {
 			getOrientadoresCurso(cursoSelecionado);
+			getDocentesBancaCurso(cursoSelecionado);
 		} else {
 			setOrientadoresCurso([]);
+			setDocentesBanca([]);
 		}
 	}, [cursoSelecionado]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -200,7 +202,6 @@ export default function Orientacao() {
 			const response = await axiosInstance.get(
 				`/orientadores/curso/${idCurso}`,
 			);
-			console.log("response.orientacoes", response.orientacoes);
 			setOrientadoresCurso(response.orientacoes || []);
 		} catch (error) {
 			console.log(
@@ -208,6 +209,24 @@ export default function Orientacao() {
 				error,
 			);
 			setOrientadoresCurso([]);
+		}
+	}
+
+		async function getDocentesBancaCurso(idCurso) {
+		try {
+			const response = await axiosInstance.get(
+				`/banca-curso/curso/${idCurso}`,
+			);
+
+			// Corrigir acesso aos dados - o axios coloca a resposta em .data
+			const docentesBanca = response.data?.docentesBanca || response.docentesBanca || [];
+			setDocentesBanca(docentesBanca);
+		} catch (error) {
+			console.log(
+				"Não foi possível retornar a lista de docentes de banca do curso: ",
+				error,
+			);
+			setDocentesBanca([]);
 		}
 	}
 
@@ -572,7 +591,7 @@ export default function Orientacao() {
 
 			if (tcc?.id) {
 				try {
-					// Carregar defesas
+					// Carregar defesas - agora sempre retorna um array (vazio ou com dados)
 					const responseDefesas = await axiosInstance.get(
 						`/defesas/tcc/${tcc.id}`,
 					);
@@ -609,19 +628,21 @@ export default function Orientacao() {
 
 					setConvitesBancaAtual(convitesBanca);
 
-										// Pegar os dois primeiros membros da banca
+					// Pegar os dois primeiros membros da banca
 					if (defesasFaseAtual.length > 0) {
 						membroBanca1 = defesasFaseAtual[0]?.membro_banca || "";
 						// Pegar data e hora da primeira defesa (assumindo que todas têm a mesma data/hora)
 						if (defesasFaseAtual[0]?.data_defesa) {
-							dataHoraDefesa = new Date(defesasFaseAtual[0].data_defesa);
+							dataHoraDefesa = new Date(
+								defesasFaseAtual[0].data_defesa,
+							);
 						}
 					}
 					if (defesasFaseAtual.length > 1) {
 						membroBanca2 = defesasFaseAtual[1]?.membro_banca || "";
 					}
 				} catch (error) {
-					console.log("Erro ao carregar defesas:", error);
+					console.log("Erro ao carregar defesas ou convites:", error);
 					setDefesasAtual([]);
 					setConvitesBancaAtual([]);
 				}
@@ -709,7 +730,6 @@ export default function Orientacao() {
 				payload,
 			);
 
-			console.log("Banca gerenciada com sucesso:", response.data);
 		} catch (error) {
 			console.log("Erro ao gerenciar banca de defesa:", error);
 			throw new Error("Falha ao atualizar banca de defesa e convites");
@@ -729,11 +749,14 @@ export default function Orientacao() {
 
 			// Validação: se data da defesa foi selecionada, ambos os membros da banca devem estar selecionados
 			const etapaAtualSave = parseInt(editData.etapa);
-			const precisaBancaSave = etapaAtualSave === 5 || etapaAtualSave === 7;
+			const precisaBancaSave =
+				etapaAtualSave === 5 || etapaAtualSave === 7;
 
 			if (precisaBancaSave && editData.dataHoraDefesa) {
 				if (!editData.membroBanca1 || !editData.membroBanca2) {
-					setMessageText("Para definir uma data de defesa, é necessário selecionar os 2 membros da banca!");
+					setMessageText(
+						"Para definir uma data de defesa, é necessário selecionar os 2 membros da banca!",
+					);
 					setMessageSeverity("error");
 					setOpenMessage(true);
 					setLoadingEdit(false);
@@ -875,7 +898,8 @@ export default function Orientacao() {
 
 			// Gerenciar banca de defesa se estivermos nas etapas corretas
 			const etapaAtualBanca = parseInt(editData.etapa);
-			const precisaBancaBanca = etapaAtualBanca === 5 || etapaAtualBanca === 7; // Etapas onde é necessário ter banca
+			const precisaBancaBanca =
+				etapaAtualBanca === 5 || etapaAtualBanca === 7; // Etapas onde é necessário ter banca
 
 			if (precisaBancaBanca) {
 				await gerenciarBancaDefesa(tcc.id);
@@ -902,6 +926,9 @@ export default function Orientacao() {
 	const docentesDisponiveis = cursoSelecionado
 		? orientadoresCurso.map((oc) => oc.docente)
 		: [];
+
+	// Estado para docentes de banca
+	const [docentesBanca, setDocentesBanca] = useState([]);
 
 	// Lista de dicentes a exibir - só mostra quando todos os filtros estão selecionados
 	const todosOsFiltrosSelecionados =
@@ -1772,34 +1799,43 @@ export default function Orientacao() {
 											gutterBottom
 										>
 											Selecione 2 docentes para compor a
-											banca de defesa (além do orientador) e defina a data/hora da defesa
+											banca de defesa (além do orientador)
+											e defina a data/hora da defesa
 										</Typography>
 
 										{/* Data e Hora da Defesa */}
 										<Box sx={{ mb: 3 }}>
-																						<LocalizationProvider
+											<LocalizationProvider
 												dateAdapter={AdapterDateFns}
 												adapterLocale={ptBR}
 											>
 												<DateTimePicker
 													label="Data e Hora da Defesa"
-													value={editData.dataHoraDefesa}
+													value={
+														editData.dataHoraDefesa
+													}
 													onChange={(newValue) =>
 														handleEditDataChange(
 															"dataHoraDefesa",
 															newValue,
 														)
 													}
-																										renderInput={(params) => (
+													renderInput={(params) => (
 														<TextField
 															{...params}
 															fullWidth
 															helperText={
-																editData.dataHoraDefesa && (!editData.membroBanca1 || !editData.membroBanca2)
+																editData.dataHoraDefesa &&
+																(!editData.membroBanca1 ||
+																	!editData.membroBanca2)
 																	? "⚠️ Selecione os 2 membros da banca para definir a data da defesa"
 																	: "Selecione a data e horário para a defesa"
 															}
-															error={editData.dataHoraDefesa && (!editData.membroBanca1 || !editData.membroBanca2)}
+															error={
+																editData.dataHoraDefesa &&
+																(!editData.membroBanca1 ||
+																	!editData.membroBanca2)
+															}
 														/>
 													)}
 													ampm={false}
@@ -1855,14 +1891,20 @@ export default function Orientacao() {
 											</Box>
 										)}
 										<Grid container spacing={3}>
-																						<Grid item xs={12} md={6}>
+											<Grid item xs={12} md={6}>
 												<FormControl
 													sx={{ minWidth: 400 }}
 													fullWidth
-													error={editData.dataHoraDefesa && !editData.membroBanca1}
+													error={
+														editData.dataHoraDefesa &&
+														!editData.membroBanca1
+													}
 												>
 													<InputLabel>
-														1º Membro da Banca{editData.dataHoraDefesa ? " *" : ""}
+														1º Membro da Banca
+														{editData.dataHoraDefesa
+															? " *"
+															: ""}
 													</InputLabel>
 													<Select
 														value={
@@ -1874,43 +1916,53 @@ export default function Orientacao() {
 																e.target.value,
 															)
 														}
-														label={`1º Membro da Banca${editData.dataHoraDefesa ? " *" : ""}`}
+														label={`1º Membro da Banca${
+															editData.dataHoraDefesa
+																? " *"
+																: ""
+														}`}
 														displayEmpty
 													>
 														<MenuItem value=""></MenuItem>
-														{docentesDisponiveis
+														{docentesBanca
 															.filter(
-																(docente) =>
-																	docente.codigo !==
+																(item) =>
+																	item.docente?.codigo !==
 																		editData.orientador &&
-																	docente.codigo !==
+																	item.docente?.codigo !==
 																		editData.membroBanca2,
 															)
-															.map((docente) => (
+															.map((item) => (
 																<MenuItem
 																	key={
-																		docente.codigo
+																		item.docente?.codigo
 																	}
 																	value={
-																		docente.codigo
+																		item.docente?.codigo
 																	}
 																>
 																	{
-																		docente.nome
+																		item.docente?.nome
 																	}
 																</MenuItem>
 															))}
 													</Select>
 												</FormControl>
 											</Grid>
-																						<Grid item xs={12} md={6}>
+											<Grid item xs={12} md={6}>
 												<FormControl
 													sx={{ minWidth: 400 }}
 													fullWidth
-													error={editData.dataHoraDefesa && !editData.membroBanca2}
+													error={
+														editData.dataHoraDefesa &&
+														!editData.membroBanca2
+													}
 												>
 													<InputLabel>
-														2º Membro da Banca{editData.dataHoraDefesa ? " *" : ""}
+														2º Membro da Banca
+														{editData.dataHoraDefesa
+															? " *"
+															: ""}
 													</InputLabel>
 													<Select
 														value={
@@ -1922,29 +1974,33 @@ export default function Orientacao() {
 																e.target.value,
 															)
 														}
-														label={`2º Membro da Banca${editData.dataHoraDefesa ? " *" : ""}`}
+														label={`2º Membro da Banca${
+															editData.dataHoraDefesa
+																? " *"
+																: ""
+														}`}
 														displayEmpty
 													>
 														<MenuItem value=""></MenuItem>
-														{docentesDisponiveis
+														{docentesBanca
 															.filter(
-																(docente) =>
-																	docente.codigo !==
+																(item) =>
+																	item.docente?.codigo !==
 																		editData.orientador &&
-																	docente.codigo !==
+																	item.docente?.codigo !==
 																		editData.membroBanca1,
 															)
-															.map((docente) => (
+															.map((item) => (
 																<MenuItem
 																	key={
-																		docente.codigo
+																		item.docente?.codigo
 																	}
 																	value={
-																		docente.codigo
+																		item.docente?.codigo
 																	}
 																>
 																	{
-																		docente.nome
+																		item.docente?.nome
 																	}
 																</MenuItem>
 															))}

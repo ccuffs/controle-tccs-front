@@ -32,18 +32,18 @@ export default function ConviteBancaModal({
 	tipoConvite = "banca_projeto", // "banca_projeto" ou "banca_trabalho"
 	docentesPreSelecionados = [], // Docentes que devem vir pré-selecionados
 }) {
-	const [orientadores, setOrientadores] = useState([]);
+	const [docentesBanca, setDocentesBanca] = useState([]);
 	const [orientadoresSelecionados, setOrientadoresSelecionados] = useState(
 		[],
 	);
 	const [mensagem, setMensagem] = useState("");
 	const [loading, setLoading] = useState(false);
-	const [loadingOrientadores, setLoadingOrientadores] = useState(false);
+	const [loadingDocentesBanca, setLoadingDocentesBanca] = useState(false);
 	const [error, setError] = useState("");
 
 	useEffect(() => {
 		if (open && idCurso) {
-			carregarOrientadores();
+			carregarDocentesBanca();
 		}
 	}, [open, idCurso]);
 
@@ -83,26 +83,26 @@ export default function ConviteBancaModal({
 		}
 	}, [open, docentesPreSelecionados, convitesExistentes, tipoConvite]);
 
-	const carregarOrientadores = async () => {
+	const carregarDocentesBanca = async () => {
 		try {
-			setLoadingOrientadores(true);
+			setLoadingDocentesBanca(true);
 			const response = await axiosInstance.get(
-				`/orientadores/curso/${idCurso}`,
+				`/banca-curso/curso/${idCurso}`,
 			);
 
-			// Extrair os docentes das orientações
-			const orientacoes =
-				response.data?.orientacoes || response.orientacoes || [];
-			const docentes = orientacoes
-				.map((orientacao) => orientacao.docente)
+			// Extrair os docentes da banca
+			const docentesBanca =
+				response.data?.docentesBanca || response.docentesBanca || [];
+			const docentes = docentesBanca
+				.map((banca) => banca.docente)
 				.filter(Boolean);
 
-			setOrientadores(docentes);
+			setDocentesBanca(docentes);
 		} catch (error) {
-			console.error("Erro ao carregar orientadores do curso:", error);
-			setError("Erro ao carregar lista de orientadores do curso");
+			console.error("Erro ao carregar docentes de banca do curso:", error);
+			setError("Erro ao carregar lista de docentes de banca do curso");
 		} finally {
-			setLoadingOrientadores(false);
+			setLoadingDocentesBanca(false);
 		}
 	};
 
@@ -226,10 +226,10 @@ export default function ConviteBancaModal({
 		}
 	};
 
-	// Obter nomes dos orientadores já convidados
-	const getOrientadorNome = (codigo) => {
-		const orientador = orientadores.find((o) => o.codigo === codigo);
-		return orientador ? orientador.nome : codigo;
+	// Obter nomes dos docentes de banca já convidados
+	const getDocenteBancaNome = (codigo) => {
+		const docente = docentesBanca.find((o) => o.codigo === codigo);
+		return docente ? docente.nome : codigo;
 	};
 
 	return (
@@ -272,7 +272,7 @@ export default function ConviteBancaModal({
 									{convitesPendentes.map((convite, index) => (
 										<Chip
 											key={index}
-											label={`${getOrientadorNome(
+											label={`${getDocenteBancaNome(
 												convite.codigo_docente,
 											)} - Aguardando resposta`}
 											color="warning"
@@ -293,7 +293,7 @@ export default function ConviteBancaModal({
 									{convitesAceitos.map((convite, index) => (
 										<Chip
 											key={index}
-											label={`${getOrientadorNome(
+											label={`${getDocenteBancaNome(
 												convite.codigo_docente,
 											)} - Aceito`}
 											color="success"
@@ -318,15 +318,15 @@ export default function ConviteBancaModal({
 					{!deveBotaoEstarDesabilitado ? (
 						<>
 							<FormControl fullWidth sx={{ mb: 2 }}>
-								<InputLabel>
-									Selecione os Orientadores para a Banca
-								</InputLabel>
+																	<InputLabel>
+										Selecione os Docentes para a Banca
+									</InputLabel>
 								<Select
 									multiple
 									value={orientadoresSelecionados}
 									onChange={handleChangeOrientadores}
 									input={
-										<OutlinedInput label="Selecione os Orientadores para a Banca" />
+										<OutlinedInput label="Selecione os Docentes para a Banca" />
 									}
 									renderValue={(selected) => (
 										<Box
@@ -339,7 +339,7 @@ export default function ConviteBancaModal({
 											{selected.map((codigo) => (
 												<Chip
 													key={codigo}
-													label={getOrientadorNome(
+													label={getDocenteBancaNome(
 														codigo,
 													)}
 													size="small"
@@ -348,40 +348,40 @@ export default function ConviteBancaModal({
 										</Box>
 									)}
 									disabled={
-										loadingOrientadores ||
+										loadingDocentesBanca ||
 										!idCurso ||
 										convitesAceitos.length +
 											convitesPendentes.length >=
 											2
 									}
 								>
-									{loadingOrientadores ? (
+									{loadingDocentesBanca ? (
 										<MenuItem disabled>
 											<CircularProgress
 												size={20}
 												sx={{ mr: 1 }}
 											/>
-											Carregando orientadores...
+											Carregando docentes de banca...
 										</MenuItem>
 									) : (
-										(Array.isArray(orientadores)
-											? orientadores
+										(Array.isArray(docentesBanca)
+											? docentesBanca
 											: []
-										).map((orientador) => {
+										).map((docente) => {
 											// Verificar se é o orientador atual
 											const ehOrientador =
 												conviteOrientacao &&
 												conviteOrientacao.codigo_docente ===
-													orientador.codigo &&
+													docente.codigo &&
 												conviteOrientacao.aceito ===
 													true;
 
-											// Verificar se o orientador já tem convite pendente, aceito ou recusado para banca
+											// Verificar se o docente já tem convite pendente, aceito ou recusado para banca
 											const jaConvidado =
 												convitesBanca.some(
 													(convite) =>
 														convite.codigo_docente ===
-															orientador.codigo &&
+															docente.codigo &&
 														(!convite.data_feedback ||
 															convite.aceito ||
 															// Para etapa 7 (banca final), também excluir docentes que recusaram
@@ -396,7 +396,7 @@ export default function ConviteBancaModal({
 												convitesBanca.some(
 													(convite) =>
 														convite.codigo_docente ===
-															orientador.codigo &&
+															docente.codigo &&
 														convite.data_feedback &&
 														!convite.aceito &&
 														tipoConvite ===
@@ -415,19 +415,19 @@ export default function ConviteBancaModal({
 
 											return (
 												<MenuItem
-													key={orientador.codigo}
-													value={orientador.codigo}
+													key={docente.codigo}
+													value={docente.codigo}
 													disabled={isDisabled}
 												>
 													<Checkbox
 														checked={
 															orientadoresSelecionados.indexOf(
-																orientador.codigo,
+																docente.codigo,
 															) > -1
 														}
 													/>
 													<ListItemText
-														primary={`${orientador.nome} - ${orientador.codigo}`}
+														primary={`${docente.nome} - ${docente.codigo}`}
 														secondary={
 															secondaryText
 														}
@@ -452,7 +452,7 @@ export default function ConviteBancaModal({
 									2 -
 									convitesAceitos.length -
 									convitesPendentes.length
-								} orientador(es) para enviar convites simultaneamente.`}
+								} docente(s) para enviar convites simultaneamente.`}
 							/>
 						</>
 					) : (
