@@ -99,7 +99,10 @@ export default function ConviteBancaModal({
 
 			setDocentesBanca(docentes);
 		} catch (error) {
-			console.error("Erro ao carregar docentes de banca do curso:", error);
+			console.error(
+				"Erro ao carregar docentes de banca do curso:",
+				error,
+			);
 			setError("Erro ao carregar lista de docentes de banca do curso");
 		} finally {
 			setLoadingDocentesBanca(false);
@@ -318,9 +321,9 @@ export default function ConviteBancaModal({
 					{!deveBotaoEstarDesabilitado ? (
 						<>
 							<FormControl fullWidth sx={{ mb: 2 }}>
-																	<InputLabel>
-										Selecione os Docentes para a Banca
-									</InputLabel>
+								<InputLabel>
+									Selecione os Docentes para a Banca
+								</InputLabel>
 								<Select
 									multiple
 									value={orientadoresSelecionados}
