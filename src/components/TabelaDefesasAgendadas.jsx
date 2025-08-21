@@ -10,7 +10,7 @@ export default function TabelaDefesasAgendadas({ defesasAgendadas, largura }) {
 		<Card
 			sx={{
 				backgroundColor: theme.palette.background.default,
-				height: "100%",
+				height: 360,
 				display: "flex",
 				flexDirection: "column",
 				width: largura || { xs: "100%", md: 560 },
@@ -20,7 +20,9 @@ export default function TabelaDefesasAgendadas({ defesasAgendadas, largura }) {
 				sx={{
 					display: "flex",
 					flexDirection: "column",
-					flexGrow: 1,
+					height: "100%",
+					padding: "16px",
+					"&:last-child": { paddingBottom: "16px" },
 				}}
 			>
 				<Typography variant="subtitle1" gutterBottom>
@@ -36,7 +38,14 @@ export default function TabelaDefesasAgendadas({ defesasAgendadas, largura }) {
 						Sem defesas agendadas
 					</Typography>
 				) : (
-					<Box sx={{ mt: 1, flexGrow: 1 }}>
+					<Box
+						sx={{
+							mt: 1,
+							flexGrow: 1,
+							overflow: "auto",
+							maxHeight: "calc(360 - 80px)", // 360px - altura do título e padding
+						}}
+					>
 						<CustomDataGrid
 							rows={defesasAgendadas}
 							columns={[
