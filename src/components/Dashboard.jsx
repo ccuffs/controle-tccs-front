@@ -208,6 +208,7 @@ export default function Dashboard({ forceOrientador = false }) {
 				const convites = await axios.get(
 					`/dashboard/convites-por-periodo?${params.toString()}`,
 				);
+
 				if (!ativo) return;
 				setDadosConvites(convites.pontos || []);
 
@@ -290,17 +291,6 @@ export default function Dashboard({ forceOrientador = false }) {
 			),
 		[anosSemestres],
 	);
-	const semestresDisponiveis = useMemo(
-		() =>
-			Array.from(
-				new Set(
-					anosSemestres
-						.filter((p) => String(p.ano) === String(filtroAno))
-						.map((p) => p.semestre),
-				),
-			).sort((a, b) => a - b),
-		[anosSemestres, filtroAno],
-	);
 
 	const faseLabel = useMemo(() => {
 		const v = String(filtroFase || "");
@@ -347,14 +337,6 @@ export default function Dashboard({ forceOrientador = false }) {
 			cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
 		}
 		return ticks;
-	}, [dadosConvites]);
-
-	const totalConvitesPeriodo = useMemo(() => {
-		if (!Array.isArray(dadosConvites)) return 0;
-		return dadosConvites.reduce(
-			(acc, p) => acc + (p.orientacao || 0) + (p.banca || 0),
-			0,
-		);
 	}, [dadosConvites]);
 
 	return (
