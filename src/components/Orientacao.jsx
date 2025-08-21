@@ -29,6 +29,10 @@ import {
 	Grid,
 	LinearProgress,
 } from "@mui/material";
+import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { ptBR } from "date-fns/locale";
 import { DataGrid } from "@mui/x-data-grid";
 import SaveIcon from "@mui/icons-material/Save";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
@@ -79,6 +83,7 @@ export default function Orientacao() {
 		etapa: 0,
 		membroBanca1: "",
 		membroBanca2: "",
+		dataHoraDefesa: null,
 	});
 	const [loadingEdit, setLoadingEdit] = useState(false);
 	const [areasTcc, setAreasTcc] = useState([]);
@@ -548,6 +553,7 @@ export default function Orientacao() {
 			etapa: 0,
 			membroBanca1: "",
 			membroBanca2: "",
+			dataHoraDefesa: null,
 		});
 		setLoadingEdit(false);
 		setDefesasAtual([]);
@@ -562,6 +568,7 @@ export default function Orientacao() {
 			// Carregar dados da banca de defesa se existir TCC
 			let membroBanca1 = "";
 			let membroBanca2 = "";
+			let dataHoraDefesa = null;
 
 			if (tcc?.id) {
 				try {
@@ -602,9 +609,13 @@ export default function Orientacao() {
 
 					setConvitesBancaAtual(convitesBanca);
 
-					// Pegar os dois primeiros membros da banca
+										// Pegar os dois primeiros membros da banca
 					if (defesasFaseAtual.length > 0) {
 						membroBanca1 = defesasFaseAtual[0]?.membro_banca || "";
+						// Pegar data e hora da primeira defesa (assumindo que todas têm a mesma data/hora)
+						if (defesasFaseAtual[0]?.data_defesa) {
+							dataHoraDefesa = new Date(defesasFaseAtual[0].data_defesa);
+						}
 					}
 					if (defesasFaseAtual.length > 1) {
 						membroBanca2 = defesasFaseAtual[1]?.membro_banca || "";
@@ -625,6 +636,7 @@ export default function Orientacao() {
 				etapa: tcc?.etapa || 0,
 				membroBanca1,
 				membroBanca2,
+				dataHoraDefesa,
 			});
 		} catch (error) {
 			console.log("Erro ao carregar dados do TCC:", error);
@@ -689,6 +701,7 @@ export default function Orientacao() {
 				convites_banca_existentes: convitesBancaAtual,
 				alteracoes: alteracoes,
 				orientador_codigo: editData.orientador, // Incluir código do orientador
+				data_hora_defesa: editData.dataHoraDefesa, // Incluir data e hora da defesa
 			};
 
 			const response = await axiosInstance.post(
@@ -712,6 +725,20 @@ export default function Orientacao() {
 			const tcc = trabalhosPorMatricula[selectedDicente.matricula];
 			if (!tcc) {
 				throw new Error("TCC não encontrado para este dicente");
+			}
+
+			// Validação: se data da defesa foi selecionada, ambos os membros da banca devem estar selecionados
+			const etapaAtualSave = parseInt(editData.etapa);
+			const precisaBancaSave = etapaAtualSave === 5 || etapaAtualSave === 7;
+
+			if (precisaBancaSave && editData.dataHoraDefesa) {
+				if (!editData.membroBanca1 || !editData.membroBanca2) {
+					setMessageText("Para definir uma data de defesa, é necessário selecionar os 2 membros da banca!");
+					setMessageSeverity("error");
+					setOpenMessage(true);
+					setLoadingEdit(false);
+					return;
+				}
 			}
 
 			// Atualizar TCC
@@ -847,10 +874,10 @@ export default function Orientacao() {
 			}
 
 			// Gerenciar banca de defesa se estivermos nas etapas corretas
-			const etapaAtual = parseInt(editData.etapa);
-			const precisaBanca = etapaAtual === 5 || etapaAtual === 7; // Etapas onde é necessário ter banca
+			const etapaAtualBanca = parseInt(editData.etapa);
+			const precisaBancaBanca = etapaAtualBanca === 5 || etapaAtualBanca === 7; // Etapas onde é necessário ter banca
 
-			if (precisaBanca) {
+			if (precisaBancaBanca) {
 				await gerenciarBancaDefesa(tcc.id);
 			}
 
@@ -1654,6 +1681,7 @@ export default function Orientacao() {
 									<Grid item xs={12}>
 										<FormControl
 											sx={{
+												minWidth: 400,
 												width: 720,
 												maxWidth: "100%",
 											}}
@@ -1670,7 +1698,7 @@ export default function Orientacao() {
 												label="Orientador"
 												displayEmpty
 											>
-												<MenuItem value=""> </MenuItem>
+												<MenuItem value=""></MenuItem>
 												{docentesDisponiveis.map(
 													(docente) => (
 														<MenuItem
@@ -1744,8 +1772,41 @@ export default function Orientacao() {
 											gutterBottom
 										>
 											Selecione 2 docentes para compor a
-											banca de defesa (além do orientador)
+											banca de defesa (além do orientador) e defina a data/hora da defesa
 										</Typography>
+
+										{/* Data e Hora da Defesa */}
+										<Box sx={{ mb: 3 }}>
+																						<LocalizationProvider
+												dateAdapter={AdapterDateFns}
+												adapterLocale={ptBR}
+											>
+												<DateTimePicker
+													label="Data e Hora da Defesa"
+													value={editData.dataHoraDefesa}
+													onChange={(newValue) =>
+														handleEditDataChange(
+															"dataHoraDefesa",
+															newValue,
+														)
+													}
+																										renderInput={(params) => (
+														<TextField
+															{...params}
+															fullWidth
+															helperText={
+																editData.dataHoraDefesa && (!editData.membroBanca1 || !editData.membroBanca2)
+																	? "⚠️ Selecione os 2 membros da banca para definir a data da defesa"
+																	: "Selecione a data e horário para a defesa"
+															}
+															error={editData.dataHoraDefesa && (!editData.membroBanca1 || !editData.membroBanca2)}
+														/>
+													)}
+													ampm={false}
+													format="dd/MM/yyyy HH:mm"
+												/>
+											</LocalizationProvider>
+										</Box>
 
 										{/* Informações sobre convites existentes */}
 										{convitesBancaAtual.length > 0 && (
@@ -1794,10 +1855,14 @@ export default function Orientacao() {
 											</Box>
 										)}
 										<Grid container spacing={3}>
-											<Grid item xs={12} md={6}>
-												<FormControl fullWidth>
+																						<Grid item xs={12} md={6}>
+												<FormControl
+													sx={{ minWidth: 400 }}
+													fullWidth
+													error={editData.dataHoraDefesa && !editData.membroBanca1}
+												>
 													<InputLabel>
-														{}
+														1º Membro da Banca{editData.dataHoraDefesa ? " *" : ""}
 													</InputLabel>
 													<Select
 														value={
@@ -1809,12 +1874,10 @@ export default function Orientacao() {
 																e.target.value,
 															)
 														}
-														label="1º Membro da Banca"
+														label={`1º Membro da Banca${editData.dataHoraDefesa ? " *" : ""}`}
 														displayEmpty
 													>
-														<MenuItem value="">
-															Selecione um docente
-														</MenuItem>
+														<MenuItem value=""></MenuItem>
 														{docentesDisponiveis
 															.filter(
 																(docente) =>
@@ -1840,10 +1903,14 @@ export default function Orientacao() {
 													</Select>
 												</FormControl>
 											</Grid>
-											<Grid item xs={12} md={6}>
-												<FormControl fullWidth>
+																						<Grid item xs={12} md={6}>
+												<FormControl
+													sx={{ minWidth: 400 }}
+													fullWidth
+													error={editData.dataHoraDefesa && !editData.membroBanca2}
+												>
 													<InputLabel>
-														{}
+														2º Membro da Banca{editData.dataHoraDefesa ? " *" : ""}
 													</InputLabel>
 													<Select
 														value={
@@ -1855,12 +1922,10 @@ export default function Orientacao() {
 																e.target.value,
 															)
 														}
-														label="2º Membro da Banca"
+														label={`2º Membro da Banca${editData.dataHoraDefesa ? " *" : ""}`}
 														displayEmpty
 													>
-														<MenuItem value="">
-															Selecione um docente
-														</MenuItem>
+														<MenuItem value=""></MenuItem>
 														{docentesDisponiveis
 															.filter(
 																(docente) =>
