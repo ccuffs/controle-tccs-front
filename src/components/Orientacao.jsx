@@ -401,7 +401,7 @@ export default function Orientacao() {
 					codigo:
 						orientacao.codigo_docente || orientacao.codigo || "",
 					nome: orientacao.Docente?.nome || "Orientador",
-				}
+			  }
 			: null;
 	}
 
@@ -444,24 +444,6 @@ export default function Orientacao() {
 			return;
 		}
 		setOpenMessage(false);
-	}
-
-	function handleModalAnoChange(e) {
-		setModalAno(e.target.value || "");
-	}
-
-	function handleModalSemestreChange(e) {
-		setModalSemestre(e.target.value || "");
-	}
-
-	function handleModalFaseChange(e) {
-		setModalFase(e.target.value || "");
-	}
-
-	function handleModalCursoChange(e) {
-		const cursoId = e.target.value;
-		const curso = cursos.find((c) => c.id === cursoId);
-		setModalCurso(curso || null);
 	}
 
 	function handleOpenUploadModal() {
@@ -824,7 +806,7 @@ export default function Orientacao() {
 						? convitesOrientacao.find(
 								(c) =>
 									c.codigo_docente === codigoOrientadorAtual,
-							)
+						  )
 						: null;
 
 					if (!codigoOrientadorAtual) {
@@ -1010,7 +992,7 @@ export default function Orientacao() {
 								)
 									? convites.some(
 											(c) => c.orientacao === true,
-										)
+									  )
 									: false;
 								const temOrientadorDefinido =
 									!!getOrientadorAtual(params.row.matricula);
@@ -1034,7 +1016,7 @@ export default function Orientacao() {
 								const convitesBanca = Array.isArray(convites)
 									? convites.filter(
 											(c) => c.orientacao === false,
-										)
+									  )
 									: [];
 								// Considera a fase corrente do TCC para validar convites corretos
 								const faseAtualTcc =
@@ -1046,9 +1028,8 @@ export default function Orientacao() {
 										faseAtualTcc == null
 											? true
 											: fase
-												? parseInt(c.fase) ===
-													faseAtualTcc
-												: true, // Se fase não estiver filtrada, aceita qualquer fase
+											? parseInt(c.fase) === faseAtualTcc
+											: true, // Se fase não estiver filtrada, aceita qualquer fase
 								);
 								if (!temConviteBancaFase) {
 									showWarn = true;
@@ -1076,7 +1057,7 @@ export default function Orientacao() {
 								const convitesBanca = Array.isArray(convites)
 									? convites.filter(
 											(c) => c.orientacao === false,
-										)
+									  )
 									: [];
 								const faseAtualTcc =
 									tcc?.fase != null
@@ -1087,9 +1068,8 @@ export default function Orientacao() {
 										faseAtualTcc == null
 											? true
 											: fase
-												? parseInt(c.fase) ===
-													faseAtualTcc
-												: true, // Se fase não estiver filtrada, aceita qualquer fase
+											? parseInt(c.fase) === faseAtualTcc
+											: true, // Se fase não estiver filtrada, aceita qualquer fase
 								);
 								if (temConviteBancaFase) {
 									showSuccess = true;
@@ -1106,7 +1086,7 @@ export default function Orientacao() {
 											fase
 												? parseInt(d.fase) === faseAtual
 												: true, // Se fase não estiver filtrada, aceita todas as defesas
-									)
+								  )
 								: [];
 							const notas = defesasFase
 								.map((d) => d.avaliacao)
@@ -1114,7 +1094,7 @@ export default function Orientacao() {
 							const media =
 								notas.length > 0
 									? notas.reduce((a, b) => a + Number(b), 0) /
-										notas.length
+									  notas.length
 									: null;
 
 							return (
@@ -1162,7 +1142,7 @@ export default function Orientacao() {
 							);
 						},
 					},
-				]
+			  ]
 			: []),
 	];
 
@@ -1305,141 +1285,31 @@ export default function Orientacao() {
 								selecionados abaixo.
 							</Typography>
 
-							{/* Selects para Curso, Ano/Semestre e Fase */}
-							<Grid container spacing={3}>
-								<Grid item xs={12} md={3}>
-									<FormControl
-										fullWidth
-										required
-										sx={{ minWidth: 200 }}
-									>
-										<InputLabel>Curso</InputLabel>
-										<Select
-											value={
-												modalCurso ? modalCurso.id : ""
-											}
-											onChange={handleModalCursoChange}
-											label="Curso"
-											disabled={
-												loadingCursos ||
-												cursos.length === 0
-											}
-										>
-											{cursos.map((curso) => (
-												<MenuItem
-													key={curso.id}
-													value={curso.id}
-												>
-													{curso.nome}
-												</MenuItem>
-											))}
-											{cursos.length === 0 &&
-												!loadingCursos && (
-													<MenuItem disabled>
-														Nenhum curso cadastrado
-													</MenuItem>
-												)}
-										</Select>
-									</FormControl>
-								</Grid>
-								<Grid item xs={12} md={3}>
-									<FormControl
-										fullWidth
-										required
-										sx={{ minWidth: 200 }}
-									>
-										<InputLabel>Ano</InputLabel>
-										<Select
-											value={modalAno || ""}
-											onChange={handleModalAnoChange}
-											label="Ano"
-											disabled={
-												loadingOfertasTcc ||
-												anosUnicos.length === 0
-											}
-										>
-											{anosUnicos.map((ano) => (
-												<MenuItem key={ano} value={ano}>
-													{ano}
-												</MenuItem>
-											))}
-											{anosUnicos.length === 0 &&
-												!loadingOfertasTcc && (
-													<MenuItem disabled>
-														Nenhum ano cadastrado
-													</MenuItem>
-												)}
-										</Select>
-									</FormControl>
-								</Grid>
-								<Grid item xs={12} md={3}>
-									<FormControl
-										fullWidth
-										required
-										sx={{ minWidth: 200 }}
-									>
-										<InputLabel>Semestre</InputLabel>
-										<Select
-											value={modalSemestre || ""}
-											onChange={handleModalSemestreChange}
-											label="Semestre"
-											disabled={
-												loadingOfertasTcc ||
-												semestresUnicos.length === 0
-											}
-										>
-											{semestresUnicos.map((semestre) => (
-												<MenuItem
-													key={semestre}
-													value={semestre}
-												>
-													{semestre}º Semestre
-												</MenuItem>
-											))}
-											{semestresUnicos.length === 0 &&
-												!loadingOfertasTcc && (
-													<MenuItem disabled>
-														Nenhum semestre
-														cadastrado
-													</MenuItem>
-												)}
-										</Select>
-									</FormControl>
-								</Grid>
-								<Grid item xs={12} md={3}>
-									<FormControl
-										fullWidth
-										required
-										sx={{ minWidth: 200 }}
-									>
-										<InputLabel>Fase TCC</InputLabel>
-										<Select
-											value={modalFase || ""}
-											onChange={handleModalFaseChange}
-											label="Fase TCC"
-											disabled={
-												loadingOfertasTcc ||
-												fasesUnicas.length === 0
-											}
-										>
-											{fasesUnicas.map((fase) => (
-												<MenuItem
-													key={fase}
-													value={fase}
-												>
-													Fase {fase}
-												</MenuItem>
-											))}
-											{fasesUnicas.length === 0 &&
-												!loadingOfertasTcc && (
-													<MenuItem disabled>
-														Nenhuma fase cadastrada
-													</MenuItem>
-												)}
-										</Select>
-									</FormControl>
-								</Grid>
-							</Grid>
+							{/* Filtros para Curso, Ano/Semestre e Fase */}
+							<FiltrosPesquisa
+								cursoSelecionado={
+									modalCurso ? modalCurso.id : ""
+								}
+								setCursoSelecionado={(valor) => {
+									const curso = cursos.find(
+										(c) => c.id === valor,
+									);
+									setModalCurso(curso || null);
+								}}
+								ano={modalAno}
+								setAno={setModalAno}
+								semestre={modalSemestre}
+								setSemestre={setModalSemestre}
+								fase={modalFase}
+								setFase={setModalFase}
+								cursos={cursos}
+								loading={loadingCursos || loadingOfertasTcc}
+								anosDisponiveis={anosUnicos}
+								semestresDisponiveis={semestresUnicos}
+								fasesDisponiveis={fasesUnicas}
+								habilitarFiltroTodasFases={false}
+								habilitarFiltroOrientacao={false}
+							/>
 
 							<Box>
 								<input
@@ -1562,24 +1432,24 @@ export default function Orientacao() {
 																	"dicente_e_orientacao_inseridos"
 																		? "Novo dicente + orientação"
 																		: detalhe.status ===
-																			  "orientacao_inserida"
-																			? "Orientação criada"
-																			: detalhe.status ===
-																				  "dicente_inserido_orientacao_ja_existe"
-																				? "Novo dicente (orientação já existe)"
-																				: detalhe.status ===
-																					  "orientacao_ja_existe"
-																					? "Orientação já existe"
-																					: detalhe.status ===
-																						  "dicente_ja_existe"
-																						? "Dicente já existe"
-																						: detalhe.status ===
-																							  "inserido"
-																							? "Inserido"
-																							: detalhe.status ===
-																								  "já_existe"
-																								? "Já existe"
-																								: detalhe.status
+																		  "orientacao_inserida"
+																		? "Orientação criada"
+																		: detalhe.status ===
+																		  "dicente_inserido_orientacao_ja_existe"
+																		? "Novo dicente (orientação já existe)"
+																		: detalhe.status ===
+																		  "orientacao_ja_existe"
+																		? "Orientação já existe"
+																		: detalhe.status ===
+																		  "dicente_ja_existe"
+																		? "Dicente já existe"
+																		: detalhe.status ===
+																		  "inserido"
+																		? "Inserido"
+																		: detalhe.status ===
+																		  "já_existe"
+																		? "Já existe"
+																		: detalhe.status
 																}
 																size="small"
 																color={
@@ -1587,24 +1457,24 @@ export default function Orientacao() {
 																	"dicente_e_orientacao_inseridos"
 																		? "success"
 																		: detalhe.status ===
-																			  "orientacao_inserida"
-																			? "success"
-																			: detalhe.status ===
-																				  "dicente_inserido_orientacao_ja_existe"
-																				? "info"
-																				: detalhe.status ===
-																					  "orientacao_ja_existe"
-																					? "warning"
-																					: detalhe.status ===
-																						  "dicente_ja_existe"
-																						? "warning"
-																						: detalhe.status ===
-																							  "inserido"
-																							? "success"
-																							: detalhe.status ===
-																								  "já_existe"
-																								? "warning"
-																								: "error"
+																		  "orientacao_inserida"
+																		? "success"
+																		: detalhe.status ===
+																		  "dicente_inserido_orientacao_ja_existe"
+																		? "info"
+																		: detalhe.status ===
+																		  "orientacao_ja_existe"
+																		? "warning"
+																		: detalhe.status ===
+																		  "dicente_ja_existe"
+																		? "warning"
+																		: detalhe.status ===
+																		  "inserido"
+																		? "success"
+																		: detalhe.status ===
+																		  "já_existe"
+																		? "warning"
+																		: "error"
 																}
 															/>
 														</Box>
