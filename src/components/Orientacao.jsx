@@ -40,15 +40,19 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import EditIcon from "@mui/icons-material/Edit";
 
-export default function Orientacao() {
+export default function Orientacao({ isOrientadorView = false }) {
 	const [dicentes, setDicentes] = useState([]);
 	const [cursos, setCursos] = useState([]);
 	const [orientadoresCurso, setOrientadoresCurso] = useState([]);
 	const [ofertasTcc, setOfertasTcc] = useState([]);
 	const [orientacoes, setOrientacoes] = useState([]);
 	const [cursoSelecionado, setCursoSelecionado] = useState("");
-	const [ano, setAno] = useState(new Date().getFullYear());
-	const [semestre, setSemestre] = useState("");
+	const [ano, setAno] = useState(
+		isOrientadorView ? getAnoSemestreAtual().ano : new Date().getFullYear(),
+	);
+	const [semestre, setSemestre] = useState(
+		isOrientadorView ? getAnoSemestreAtual().semestre : "",
+	);
 	const [fase, setFase] = useState("");
 	const [loadingCursos, setLoadingCursos] = useState(false);
 	const [loadingOfertasTcc, setLoadingOfertasTcc] = useState(false);
@@ -91,6 +95,14 @@ export default function Orientacao() {
 	const [defesasAtual, setDefesasAtual] = useState([]);
 	const [convitesBancaAtual, setConvitesBancaAtual] = useState([]);
 
+	// Helper function para retornar ano/semestre atual
+	function getAnoSemestreAtual() {
+		const data = new Date();
+		const anoAtual = data.getFullYear();
+		const semestreAtual = data.getMonth() < 6 ? 1 : 2;
+		return { ano: anoAtual, semestre: semestreAtual };
+	}
+
 	const { permissoesUsuario, gruposUsuario, usuario } = useAuth();
 
 	// Função para verificar se o usuário é professor
@@ -117,21 +129,29 @@ export default function Orientacao() {
 	}, [isAdmin, isProfessor]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	useEffect(() => {
-		// Para professores: carrega dicentes assim que curso estiver selecionado
-		// Para admins: carrega dicentes apenas quando curso estiver selecionado
-		if (isProfessor) {
-			if (cursoSelecionado) {
-				getDicentes();
-			}
-		} else if (isAdmin) {
-			if (cursoSelecionado) {
-				getDicentes();
+		// No modo orientador, carrega dicentes apenas quando filtros necessários estão selecionados
+		if (isOrientadorView) {
+			if (cursoSelecionado && ano && semestre) {
+				getDicentesOrientador();
 			} else {
 				setDicentes([]);
 			}
 		} else {
-			// Para outros tipos de usuário, comportamento original
-			getDicentes();
+			// Modo admin/professor original
+			if (isProfessor) {
+				if (cursoSelecionado) {
+					getDicentes();
+				}
+			} else if (isAdmin) {
+				if (cursoSelecionado) {
+					getDicentes();
+				} else {
+					setDicentes([]);
+				}
+			} else {
+				// Para outros tipos de usuário, comportamento original
+				getDicentes();
+			}
 		}
 
 		// Busca orientações quando todos os filtros estão preenchidos
@@ -147,7 +167,7 @@ export default function Orientacao() {
 		} else {
 			setTrabalhosPorMatricula({});
 		}
-	}, [cursoSelecionado, ano, semestre, fase, isProfessor, isAdmin]); // eslint-disable-line react-hooks/exhaustive-deps
+	}, [cursoSelecionado, ano, semestre, fase, isProfessor, isAdmin, isOrientadorView]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	useEffect(() => {
 		// Busca orientadores do curso selecionado
@@ -163,8 +183,8 @@ export default function Orientacao() {
 	async function getCursos() {
 		setLoadingCursos(true);
 		try {
-			if (isProfessor) {
-				// Para professores, buscar apenas seus cursos
+			if (isOrientadorView || isProfessor) {
+				// Para orientadores, buscar apenas seus cursos
 				const codigoDocente = usuario?.codigo || usuario?.id;
 				if (!codigoDocente) {
 					setCursos([]);
@@ -269,6 +289,54 @@ export default function Orientacao() {
 		} catch (error) {
 			console.log(
 				"Não foi possível retornar a lista de dicentes: ",
+				error,
+			);
+			setDicentes([]);
+		} finally {
+			setLoadingDicentes(false);
+		}
+	}
+
+	async function getDicentesOrientador() {
+		setLoadingDicentes(true);
+		try {
+			const codigoDocente = usuario?.codigo || usuario?.id;
+			if (!codigoDocente) {
+				setDicentes([]);
+				return;
+			}
+
+			// Buscar orientações do docente logado
+			const params = {
+				codigo_docente: codigoDocente,
+				orientador: true,
+			};
+			const response = await axiosInstance.get("/orientacoes", { params });
+
+			// Filtrar orientações por curso, ano, semestre e fase
+			const orientacoesFiltradas = (response.orientacoes || [])
+				.filter((o) => {
+					const tcc = o.TrabalhoConclusao;
+					if (!tcc) return false;
+
+					return (
+						tcc.Curso?.id === parseInt(cursoSelecionado) &&
+						tcc.ano === parseInt(ano) &&
+						tcc.semestre === parseInt(semestre) &&
+						(fase === "" || tcc.fase === parseInt(fase))
+					);
+				});
+
+			// Extrair dicentes das orientações
+			const dicentes = orientacoesFiltradas
+				.map((o) => o.TrabalhoConclusao?.Dicente)
+				.filter((dicente) => dicente !== null && dicente !== undefined)
+				.sort((a, b) => a.nome.localeCompare(b.nome));
+
+			setDicentes(dicentes);
+		} catch (error) {
+			console.log(
+				"Não foi possível retornar a lista de dicentes orientados: ",
 				error,
 			);
 			setDicentes([]);
@@ -586,7 +654,7 @@ export default function Orientacao() {
 					// Filtrar defesas da fase atual e que não são orientador
 					const defesasFaseAtual = defesas.filter(
 						(defesa) =>
-							parseInt(defesa.fase) === parseInt(fase) &&
+							parseInt(defesa.fase) === parseInt(tcc.fase) &&
 							!defesa.orientador,
 					);
 
@@ -606,7 +674,7 @@ export default function Orientacao() {
 					).filter(
 						(c) =>
 							c.orientacao === false &&
-							parseInt(c.fase) === parseInt(fase),
+							parseInt(c.fase) === parseInt(tcc.fase),
 					);
 
 					setConvitesBancaAtual(convitesBanca);
@@ -632,7 +700,9 @@ export default function Orientacao() {
 			}
 
 			setEditData({
-				orientador: orientador?.codigo || "",
+				orientador: isOrientadorView
+					? usuario?.codigo || usuario?.id || orientador?.codigo || ""
+					: orientador?.codigo || "",
 				tema: tcc?.tema || "",
 				titulo: tcc?.titulo || "",
 				resumo: tcc?.resumo || "",
@@ -697,9 +767,10 @@ export default function Orientacao() {
 			}
 
 			// Fazer chamada única para a API transacional
+			const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
 			const payload = {
 				id_tcc: idTcc,
-				fase: parseInt(fase),
+				fase: parseInt(tccAtual?.fase || fase),
 				membros_novos: membrosNovos,
 				membros_existentes: membrosExistentes,
 				convites_banca_existentes: convitesBancaAtual,
@@ -755,7 +826,7 @@ export default function Orientacao() {
 			};
 
 			// Adicionar seminário de andamento se for fase 2
-			if (parseInt(fase) === 2) {
+			if (parseInt(tcc.fase) === 2) {
 				tccData.seminario_andamento = editData.seminarioAndamento;
 			}
 
@@ -770,7 +841,8 @@ export default function Orientacao() {
 			);
 			const codigoOrientadorAtual = orientadorAtual?.codigo || "";
 
-			if (editData.orientador !== codigoOrientadorAtual) {
+			// No modo orientador, não permitir alteração do orientador
+			if (!isOrientadorView && editData.orientador !== codigoOrientadorAtual) {
 				// Buscar convites de orientação existentes para este TCC
 				const responseConvites = await axiosInstance.get("/convites", {
 					params: { id_tcc: tcc.id },
@@ -782,7 +854,7 @@ export default function Orientacao() {
 				).filter(
 					(c) =>
 						c.orientacao === true &&
-						parseInt(c.fase) === parseInt(fase),
+						parseInt(c.fase) === parseInt(tcc.fase),
 				);
 
 				// Se havia orientador anterior, deletar a orientação
@@ -822,7 +894,7 @@ export default function Orientacao() {
 							const convitePayload = {
 								id_tcc: tcc.id,
 								codigo_docente: editData.orientador,
-								fase: parseInt(fase),
+								fase: parseInt(tcc.fase),
 								data_envio: dataAtual,
 								mensagem_envio: mensagemPadrao,
 								data_feedback: dataAtual,
@@ -843,7 +915,7 @@ export default function Orientacao() {
 							// Se há convite do orientador atual, deletá-lo
 							if (conviteOrientadorAtual) {
 								await axiosInstance.delete(
-									`/convites/${tcc.id}/${codigoOrientadorAtual}/${fase}`,
+									`/convites/${tcc.id}/${codigoOrientadorAtual}/${tcc.fase}`,
 								);
 							}
 
@@ -851,7 +923,7 @@ export default function Orientacao() {
 							const convitePayload = {
 								id_tcc: tcc.id,
 								codigo_docente: editData.orientador,
-								fase: parseInt(fase),
+								fase: parseInt(tcc.fase),
 								data_envio: dataAtual,
 								mensagem_envio: mensagemAlteracao,
 								data_feedback: dataAtual,
@@ -912,9 +984,10 @@ export default function Orientacao() {
 	// Estado para docentes de banca
 	const [docentesBanca, setDocentesBanca] = useState([]);
 
-	// Lista de dicentes a exibir - só mostra quando todos os filtros estão selecionados
-	const todosOsFiltrosSelecionados =
-		cursoSelecionado && ano && semestre && fase;
+	// Lista de dicentes a exibir
+	const todosOsFiltrosSelecionados = isOrientadorView
+		? cursoSelecionado && ano && semestre
+		: cursoSelecionado && ano && semestre && fase;
 	const dicentesFiltrados = todosOsFiltrosSelecionados ? dicentes : [];
 
 	// Configuração das colunas do DataGrid
@@ -1192,7 +1265,9 @@ export default function Orientacao() {
 		<Box sx={{ width: 1400 }}>
 			<Stack spacing={2} sx={{ width: "100%" }}>
 				<Typography variant="h5" component="h2">
-					Gerenciamento de Orientações
+					{isOrientadorView
+						? "Meus Trabalhos de Orientação"
+						: "Gerenciamento de Orientações"}
 				</Typography>
 
 				<FiltrosPesquisa
@@ -1234,43 +1309,48 @@ export default function Orientacao() {
 						</Typography>
 					) : (
 						<Typography variant="body2" color="text.secondary">
-							Selecione todos os filtros para visualizar dicentes
+							{isOrientadorView
+								? "Selecione curso, ano e semestre para visualizar seus orientandos"
+								: "Selecione todos os filtros para visualizar dicentes"}
 						</Typography>
 					)}
 				</Box>
 
-				<PermissionContext
-					permissoes={[
-						Permissoes.ORIENTACAO.CRIAR,
-						Permissoes.ORIENTACAO.EDITAR,
-					]}
-					showError={false}
-				>
-					<Stack direction="row" spacing={2}>
-						<PermissionContext
-							permissoes={[Permissoes.DICENTE.CRIAR]}
-							showError={false}
-						>
-							<Button
-								variant="outlined"
-								color="secondary"
-								startIcon={<CloudUploadIcon />}
-								onClick={handleOpenUploadModal}
+				{!isOrientadorView && (
+					<PermissionContext
+						permissoes={[
+							Permissoes.ORIENTACAO.CRIAR,
+							Permissoes.ORIENTACAO.EDITAR,
+						]}
+						showError={false}
+					>
+						<Stack direction="row" spacing={2}>
+							<PermissionContext
+								permissoes={[Permissoes.DICENTE.CRIAR]}
+								showError={false}
 							>
-								Upload PDF Lista
-							</Button>
-						</PermissionContext>
-					</Stack>
-				</PermissionContext>
+								<Button
+									variant="outlined"
+									color="secondary"
+									startIcon={<CloudUploadIcon />}
+									onClick={handleOpenUploadModal}
+								>
+									Upload PDF Lista
+								</Button>
+							</PermissionContext>
+						</Stack>
+					</PermissionContext>
+				)}
 
-				{/* Modal para upload de PDF */}
-				<Dialog
-					open={openUploadModal}
-					onClose={handleCloseUploadModal}
-					aria-labelledby="upload-pdf-title"
-					maxWidth="md"
-					fullWidth
-				>
+				{/* Modal para upload de PDF - apenas no modo admin */}
+				{!isOrientadorView && (
+					<Dialog
+						open={openUploadModal}
+						onClose={handleCloseUploadModal}
+						aria-labelledby="upload-pdf-title"
+						maxWidth="md"
+						fullWidth
+					>
 					<DialogTitle id="upload-pdf-title">
 						Upload de Lista de Presença (PDF)
 					</DialogTitle>
@@ -1518,7 +1598,8 @@ export default function Orientacao() {
 							</Button>
 						)}
 					</DialogActions>
-				</Dialog>
+					</Dialog>
+				)}
 
 				{/* Modal de edição de orientação */}
 				<Dialog
@@ -1578,40 +1659,62 @@ export default function Orientacao() {
 								{/* Orientador e Etapa */}
 								<Grid container spacing={3}>
 									<Grid item xs={12}>
-										<FormControl
-											sx={{
-												minWidth: 400,
-												width: 720,
-												maxWidth: "100%",
-											}}
-										>
-											<InputLabel>Orientador</InputLabel>
-											<Select
-												value={editData.orientador}
-												onChange={(e) =>
-													handleEditDataChange(
-														"orientador",
-														e.target.value,
-													)
-												}
+										{isOrientadorView ? (
+											// No modo orientador, mostrar como campo de texto desabilitado
+											<TextField
+												fullWidth
 												label="Orientador"
-												displayEmpty
+												value={(() => {
+													const orientadorAtual = docentesDisponiveis.find(
+														(docente) => docente.codigo === editData.orientador
+													);
+													return orientadorAtual?.nome || usuario?.nome || "Orientador não definido";
+												})()}
+												disabled
+												sx={{
+													minWidth: 400,
+													width: 720,
+													maxWidth: "100%",
+												}}
+												helperText="Como orientador, você não pode alterar esta informação"
+											/>
+										) : (
+											// No modo admin/professor, permitir edição
+											<FormControl
+												sx={{
+													minWidth: 400,
+													width: 720,
+													maxWidth: "100%",
+												}}
 											>
-												<MenuItem value=""></MenuItem>
-												{docentesDisponiveis.map(
-													(docente) => (
-														<MenuItem
-															key={docente.codigo}
-															value={
-																docente.codigo
-															}
-														>
-															{docente.nome}
-														</MenuItem>
-													),
-												)}
-											</Select>
-										</FormControl>
+												<InputLabel>Orientador</InputLabel>
+												<Select
+													value={editData.orientador}
+													onChange={(e) =>
+														handleEditDataChange(
+															"orientador",
+															e.target.value,
+														)
+													}
+													label="Orientador"
+													displayEmpty
+												>
+													<MenuItem value=""></MenuItem>
+													{docentesDisponiveis.map(
+														(docente) => (
+															<MenuItem
+																key={docente.codigo}
+																value={
+																	docente.codigo
+																}
+															>
+																{docente.nome}
+															</MenuItem>
+														),
+													)}
+												</Select>
+											</FormControl>
+										)}
 									</Grid>
 									<Grid item xs={12}>
 										<FormControl fullWidth>
@@ -1627,8 +1730,11 @@ export default function Orientacao() {
 												label="Etapa"
 											>
 												{(() => {
+													// Usar a fase do TCC específico, não a fase do filtro
+													const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
+													const faseTcc = tccAtual?.fase;
 													const maxEtapa =
-														parseInt(fase) === 2
+														parseInt(faseTcc) === 2
 															? 9
 															: 6;
 													const etapas = [];
@@ -1948,7 +2054,10 @@ export default function Orientacao() {
 								/>
 
 								{/* Seminário de Andamento - apenas para fase 2 */}
-								{parseInt(fase) === 2 && (
+								{(() => {
+									const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
+									return parseInt(tccAtual?.fase) === 2;
+								})() && (
 									<TextField
 										fullWidth
 										label="Seminário de Andamento"

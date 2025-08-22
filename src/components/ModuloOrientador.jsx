@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Box, Typography, Tabs, Tab } from "@mui/material";
 import TemasTcc from "./TemasTcc";
 import ConvitesRecebidosOrientador from "./ConvitesRecebidosOrientador";
-import TrabalhosOrientador from "./TrabalhosOrientador";
+import Orientacao from "./Orientacao";
 import GerenciarDisponibilidadeBanca from "./GerenciarDisponibilidadeBanca";
 import AvaliarDefesasOrientador from "./AvaliarDefesasOrientador";
 import Dashboard from "./Dashboard";
@@ -62,7 +62,7 @@ export default function ModuloOrientador() {
 			</TabPanel>
 
 			<TabPanel value={tabValue} index={1}>
-				<TrabalhosOrientador />
+				<Orientacao isOrientadorView={true} />
 			</TabPanel>
 
 			<TabPanel value={tabValue} index={2}>
