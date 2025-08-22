@@ -94,6 +94,8 @@ export default function Orientacao({ isOrientadorView = false }) {
 	const [loadingAreas, setLoadingAreas] = useState(false);
 	const [defesasAtual, setDefesasAtual] = useState([]);
 	const [convitesBancaAtual, setConvitesBancaAtual] = useState([]);
+	const [convitesBancaFase1, setConvitesBancaFase1] = useState([]);
+	const [convitesBancaFase2, setConvitesBancaFase2] = useState([]);
 
 	// Helper function para retornar ano/semestre atual
 	function getAnoSemestreAtual() {
@@ -628,6 +630,8 @@ export default function Orientacao({ isOrientadorView = false }) {
 		setLoadingEdit(false);
 		setDefesasAtual([]);
 		setConvitesBancaAtual([]);
+		setConvitesBancaFase1([]);
+		setConvitesBancaFase2([]);
 	}
 
 	async function loadTccData(matricula) {
@@ -667,17 +671,28 @@ export default function Orientacao({ isOrientadorView = false }) {
 							params: { id_tcc: tcc.id },
 						},
 					);
-					const convitesBanca = (
+					const todosConvitesBanca = (
 						responseConvites.data?.convites ||
 						responseConvites.convites ||
 						[]
-					).filter(
-						(c) =>
-							c.orientacao === false &&
-							parseInt(c.fase) === parseInt(tcc.fase),
+					).filter((c) => c.orientacao === false);
+
+					// Separar convites por fase
+					const convitesFase1 = todosConvitesBanca.filter(
+						(c) => parseInt(c.fase) === 1,
+					);
+					const convitesFase2 = todosConvitesBanca.filter(
+						(c) => parseInt(c.fase) === 2,
 					);
 
-					setConvitesBancaAtual(convitesBanca);
+					// Convites da fase atual (para manter compatibilidade)
+					const convitesFaseAtual = todosConvitesBanca.filter(
+						(c) => parseInt(c.fase) === parseInt(tcc.fase),
+					);
+
+					setConvitesBancaAtual(convitesFaseAtual);
+					setConvitesBancaFase1(convitesFase1);
+					setConvitesBancaFase2(convitesFase2);
 
 					// Pegar os dois primeiros membros da banca
 					if (defesasFaseAtual.length > 0) {
@@ -696,6 +711,8 @@ export default function Orientacao({ isOrientadorView = false }) {
 					console.log("Erro ao carregar defesas ou convites:", error);
 					setDefesasAtual([]);
 					setConvitesBancaAtual([]);
+					setConvitesBancaFase1([]);
+					setConvitesBancaFase2([]);
 				}
 			}
 
@@ -752,7 +769,12 @@ export default function Orientacao({ isOrientadorView = false }) {
 					);
 
 					if (membroSubstituto) {
-						const conviteAntigo = convitesBancaAtual.find(
+						// Usar os convites da fase correta
+						const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
+						const faseAtual = parseInt(tccAtual?.fase);
+						const convitesCorretos = faseAtual === 2 ? convitesBancaFase2 : convitesBancaAtual;
+
+						const conviteAntigo = convitesCorretos.find(
 							(c) => c.codigo_docente === membroExistente,
 						);
 
@@ -768,12 +790,15 @@ export default function Orientacao({ isOrientadorView = false }) {
 
 			// Fazer chamada única para a API transacional
 			const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
+			const faseAtual = parseInt(tccAtual?.fase);
+			const convitesCorretos = faseAtual === 2 ? convitesBancaFase2 : convitesBancaAtual;
+
 			const payload = {
 				id_tcc: idTcc,
 				fase: parseInt(tccAtual?.fase || fase),
 				membros_novos: membrosNovos,
 				membros_existentes: membrosExistentes,
-				convites_banca_existentes: convitesBancaAtual,
+				convites_banca_existentes: convitesCorretos,
 				alteracoes: alteracoes,
 				orientador_codigo: editData.orientador, // Incluir código do orientador
 				data_hora_defesa: editData.dataHoraDefesa, // Incluir data e hora da defesa
@@ -802,8 +827,11 @@ export default function Orientacao({ isOrientadorView = false }) {
 
 			// Validação: se data da defesa foi selecionada, ambos os membros da banca devem estar selecionados
 			const etapaAtualSave = parseInt(editData.etapa);
-			const precisaBancaSave =
-				etapaAtualSave === 5 || etapaAtualSave === 7;
+			const tccAtualSave = trabalhosPorMatricula[selectedDicente.matricula];
+			const faseAtualSave = parseInt(tccAtualSave?.fase);
+						const edicaoHabilitadaSave = (etapaAtualSave === 5 && faseAtualSave === 1) ||
+										  (etapaAtualSave === 8 && faseAtualSave === 2);
+			const precisaBancaSave = edicaoHabilitadaSave;
 
 			if (precisaBancaSave && editData.dataHoraDefesa) {
 				if (!editData.membroBanca1 || !editData.membroBanca2) {
@@ -952,8 +980,10 @@ export default function Orientacao({ isOrientadorView = false }) {
 
 			// Gerenciar banca de defesa se estivermos nas etapas corretas
 			const etapaAtualBanca = parseInt(editData.etapa);
-			const precisaBancaBanca =
-				etapaAtualBanca === 5 || etapaAtualBanca === 7; // Etapas onde é necessário ter banca
+			const faseAtualBanca = parseInt(tcc?.fase);
+						const edicaoHabilitadaBanca = (etapaAtualBanca === 5 && faseAtualBanca === 1) ||
+										   (etapaAtualBanca === 8 && faseAtualBanca === 2);
+			const precisaBancaBanca = edicaoHabilitadaBanca; // Etapas onde é possível editar banca
 
 			if (precisaBancaBanca) {
 				await gerenciarBancaDefesa(tcc.id);
@@ -1085,7 +1115,8 @@ export default function Orientacao({ isOrientadorView = false }) {
 										? "Orientador definido"
 										: "Convite para orientação enviado";
 								}
-							} else if (etapa === 5 || etapa === 7) {
+							} else if (etapa === 5 || etapa === 7 ||
+									(etapa === 8 && parseInt(tcc?.fase) === 2)) {
 								const convitesBanca = Array.isArray(convites)
 									? convites.filter(
 											(c) => c.orientacao === false,
@@ -1759,9 +1790,23 @@ export default function Orientacao({ isOrientadorView = false }) {
 									</Grid>
 								</Grid>
 
-								{/* Banca de Defesa - apenas para etapas que necessitam banca */}
-								{(parseInt(editData.etapa) === 5 ||
-									parseInt(editData.etapa) === 7) && (
+																								{/* Banca de Defesa - exibir a partir da etapa 5 OU se houver histórico */}
+								{(() => {
+									const etapaAtual = parseInt(editData.etapa);
+									const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
+									const faseAtual = parseInt(tccAtual?.fase);
+
+									// Verificar se há histórico de convites de banca
+									const temHistoricoConvites = convitesBancaFase1.length > 0 ||
+																convitesBancaFase2.length > 0 ||
+																convitesBancaAtual.length > 0;
+
+									// Verificar se há histórico de defesas
+									const temHistoricoDefesas = defesasAtual.length > 0;
+
+									// Exibir se etapa >= 5 OU se houver histórico
+									return etapaAtual >= 5 || temHistoricoConvites || temHistoricoDefesas;
+								})() && (
 									<Paper
 										sx={{
 											p: 2,
@@ -1769,19 +1814,44 @@ export default function Orientacao({ isOrientadorView = false }) {
 										}}
 									>
 										<Typography variant="h6" gutterBottom>
-											Banca de Defesa
+											{(() => {
+												const etapaAtual = parseInt(editData.etapa);
+												return etapaAtual === 8 ? "Banca de Defesa de TCC" : "Banca de Defesa de Projeto";
+											})()}
 										</Typography>
 										<Typography
 											variant="body2"
 											color="text.secondary"
 											gutterBottom
 										>
-											Selecione 2 docentes para compor a
-											banca de defesa (além do orientador)
-											e defina a data/hora da defesa
+											{(() => {
+												const etapaAtual = parseInt(editData.etapa);
+												const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
+												const faseAtual = parseInt(tccAtual?.fase);
+												const tipoDefesa = etapaAtual === 8 ? "defesa de TCC" : "defesa de projeto";
+
+												// Determinar se a edição está habilitada
+												const edicaoHabilitada = (etapaAtual === 5 && faseAtual === 1) ||
+																		(etapaAtual === 8 && faseAtual === 2);
+
+												if (edicaoHabilitada) {
+													return `Selecione 2 docentes para compor a banca de ${tipoDefesa} (além do orientador) e defina a data/hora da defesa`;
+												} else {
+													return `Visualização do histórico da banca de ${tipoDefesa}. Campos de seleção disponíveis apenas na etapa ${faseAtual === 1 ? '5' : '8'}.`;
+												}
+											})()}
 										</Typography>
 
-										{/* Data e Hora da Defesa */}
+										{/* Data e Hora da Defesa - apenas para etapas 5 e 8 */}
+										{(() => {
+											const etapaAtual = parseInt(editData.etapa);
+											const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
+											const faseAtual = parseInt(tccAtual?.fase);
+											const mostrarCamposSelecao = (etapaAtual === 5 && faseAtual === 1) ||
+																		(etapaAtual === 8 && faseAtual === 2);
+
+											return mostrarCamposSelecao;
+										})() && (
 										<Box sx={{ mb: 3 }}>
 											<LocalizationProvider
 												dateAdapter={AdapterDateFns}
@@ -1792,23 +1862,43 @@ export default function Orientacao({ isOrientadorView = false }) {
 													value={
 														editData.dataHoraDefesa
 													}
-													onChange={(newValue) =>
-														handleEditDataChange(
-															"dataHoraDefesa",
-															newValue,
-														)
-													}
+													onChange={(newValue) => {
+														const etapaAtual = parseInt(editData.etapa);
+														const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
+														const faseAtual = parseInt(tccAtual?.fase);
+														const edicaoHabilitada = (etapaAtual === 5 && faseAtual === 1) ||
+																				(etapaAtual === 8 && faseAtual === 2);
+
+														if (edicaoHabilitada) {
+															handleEditDataChange("dataHoraDefesa", newValue);
+														}
+													}}
+													disabled={(() => {
+														const etapaAtual = parseInt(editData.etapa);
+														const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
+														const faseAtual = parseInt(tccAtual?.fase);
+														return !((etapaAtual === 5 && faseAtual === 1) || (etapaAtual === 8 && faseAtual === 2));
+													})()}
 													renderInput={(params) => (
 														<TextField
 															{...params}
 															fullWidth
-															helperText={
-																editData.dataHoraDefesa &&
-																(!editData.membroBanca1 ||
-																	!editData.membroBanca2)
+															helperText={(() => {
+																const etapaAtual = parseInt(editData.etapa);
+																const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
+																const faseAtual = parseInt(tccAtual?.fase);
+																const edicaoHabilitada = (etapaAtual === 5 && faseAtual === 1) ||
+																						(etapaAtual === 8 && faseAtual === 2);
+
+																if (!edicaoHabilitada) {
+																	return `Edição disponível apenas na etapa ${faseAtual === 1 ? '5' : '8'}`;
+																}
+
+																return editData.dataHoraDefesa &&
+																	(!editData.membroBanca1 || !editData.membroBanca2)
 																	? "⚠️ Selecione os 2 membros da banca para definir a data da defesa"
-																	: "Selecione a data e horário para a defesa"
-															}
+																	: "Selecione a data e horário para a defesa";
+															})()}
 															error={
 																editData.dataHoraDefesa &&
 																(!editData.membroBanca1 ||
@@ -1821,53 +1911,19 @@ export default function Orientacao({ isOrientadorView = false }) {
 												/>
 											</LocalizationProvider>
 										</Box>
-
-										{/* Informações sobre convites existentes */}
-										{convitesBancaAtual.length > 0 && (
-											<Box
-												sx={{
-													mb: 2,
-													p: 1,
-													bgcolor: "info.light",
-													borderRadius: 1,
-												}}
-											>
-												<Typography
-													variant="body2"
-													color="info.contrastText"
-												>
-													<strong>
-														Convites de banca
-														existentes:
-													</strong>
-												</Typography>
-												{convitesBancaAtual.map(
-													(convite, index) => (
-														<Typography
-															key={index}
-															variant="body2"
-															color="info.contrastText"
-														>
-															•{" "}
-															{docentesDisponiveis.find(
-																(d) =>
-																	d.codigo ===
-																	convite.codigo_docente,
-															)?.nome ||
-																convite.codigo_docente}{" "}
-															-
-															{convite.aceito
-																? " Aceito"
-																: " Pendente"}
-															{convite.aceito &&
-																` (${new Date(
-																	convite.data_feedback,
-																).toLocaleDateString()})`}
-														</Typography>
-													),
-												)}
-											</Box>
 										)}
+
+
+										{/* Campos de seleção de membros da banca - apenas para etapas 5 e 8 */}
+										{(() => {
+											const etapaAtual = parseInt(editData.etapa);
+											const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
+											const faseAtual = parseInt(tccAtual?.fase);
+											const mostrarCamposSelecao = (etapaAtual === 5 && faseAtual === 1) ||
+																		(etapaAtual === 8 && faseAtual === 2);
+
+											return mostrarCamposSelecao;
+										})() && (
 										<Grid container spacing={3}>
 											<Grid item xs={12} md={6}>
 												<FormControl
@@ -1879,26 +1935,38 @@ export default function Orientacao({ isOrientadorView = false }) {
 													}
 												>
 													<InputLabel>
-														1º Membro da Banca
-														{editData.dataHoraDefesa
-															? " *"
-															: ""}
+														{(() => {
+															const etapaAtual = parseInt(editData.etapa);
+															const tipoDefesa = etapaAtual === 8 ? "TCC" : "Projeto";
+															return `1º Membro da Banca de ${tipoDefesa}${editData.dataHoraDefesa ? " *" : ""}`;
+														})()}
 													</InputLabel>
 													<Select
 														value={
 															editData.membroBanca1
 														}
-														onChange={(e) =>
-															handleEditDataChange(
-																"membroBanca1",
-																e.target.value,
-															)
-														}
-														label={`1º Membro da Banca${
-															editData.dataHoraDefesa
-																? " *"
-																: ""
-														}`}
+														onChange={(e) => {
+															const etapaAtual = parseInt(editData.etapa);
+															const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
+															const faseAtual = parseInt(tccAtual?.fase);
+															const edicaoHabilitada = (etapaAtual === 5 && faseAtual === 1) ||
+																					(etapaAtual === 8 && faseAtual === 2);
+
+															if (edicaoHabilitada) {
+																handleEditDataChange("membroBanca1", e.target.value);
+															}
+														}}
+														disabled={(() => {
+															const etapaAtual = parseInt(editData.etapa);
+															const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
+															const faseAtual = parseInt(tccAtual?.fase);
+															return !((etapaAtual === 5 && faseAtual === 1) || (etapaAtual === 8 && faseAtual === 2));
+														})()}
+														label={(() => {
+															const etapaAtual = parseInt(editData.etapa);
+															const tipoDefesa = etapaAtual === 8 ? "TCC" : "Projeto";
+															return `1º Membro da Banca de ${tipoDefesa}${editData.dataHoraDefesa ? " *" : ""}`;
+														})()}
 														displayEmpty
 													>
 														<MenuItem value=""></MenuItem>
@@ -1945,26 +2013,38 @@ export default function Orientacao({ isOrientadorView = false }) {
 													}
 												>
 													<InputLabel>
-														2º Membro da Banca
-														{editData.dataHoraDefesa
-															? " *"
-															: ""}
+														{(() => {
+															const etapaAtual = parseInt(editData.etapa);
+															const tipoDefesa = etapaAtual === 8 ? "TCC" : "Projeto";
+															return `2º Membro da Banca de ${tipoDefesa}${editData.dataHoraDefesa ? " *" : ""}`;
+														})()}
 													</InputLabel>
 													<Select
 														value={
 															editData.membroBanca2
 														}
-														onChange={(e) =>
-															handleEditDataChange(
-																"membroBanca2",
-																e.target.value,
-															)
-														}
-														label={`2º Membro da Banca${
-															editData.dataHoraDefesa
-																? " *"
-																: ""
-														}`}
+														onChange={(e) => {
+															const etapaAtual = parseInt(editData.etapa);
+															const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
+															const faseAtual = parseInt(tccAtual?.fase);
+															const edicaoHabilitada = (etapaAtual === 5 && faseAtual === 1) ||
+																					(etapaAtual === 8 && faseAtual === 2);
+
+															if (edicaoHabilitada) {
+																handleEditDataChange("membroBanca2", e.target.value);
+															}
+														}}
+														disabled={(() => {
+															const etapaAtual = parseInt(editData.etapa);
+															const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
+															const faseAtual = parseInt(tccAtual?.fase);
+															return !((etapaAtual === 5 && faseAtual === 1) || (etapaAtual === 8 && faseAtual === 2));
+														})()}
+														label={(() => {
+															const etapaAtual = parseInt(editData.etapa);
+															const tipoDefesa = etapaAtual === 8 ? "TCC" : "Projeto";
+															return `2º Membro da Banca de ${tipoDefesa}${editData.dataHoraDefesa ? " *" : ""}`;
+														})()}
 														displayEmpty
 													>
 														<MenuItem value=""></MenuItem>
@@ -2002,6 +2082,156 @@ export default function Orientacao({ isOrientadorView = false }) {
 												</FormControl>
 											</Grid>
 										</Grid>
+										)}
+
+										{/* Informações sobre convites existentes por fase */}
+										{(() => {
+											const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
+											const faseAtual = parseInt(tccAtual?.fase);
+											const etapaAtual = parseInt(editData.etapa);
+
+											return (
+												<>
+													{/* Convites de Fase 1 - sempre somente leitura */}
+													{convitesBancaFase1.length > 0 && (
+														<Box
+															sx={{
+																mb: 2,
+																p: 1,
+																bgcolor: "grey.100",
+																borderRadius: 1,
+															}}
+														>
+															<Typography
+																variant="body2"
+																color="text.secondary"
+															>
+																<strong>
+																	Banca de Defesa de Projeto (histórico):
+																</strong>
+															</Typography>
+															{convitesBancaFase1.map(
+																(convite, index) => (
+																	<Typography
+																		key={index}
+																		variant="body2"
+																		color="text.secondary"
+																	>
+																		•{" "}
+																		{docentesDisponiveis.find(
+																			(d) =>
+																				d.codigo ===
+																				convite.codigo_docente,
+																		)?.nome ||
+																			convite.codigo_docente}{" "}
+																		-
+																		{convite.aceito
+																			? " Aceito"
+																			: " Pendente"}
+																		{convite.aceito &&
+																			` (${new Date(
+																				convite.data_feedback,
+																			).toLocaleDateString()})`}
+																	</Typography>
+																),
+															)}
+														</Box>
+													)}
+
+													{/* Convites de Fase 2 - editáveis quando etapa 8 */}
+													{faseAtual === 2 && convitesBancaFase2.length > 0 && (
+														<Box
+															sx={{
+																mb: 2,
+																p: 1,
+																bgcolor: etapaAtual === 8 ? "info.light" : "grey.100",
+																borderRadius: 1,
+															}}
+														>
+															<Typography
+																variant="body2"
+																color={etapaAtual === 8 ? "info.contrastText" : "text.secondary"}
+															>
+																<strong>
+																	{etapaAtual === 8 ? "Banca de Defesa de TCC:" : "Banca de Defesa de TCC (histórico):"}
+																</strong>
+															</Typography>
+															{convitesBancaFase2.map(
+																(convite, index) => (
+																	<Typography
+																		key={index}
+																		variant="body2"
+																		color={etapaAtual === 8 ? "info.contrastText" : "text.secondary"}
+																	>
+																		•{" "}
+																		{docentesDisponiveis.find(
+																			(d) =>
+																				d.codigo ===
+																				convite.codigo_docente,
+																		)?.nome ||
+																			convite.codigo_docente}{" "}
+																		-
+																		{convite.aceito
+																			? " Aceito"
+																			: " Pendente"}
+																		{convite.aceito &&
+																			` (${new Date(
+																				convite.data_feedback,
+																			).toLocaleDateString()})`}
+																	</Typography>
+																),
+															)}
+														</Box>
+													)}
+
+													{/* Convites da fase atual (para compatibilidade) */}
+													{faseAtual === 1 && convitesBancaAtual.length > 0 && (
+														<Box
+															sx={{
+																mb: 2,
+																p: 1,
+																bgcolor: "info.light",
+																borderRadius: 1,
+															}}
+														>
+															<Typography
+																variant="body2"
+																color="info.contrastText"
+															>
+																<strong>
+																	Banca de Defesa de Projeto:
+																</strong>
+															</Typography>
+															{convitesBancaAtual.map(
+																(convite, index) => (
+																	<Typography
+																		key={index}
+																		variant="body2"
+																		color="info.contrastText"
+																	>
+																		•{" "}
+																		{docentesDisponiveis.find(
+																			(d) =>
+																				d.codigo ===
+																				convite.codigo_docente,
+																		)?.nome ||
+																			convite.codigo_docente}{" "}
+																		-
+																		{convite.aceito
+																			? " Aceito"
+																			: " Pendente"}
+																		{convite.aceito &&
+																			` (${new Date(
+																				convite.data_feedback,
+																			).toLocaleDateString()})`}
+																	</Typography>
+																),
+															)}
+														</Box>
+													)}
+												</>
+											);
+										})()}
 									</Paper>
 								)}
 
