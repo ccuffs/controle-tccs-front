@@ -5,6 +5,7 @@ import { Permissoes } from "../enums/permissoes";
 import permissoesService from "../services/permissoesService";
 import { useAuth } from "../contexts/AuthContext";
 import FiltrosPesquisa from "./FiltrosPesquisa";
+import SelecionarHorarioBanca from "./SelecionarHorarioBanca";
 
 import {
 	Alert,
@@ -89,6 +90,7 @@ export default function Orientacao({ isOrientadorView = false }) {
 		membroBanca2: "",
 		dataHoraDefesa: null,
 	});
+	const [mostrarSeletorHorario, setMostrarSeletorHorario] = useState(false);
 	const [loadingEdit, setLoadingEdit] = useState(false);
 	const [areasTcc, setAreasTcc] = useState([]);
 	const [loadingAreas, setLoadingAreas] = useState(false);
@@ -96,6 +98,7 @@ export default function Orientacao({ isOrientadorView = false }) {
 	const [convitesBancaAtual, setConvitesBancaAtual] = useState([]);
 	const [convitesBancaFase1, setConvitesBancaFase1] = useState([]);
 	const [convitesBancaFase2, setConvitesBancaFase2] = useState([]);
+	const [selectedHorarioBanca, setSelectedHorarioBanca] = useState(null);
 
 	// Helper function para retornar ano/semestre atual
 	function getAnoSemestreAtual() {
@@ -169,7 +172,15 @@ export default function Orientacao({ isOrientadorView = false }) {
 		} else {
 			setTrabalhosPorMatricula({});
 		}
-	}, [cursoSelecionado, ano, semestre, fase, isProfessor, isAdmin, isOrientadorView]); // eslint-disable-line react-hooks/exhaustive-deps
+	}, [
+		cursoSelecionado,
+		ano,
+		semestre,
+		fase,
+		isProfessor,
+		isAdmin,
+		isOrientadorView,
+	]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	useEffect(() => {
 		// Busca orientadores do curso selecionado
@@ -313,11 +324,13 @@ export default function Orientacao({ isOrientadorView = false }) {
 				codigo_docente: codigoDocente,
 				orientador: true,
 			};
-			const response = await axiosInstance.get("/orientacoes", { params });
+			const response = await axiosInstance.get("/orientacoes", {
+				params,
+			});
 
 			// Filtrar orientações por curso, ano, semestre e fase
-			const orientacoesFiltradas = (response.orientacoes || [])
-				.filter((o) => {
+			const orientacoesFiltradas = (response.orientacoes || []).filter(
+				(o) => {
 					const tcc = o.TrabalhoConclusao;
 					if (!tcc) return false;
 
@@ -327,7 +340,8 @@ export default function Orientacao({ isOrientadorView = false }) {
 						tcc.semestre === parseInt(semestre) &&
 						(fase === "" || tcc.fase === parseInt(fase))
 					);
-				});
+				},
+			);
 
 			// Extrair dicentes das orientações
 			const dicentes = orientacoesFiltradas
@@ -471,7 +485,7 @@ export default function Orientacao({ isOrientadorView = false }) {
 					codigo:
 						orientacao.codigo_docente || orientacao.codigo || "",
 					nome: orientacao.Docente?.nome || "Orientador",
-			  }
+				}
 			: null;
 	}
 
@@ -632,6 +646,8 @@ export default function Orientacao({ isOrientadorView = false }) {
 		setConvitesBancaAtual([]);
 		setConvitesBancaFase1([]);
 		setConvitesBancaFase2([]);
+		setSelectedHorarioBanca(null);
+		setMostrarSeletorHorario(false);
 	}
 
 	async function loadTccData(matricula) {
@@ -727,9 +743,11 @@ export default function Orientacao({ isOrientadorView = false }) {
 				etapa: tcc?.etapa || 0,
 				membroBanca1,
 				membroBanca2,
-				dataHoraDefesa,
-			});
-		} catch (error) {
+							dataHoraDefesa,
+		});
+		setSelectedHorarioBanca(null);
+		setMostrarSeletorHorario(false);
+	} catch (error) {
 			console.log("Erro ao carregar dados do TCC:", error);
 		} finally {
 			setLoadingEdit(false);
@@ -741,6 +759,12 @@ export default function Orientacao({ isOrientadorView = false }) {
 			...prev,
 			[field]: value,
 		}));
+
+		// Se alterar orientador ou membros da banca, resetar seleção de horário
+		if (field === "orientador" || field === "membroBanca1" || field === "membroBanca2") {
+			setSelectedHorarioBanca(null);
+			setMostrarSeletorHorario(false);
+		}
 	}
 
 	async function gerenciarBancaDefesa(idTcc) {
@@ -770,9 +794,13 @@ export default function Orientacao({ isOrientadorView = false }) {
 
 					if (membroSubstituto) {
 						// Usar os convites da fase correta
-						const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
+						const tccAtual =
+							trabalhosPorMatricula[selectedDicente?.matricula];
 						const faseAtual = parseInt(tccAtual?.fase);
-						const convitesCorretos = faseAtual === 2 ? convitesBancaFase2 : convitesBancaAtual;
+						const convitesCorretos =
+							faseAtual === 2
+								? convitesBancaFase2
+								: convitesBancaAtual;
 
 						const conviteAntigo = convitesCorretos.find(
 							(c) => c.codigo_docente === membroExistente,
@@ -791,7 +819,8 @@ export default function Orientacao({ isOrientadorView = false }) {
 			// Fazer chamada única para a API transacional
 			const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
 			const faseAtual = parseInt(tccAtual?.fase);
-			const convitesCorretos = faseAtual === 2 ? convitesBancaFase2 : convitesBancaAtual;
+			const convitesCorretos =
+				faseAtual === 2 ? convitesBancaFase2 : convitesBancaAtual;
 
 			const payload = {
 				id_tcc: idTcc,
@@ -808,6 +837,20 @@ export default function Orientacao({ isOrientadorView = false }) {
 				"/defesas/gerenciar-banca",
 				payload,
 			);
+
+			// Se há horário selecionado, agendar a defesa (fazer reserva do horário)
+			if (selectedHorarioBanca && editData.orientador && editData.membroBanca1 && editData.membroBanca2) {
+				const agendamentoPayload = {
+					id_tcc: idTcc,
+					fase: parseInt(tccAtual?.fase || fase),
+					data: selectedHorarioBanca.data,
+					hora: selectedHorarioBanca.hora,
+					codigo_orientador: editData.orientador,
+					membros_banca: [editData.membroBanca1, editData.membroBanca2]
+				};
+
+				await axiosInstance.post("/defesas/agendar", agendamentoPayload);
+			}
 		} catch (error) {
 			console.log("Erro ao gerenciar banca de defesa:", error);
 			throw new Error("Falha ao atualizar banca de defesa e convites");
@@ -827,10 +870,12 @@ export default function Orientacao({ isOrientadorView = false }) {
 
 			// Validação: se data da defesa foi selecionada, ambos os membros da banca devem estar selecionados
 			const etapaAtualSave = parseInt(editData.etapa);
-			const tccAtualSave = trabalhosPorMatricula[selectedDicente.matricula];
+			const tccAtualSave =
+				trabalhosPorMatricula[selectedDicente.matricula];
 			const faseAtualSave = parseInt(tccAtualSave?.fase);
-						const edicaoHabilitadaSave = (etapaAtualSave === 5 && faseAtualSave === 1) ||
-										  (etapaAtualSave === 8 && faseAtualSave === 2);
+			const edicaoHabilitadaSave =
+				(etapaAtualSave === 5 && faseAtualSave === 1) ||
+				(etapaAtualSave === 8 && faseAtualSave === 2);
 			const precisaBancaSave = edicaoHabilitadaSave;
 
 			if (precisaBancaSave && editData.dataHoraDefesa) {
@@ -870,7 +915,10 @@ export default function Orientacao({ isOrientadorView = false }) {
 			const codigoOrientadorAtual = orientadorAtual?.codigo || "";
 
 			// No modo orientador, não permitir alteração do orientador
-			if (!isOrientadorView && editData.orientador !== codigoOrientadorAtual) {
+			if (
+				!isOrientadorView &&
+				editData.orientador !== codigoOrientadorAtual
+			) {
 				// Buscar convites de orientação existentes para este TCC
 				const responseConvites = await axiosInstance.get("/convites", {
 					params: { id_tcc: tcc.id },
@@ -906,7 +954,7 @@ export default function Orientacao({ isOrientadorView = false }) {
 						? convitesOrientacao.find(
 								(c) =>
 									c.codigo_docente === codigoOrientadorAtual,
-						  )
+							)
 						: null;
 
 					if (!codigoOrientadorAtual) {
@@ -981,8 +1029,9 @@ export default function Orientacao({ isOrientadorView = false }) {
 			// Gerenciar banca de defesa se estivermos nas etapas corretas
 			const etapaAtualBanca = parseInt(editData.etapa);
 			const faseAtualBanca = parseInt(tcc?.fase);
-						const edicaoHabilitadaBanca = (etapaAtualBanca === 5 && faseAtualBanca === 1) ||
-										   (etapaAtualBanca === 8 && faseAtualBanca === 2);
+			const edicaoHabilitadaBanca =
+				(etapaAtualBanca === 5 && faseAtualBanca === 1) ||
+				(etapaAtualBanca === 8 && faseAtualBanca === 2);
 			const precisaBancaBanca = edicaoHabilitadaBanca; // Etapas onde é possível editar banca
 
 			if (precisaBancaBanca) {
@@ -1095,7 +1144,7 @@ export default function Orientacao({ isOrientadorView = false }) {
 								)
 									? convites.some(
 											(c) => c.orientacao === true,
-									  )
+										)
 									: false;
 								const temOrientadorDefinido =
 									!!getOrientadorAtual(params.row.matricula);
@@ -1115,12 +1164,15 @@ export default function Orientacao({ isOrientadorView = false }) {
 										? "Orientador definido"
 										: "Convite para orientação enviado";
 								}
-							} else if (etapa === 5 || etapa === 7 ||
-									(etapa === 8 && parseInt(tcc?.fase) === 2)) {
+							} else if (
+								etapa === 5 ||
+								etapa === 7 ||
+								(etapa === 8 && parseInt(tcc?.fase) === 2)
+							) {
 								const convitesBanca = Array.isArray(convites)
 									? convites.filter(
 											(c) => c.orientacao === false,
-									  )
+										)
 									: [];
 								// Considera a fase corrente do TCC para validar convites corretos
 								const faseAtualTcc =
@@ -1132,8 +1184,9 @@ export default function Orientacao({ isOrientadorView = false }) {
 										faseAtualTcc == null
 											? true
 											: fase
-											? parseInt(c.fase) === faseAtualTcc
-											: true, // Se fase não estiver filtrada, aceita qualquer fase
+												? parseInt(c.fase) ===
+													faseAtualTcc
+												: true, // Se fase não estiver filtrada, aceita qualquer fase
 								);
 								if (!temConviteBancaFase) {
 									showWarn = true;
@@ -1161,7 +1214,7 @@ export default function Orientacao({ isOrientadorView = false }) {
 								const convitesBanca = Array.isArray(convites)
 									? convites.filter(
 											(c) => c.orientacao === false,
-									  )
+										)
 									: [];
 								const faseAtualTcc =
 									tcc?.fase != null
@@ -1172,8 +1225,9 @@ export default function Orientacao({ isOrientadorView = false }) {
 										faseAtualTcc == null
 											? true
 											: fase
-											? parseInt(c.fase) === faseAtualTcc
-											: true, // Se fase não estiver filtrada, aceita qualquer fase
+												? parseInt(c.fase) ===
+													faseAtualTcc
+												: true, // Se fase não estiver filtrada, aceita qualquer fase
 								);
 								if (temConviteBancaFase) {
 									showSuccess = true;
@@ -1190,7 +1244,7 @@ export default function Orientacao({ isOrientadorView = false }) {
 											fase
 												? parseInt(d.fase) === faseAtual
 												: true, // Se fase não estiver filtrada, aceita todas as defesas
-								  )
+									)
 								: [];
 							const notas = defesasFase
 								.map((d) => d.avaliacao)
@@ -1198,7 +1252,7 @@ export default function Orientacao({ isOrientadorView = false }) {
 							const media =
 								notas.length > 0
 									? notas.reduce((a, b) => a + Number(b), 0) /
-									  notas.length
+										notas.length
 									: null;
 
 							return (
@@ -1246,7 +1300,7 @@ export default function Orientacao({ isOrientadorView = false }) {
 							);
 						},
 					},
-			  ]
+				]
 			: []),
 	];
 
@@ -1382,253 +1436,276 @@ export default function Orientacao({ isOrientadorView = false }) {
 						maxWidth="md"
 						fullWidth
 					>
-					<DialogTitle id="upload-pdf-title">
-						Upload de Lista de Presença (PDF)
-					</DialogTitle>
-					<DialogContent>
-						<Stack spacing={3} sx={{ mt: 1 }}>
-							<Typography variant="body2" color="text.secondary">
-								Selecione um arquivo PDF de lista de presença
-								para importar dicentes automaticamente. O
-								arquivo deve conter dados no formato: NOME
-								seguido da MATRÍCULA. Os dicentes serão
-								vinculados ao curso, ano/semestre e fase
-								selecionados abaixo.
-							</Typography>
-
-							{/* Filtros para Curso, Ano/Semestre e Fase */}
-							<FiltrosPesquisa
-								cursoSelecionado={
-									modalCurso ? modalCurso.id : ""
-								}
-								setCursoSelecionado={(valor) => {
-									const curso = cursos.find(
-										(c) => c.id === valor,
-									);
-									setModalCurso(curso || null);
-								}}
-								ano={modalAno}
-								setAno={setModalAno}
-								semestre={modalSemestre}
-								setSemestre={setModalSemestre}
-								fase={modalFase}
-								setFase={setModalFase}
-								cursos={cursos}
-								loading={loadingCursos || loadingOfertasTcc}
-								anosDisponiveis={anosUnicos}
-								semestresDisponiveis={semestresUnicos}
-								fasesDisponiveis={fasesUnicas}
-								habilitarFiltroTodasFases={false}
-								habilitarFiltroOrientacao={false}
-							/>
-
-							<Box>
-								<input
-									accept="application/pdf"
-									style={{ display: "none" }}
-									id="raised-button-file"
-									type="file"
-									onChange={handleFileChange}
-								/>
-								<label htmlFor="raised-button-file">
-									<Button
-										variant="outlined"
-										component="span"
-										startIcon={<CloudUploadIcon />}
-										fullWidth
-									>
-										Selecionar Arquivo PDF
-									</Button>
-								</label>
-							</Box>
-
-							{uploadFile && (
-								<Paper
-									sx={{ p: 2, bgcolor: "background.default" }}
+						<DialogTitle id="upload-pdf-title">
+							Upload de Lista de Presença (PDF)
+						</DialogTitle>
+						<DialogContent>
+							<Stack spacing={3} sx={{ mt: 1 }}>
+								<Typography
+									variant="body2"
+									color="text.secondary"
 								>
-									<Typography variant="body2">
-										<strong>Arquivo selecionado:</strong>{" "}
-										{uploadFile.name}
-									</Typography>
-									<Typography variant="body2">
-										<strong>Tamanho:</strong>{" "}
-										{(
-											uploadFile.size /
-											1024 /
-											1024
-										).toFixed(2)}{" "}
-										MB
-									</Typography>
-								</Paper>
-							)}
+									Selecione um arquivo PDF de lista de
+									presença para importar dicentes
+									automaticamente. O arquivo deve conter dados
+									no formato: NOME seguido da MATRÍCULA. Os
+									dicentes serão vinculados ao curso,
+									ano/semestre e fase selecionados abaixo.
+								</Typography>
 
-							{uploading && (
-								<Box>
-									<Typography variant="body2" sx={{ mb: 1 }}>
-										Processando PDF...
-									</Typography>
-									<LinearProgress />
-								</Box>
-							)}
-
-							{uploadResults && (
-								<Paper
-									sx={{
-										p: 2,
-										bgcolor: "success.light",
-										color: "success.contrastText",
+								{/* Filtros para Curso, Ano/Semestre e Fase */}
+								<FiltrosPesquisa
+									cursoSelecionado={
+										modalCurso ? modalCurso.id : ""
+									}
+									setCursoSelecionado={(valor) => {
+										const curso = cursos.find(
+											(c) => c.id === valor,
+										);
+										setModalCurso(curso || null);
 									}}
-								>
-									<Typography variant="h6" gutterBottom>
-										Resultados do Processamento
-									</Typography>
-									<Stack
-										direction="row"
-										spacing={1}
-										sx={{ mb: 2 }}
-									>
-										<Chip
-											label={`Total: ${uploadResults.totalEncontrados}`}
-											color="default"
-											size="small"
-										/>
-										<Chip
-											label={`Sucessos: ${uploadResults.sucessos}`}
-											color="success"
-											size="small"
-										/>
-										<Chip
-											label={`Erros: ${uploadResults.erros}`}
-											color="error"
-											size="small"
-										/>
-									</Stack>
+									ano={modalAno}
+									setAno={setModalAno}
+									semestre={modalSemestre}
+									setSemestre={setModalSemestre}
+									fase={modalFase}
+									setFase={setModalFase}
+									cursos={cursos}
+									loading={loadingCursos || loadingOfertasTcc}
+									anosDisponiveis={anosUnicos}
+									semestresDisponiveis={semestresUnicos}
+									fasesDisponiveis={fasesUnicas}
+									habilitarFiltroTodasFases={false}
+									habilitarFiltroOrientacao={false}
+								/>
 
-									{uploadResults.detalhes &&
-										uploadResults.detalhes.length > 0 && (
-											<Box
-												sx={{
-													maxHeight: 200,
-													overflow: "auto",
-												}}
-											>
-												{uploadResults.detalhes
-													.slice(0, 10)
-													.map((detalhe, index) => (
-														<Box
-															key={index}
-															sx={{
-																mb: 0.5,
-																display: "flex",
-																alignItems:
-																	"center",
-																gap: 1,
-															}}
+								<Box>
+									<input
+										accept="application/pdf"
+										style={{ display: "none" }}
+										id="raised-button-file"
+										type="file"
+										onChange={handleFileChange}
+									/>
+									<label htmlFor="raised-button-file">
+										<Button
+											variant="outlined"
+											component="span"
+											startIcon={<CloudUploadIcon />}
+											fullWidth
+										>
+											Selecionar Arquivo PDF
+										</Button>
+									</label>
+								</Box>
+
+								{uploadFile && (
+									<Paper
+										sx={{
+											p: 2,
+											bgcolor: "background.default",
+										}}
+									>
+										<Typography variant="body2">
+											<strong>
+												Arquivo selecionado:
+											</strong>{" "}
+											{uploadFile.name}
+										</Typography>
+										<Typography variant="body2">
+											<strong>Tamanho:</strong>{" "}
+											{(
+												uploadFile.size /
+												1024 /
+												1024
+											).toFixed(2)}{" "}
+											MB
+										</Typography>
+									</Paper>
+								)}
+
+								{uploading && (
+									<Box>
+										<Typography
+											variant="body2"
+											sx={{ mb: 1 }}
+										>
+											Processando PDF...
+										</Typography>
+										<LinearProgress />
+									</Box>
+								)}
+
+								{uploadResults && (
+									<Paper
+										sx={{
+											p: 2,
+											bgcolor: "success.light",
+											color: "success.contrastText",
+										}}
+									>
+										<Typography variant="h6" gutterBottom>
+											Resultados do Processamento
+										</Typography>
+										<Stack
+											direction="row"
+											spacing={1}
+											sx={{ mb: 2 }}
+										>
+											<Chip
+												label={`Total: ${uploadResults.totalEncontrados}`}
+												color="default"
+												size="small"
+											/>
+											<Chip
+												label={`Sucessos: ${uploadResults.sucessos}`}
+												color="success"
+												size="small"
+											/>
+											<Chip
+												label={`Erros: ${uploadResults.erros}`}
+												color="error"
+												size="small"
+											/>
+										</Stack>
+
+										{uploadResults.detalhes &&
+											uploadResults.detalhes.length >
+												0 && (
+												<Box
+													sx={{
+														maxHeight: 200,
+														overflow: "auto",
+													}}
+												>
+													{uploadResults.detalhes
+														.slice(0, 10)
+														.map(
+															(
+																detalhe,
+																index,
+															) => (
+																<Box
+																	key={index}
+																	sx={{
+																		mb: 0.5,
+																		display:
+																			"flex",
+																		alignItems:
+																			"center",
+																		gap: 1,
+																	}}
+																>
+																	<Typography
+																		variant="body2"
+																		component="span"
+																	>
+																		<strong>
+																			{
+																				detalhe.matricula
+																			}
+																		</strong>{" "}
+																		-{" "}
+																		{
+																			detalhe.nome
+																		}
+																		:
+																	</Typography>
+																	<Chip
+																		label={
+																			detalhe.status ===
+																			"dicente_e_orientacao_inseridos"
+																				? "Novo dicente + orientação"
+																				: detalhe.status ===
+																					  "orientacao_inserida"
+																					? "Orientação criada"
+																					: detalhe.status ===
+																						  "dicente_inserido_orientacao_ja_existe"
+																						? "Novo dicente (orientação já existe)"
+																						: detalhe.status ===
+																							  "orientacao_ja_existe"
+																							? "Orientação já existe"
+																							: detalhe.status ===
+																								  "dicente_ja_existe"
+																								? "Dicente já existe"
+																								: detalhe.status ===
+																									  "inserido"
+																									? "Inserido"
+																									: detalhe.status ===
+																										  "já_existe"
+																										? "Já existe"
+																										: detalhe.status
+																		}
+																		size="small"
+																		color={
+																			detalhe.status ===
+																			"dicente_e_orientacao_inseridos"
+																				? "success"
+																				: detalhe.status ===
+																					  "orientacao_inserida"
+																					? "success"
+																					: detalhe.status ===
+																						  "dicente_inserido_orientacao_ja_existe"
+																						? "info"
+																						: detalhe.status ===
+																							  "orientacao_ja_existe"
+																							? "warning"
+																							: detalhe.status ===
+																								  "dicente_ja_existe"
+																								? "warning"
+																								: detalhe.status ===
+																									  "inserido"
+																									? "success"
+																									: detalhe.status ===
+																										  "já_existe"
+																										? "warning"
+																										: "error"
+																		}
+																	/>
+																</Box>
+															),
+														)}
+													{uploadResults.detalhes
+														.length > 10 && (
+														<Typography
+															variant="body2"
+															color="text.secondary"
 														>
-															<Typography
-																variant="body2"
-																component="span"
-															>
-																<strong>
-																	{
-																		detalhe.matricula
-																	}
-																</strong>{" "}
-																- {detalhe.nome}
-																:
-															</Typography>
-															<Chip
-																label={
-																	detalhe.status ===
-																	"dicente_e_orientacao_inseridos"
-																		? "Novo dicente + orientação"
-																		: detalhe.status ===
-																		  "orientacao_inserida"
-																		? "Orientação criada"
-																		: detalhe.status ===
-																		  "dicente_inserido_orientacao_ja_existe"
-																		? "Novo dicente (orientação já existe)"
-																		: detalhe.status ===
-																		  "orientacao_ja_existe"
-																		? "Orientação já existe"
-																		: detalhe.status ===
-																		  "dicente_ja_existe"
-																		? "Dicente já existe"
-																		: detalhe.status ===
-																		  "inserido"
-																		? "Inserido"
-																		: detalhe.status ===
-																		  "já_existe"
-																		? "Já existe"
-																		: detalhe.status
-																}
-																size="small"
-																color={
-																	detalhe.status ===
-																	"dicente_e_orientacao_inseridos"
-																		? "success"
-																		: detalhe.status ===
-																		  "orientacao_inserida"
-																		? "success"
-																		: detalhe.status ===
-																		  "dicente_inserido_orientacao_ja_existe"
-																		? "info"
-																		: detalhe.status ===
-																		  "orientacao_ja_existe"
-																		? "warning"
-																		: detalhe.status ===
-																		  "dicente_ja_existe"
-																		? "warning"
-																		: detalhe.status ===
-																		  "inserido"
-																		? "success"
-																		: detalhe.status ===
-																		  "já_existe"
-																		? "warning"
-																		: "error"
-																}
-															/>
-														</Box>
-													))}
-												{uploadResults.detalhes.length >
-													10 && (
-													<Typography
-														variant="body2"
-														color="text.secondary"
-													>
-														... e mais{" "}
-														{uploadResults.detalhes
-															.length - 10}{" "}
-														registros
-													</Typography>
-												)}
-											</Box>
-										)}
-								</Paper>
-							)}
-						</Stack>
-					</DialogContent>
-					<DialogActions>
-						<Button onClick={handleCloseUploadModal}>
-							{uploadResults ? "Fechar" : "Cancelar"}
-						</Button>
-						{uploadFile && !uploading && !uploadResults && (
-							<Button
-								onClick={handleUploadPDF}
-								variant="contained"
-								color="primary"
-								startIcon={<CloudUploadIcon />}
-								disabled={
-									!modalCurso ||
-									!modalAno ||
-									!modalSemestre ||
-									!modalFase
-								}
-							>
-								Processar PDF
+															... e mais{" "}
+															{uploadResults
+																.detalhes
+																.length -
+																10}{" "}
+															registros
+														</Typography>
+													)}
+												</Box>
+											)}
+									</Paper>
+								)}
+							</Stack>
+						</DialogContent>
+						<DialogActions>
+							<Button onClick={handleCloseUploadModal}>
+								{uploadResults ? "Fechar" : "Cancelar"}
 							</Button>
-						)}
-					</DialogActions>
+							{uploadFile && !uploading && !uploadResults && (
+								<Button
+									onClick={handleUploadPDF}
+									variant="contained"
+									color="primary"
+									startIcon={<CloudUploadIcon />}
+									disabled={
+										!modalCurso ||
+										!modalAno ||
+										!modalSemestre ||
+										!modalFase
+									}
+								>
+									Processar PDF
+								</Button>
+							)}
+						</DialogActions>
 					</Dialog>
 				)}
 
@@ -1696,10 +1773,17 @@ export default function Orientacao({ isOrientadorView = false }) {
 												fullWidth
 												label="Orientador"
 												value={(() => {
-													const orientadorAtual = docentesDisponiveis.find(
-														(docente) => docente.codigo === editData.orientador
+													const orientadorAtual =
+														docentesDisponiveis.find(
+															(docente) =>
+																docente.codigo ===
+																editData.orientador,
+														);
+													return (
+														orientadorAtual?.nome ||
+														usuario?.nome ||
+														"Orientador não definido"
 													);
-													return orientadorAtual?.nome || usuario?.nome || "Orientador não definido";
 												})()}
 												disabled
 												sx={{
@@ -1718,7 +1802,9 @@ export default function Orientacao({ isOrientadorView = false }) {
 													maxWidth: "100%",
 												}}
 											>
-												<InputLabel>Orientador</InputLabel>
+												<InputLabel>
+													Orientador
+												</InputLabel>
 												<Select
 													value={editData.orientador}
 													onChange={(e) =>
@@ -1734,7 +1820,9 @@ export default function Orientacao({ isOrientadorView = false }) {
 													{docentesDisponiveis.map(
 														(docente) => (
 															<MenuItem
-																key={docente.codigo}
+																key={
+																	docente.codigo
+																}
 																value={
 																	docente.codigo
 																}
@@ -1762,8 +1850,13 @@ export default function Orientacao({ isOrientadorView = false }) {
 											>
 												{(() => {
 													// Usar a fase do TCC específico, não a fase do filtro
-													const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
-													const faseTcc = tccAtual?.fase;
+													const tccAtual =
+														trabalhosPorMatricula[
+															selectedDicente
+																?.matricula
+														];
+													const faseTcc =
+														tccAtual?.fase;
 													const maxEtapa =
 														parseInt(faseTcc) === 2
 															? 9
@@ -1790,22 +1883,31 @@ export default function Orientacao({ isOrientadorView = false }) {
 									</Grid>
 								</Grid>
 
-																								{/* Banca de Defesa - exibir a partir da etapa 5 OU se houver histórico */}
+								{/* Banca de Defesa - exibir a partir da etapa 5 OU se houver histórico */}
 								{(() => {
 									const etapaAtual = parseInt(editData.etapa);
-									const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
+									const tccAtual =
+										trabalhosPorMatricula[
+											selectedDicente?.matricula
+										];
 									const faseAtual = parseInt(tccAtual?.fase);
 
 									// Verificar se há histórico de convites de banca
-									const temHistoricoConvites = convitesBancaFase1.length > 0 ||
-																convitesBancaFase2.length > 0 ||
-																convitesBancaAtual.length > 0;
+									const temHistoricoConvites =
+										convitesBancaFase1.length > 0 ||
+										convitesBancaFase2.length > 0 ||
+										convitesBancaAtual.length > 0;
 
 									// Verificar se há histórico de defesas
-									const temHistoricoDefesas = defesasAtual.length > 0;
+									const temHistoricoDefesas =
+										defesasAtual.length > 0;
 
 									// Exibir se etapa >= 5 OU se houver histórico
-									return etapaAtual >= 5 || temHistoricoConvites || temHistoricoDefesas;
+									return (
+										etapaAtual >= 5 ||
+										temHistoricoConvites ||
+										temHistoricoDefesas
+									);
 								})() && (
 									<Paper
 										sx={{
@@ -1815,8 +1917,12 @@ export default function Orientacao({ isOrientadorView = false }) {
 									>
 										<Typography variant="h6" gutterBottom>
 											{(() => {
-												const etapaAtual = parseInt(editData.etapa);
-												return etapaAtual === 8 ? "Banca de Defesa de TCC" : "Banca de Defesa de Projeto";
+												const etapaAtual = parseInt(
+													editData.etapa,
+												);
+												return etapaAtual === 8
+													? "Banca de Defesa de TCC"
+													: "Banca de Defesa de Projeto";
 											})()}
 										</Typography>
 										<Typography
@@ -1825,280 +1931,551 @@ export default function Orientacao({ isOrientadorView = false }) {
 											gutterBottom
 										>
 											{(() => {
-												const etapaAtual = parseInt(editData.etapa);
-												const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
-												const faseAtual = parseInt(tccAtual?.fase);
-												const tipoDefesa = etapaAtual === 8 ? "defesa de TCC" : "defesa de projeto";
+												const etapaAtual = parseInt(
+													editData.etapa,
+												);
+												const tccAtual =
+													trabalhosPorMatricula[
+														selectedDicente
+															?.matricula
+													];
+												const faseAtual = parseInt(
+													tccAtual?.fase,
+												);
+												const tipoDefesa =
+													etapaAtual === 8
+														? "defesa de TCC"
+														: "defesa de projeto";
 
 												// Determinar se a edição está habilitada
-												const edicaoHabilitada = (etapaAtual === 5 && faseAtual === 1) ||
-																		(etapaAtual === 8 && faseAtual === 2);
+												const edicaoHabilitada =
+													(etapaAtual === 5 &&
+														faseAtual === 1) ||
+													(etapaAtual === 8 &&
+														faseAtual === 2);
 
 												if (edicaoHabilitada) {
 													return `Selecione 2 docentes para compor a banca de ${tipoDefesa} (além do orientador) e defina a data/hora da defesa`;
 												} else {
-													return `Visualização do histórico da banca de ${tipoDefesa}. Campos de seleção disponíveis apenas na etapa ${faseAtual === 1 ? '5' : '8'}.`;
+													return `Visualização do histórico da banca de ${tipoDefesa}. Campos de seleção disponíveis apenas na etapa ${faseAtual === 1 ? "5" : "8"}.`;
 												}
 											})()}
 										</Typography>
 
 										{/* Data e Hora da Defesa - apenas para etapas 5 e 8 */}
 										{(() => {
-											const etapaAtual = parseInt(editData.etapa);
-											const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
-											const faseAtual = parseInt(tccAtual?.fase);
-											const mostrarCamposSelecao = (etapaAtual === 5 && faseAtual === 1) ||
-																		(etapaAtual === 8 && faseAtual === 2);
+											const etapaAtual = parseInt(
+												editData.etapa,
+											);
+											const tccAtual =
+												trabalhosPorMatricula[
+													selectedDicente?.matricula
+												];
+											const faseAtual = parseInt(
+												tccAtual?.fase,
+											);
+											const mostrarCamposSelecao =
+												(etapaAtual === 5 &&
+													faseAtual === 1) ||
+												(etapaAtual === 8 &&
+													faseAtual === 2);
 
 											return mostrarCamposSelecao;
 										})() && (
-										<Box sx={{ mb: 3 }}>
-											<LocalizationProvider
-												dateAdapter={AdapterDateFns}
-												adapterLocale={ptBR}
-											>
-												<DateTimePicker
-													label="Data e Hora da Defesa"
-													value={
-														editData.dataHoraDefesa
-													}
-													onChange={(newValue) => {
-														const etapaAtual = parseInt(editData.etapa);
-														const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
-														const faseAtual = parseInt(tccAtual?.fase);
-														const edicaoHabilitada = (etapaAtual === 5 && faseAtual === 1) ||
-																				(etapaAtual === 8 && faseAtual === 2);
-
-														if (edicaoHabilitada) {
-															handleEditDataChange("dataHoraDefesa", newValue);
+											<>
+												<Box sx={{ mb: 3 }}>
+													<LocalizationProvider
+													dateAdapter={AdapterDateFns}
+													adapterLocale={ptBR}
+												>
+													<DateTimePicker
+														label="Data e Hora da Defesa"
+														value={
+															editData.dataHoraDefesa
 														}
-													}}
-													disabled={(() => {
-														const etapaAtual = parseInt(editData.etapa);
-														const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
-														const faseAtual = parseInt(tccAtual?.fase);
-														return !((etapaAtual === 5 && faseAtual === 1) || (etapaAtual === 8 && faseAtual === 2));
-													})()}
-													renderInput={(params) => (
-														<TextField
-															{...params}
-															fullWidth
-															helperText={(() => {
-																const etapaAtual = parseInt(editData.etapa);
-																const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
-																const faseAtual = parseInt(tccAtual?.fase);
-																const edicaoHabilitada = (etapaAtual === 5 && faseAtual === 1) ||
-																						(etapaAtual === 8 && faseAtual === 2);
+														onChange={(
+															newValue,
+														) => {
+															const etapaAtual =
+																parseInt(
+																	editData.etapa,
+																);
+															const tccAtual =
+																trabalhosPorMatricula[
+																	selectedDicente
+																		?.matricula
+																];
+															const faseAtual =
+																parseInt(
+																	tccAtual?.fase,
+																);
+															const edicaoHabilitada =
+																(etapaAtual ===
+																	5 &&
+																	faseAtual ===
+																		1) ||
+																(etapaAtual ===
+																	8 &&
+																	faseAtual ===
+																		2);
 
-																if (!edicaoHabilitada) {
-																	return `Edição disponível apenas na etapa ${faseAtual === 1 ? '5' : '8'}`;
+															if (
+																edicaoHabilitada
+															) {
+																handleEditDataChange(
+																	"dataHoraDefesa",
+																	newValue,
+																);
+															}
+														}}
+														disabled={(() => {
+															const etapaAtual =
+																parseInt(
+																	editData.etapa,
+																);
+															const tccAtual =
+																trabalhosPorMatricula[
+																	selectedDicente
+																		?.matricula
+																];
+															const faseAtual =
+																parseInt(
+																	tccAtual?.fase,
+																);
+															return !(
+																(etapaAtual ===
+																	5 &&
+																	faseAtual ===
+																		1) ||
+																(etapaAtual ===
+																	8 &&
+																	faseAtual ===
+																		2)
+															);
+														})()}
+														renderInput={(
+															params,
+														) => (
+															<TextField
+																{...params}
+																fullWidth
+																helperText={(() => {
+																	const etapaAtual =
+																		parseInt(
+																			editData.etapa,
+																		);
+																	const tccAtual =
+																		trabalhosPorMatricula[
+																			selectedDicente
+																				?.matricula
+																		];
+																	const faseAtual =
+																		parseInt(
+																			tccAtual?.fase,
+																		);
+																	const edicaoHabilitada =
+																		(etapaAtual ===
+																			5 &&
+																			faseAtual ===
+																				1) ||
+																		(etapaAtual ===
+																			8 &&
+																			faseAtual ===
+																				2);
+
+																	if (
+																		!edicaoHabilitada
+																	) {
+																		return `Edição disponível apenas na etapa ${faseAtual === 1 ? "5" : "8"}`;
+																	}
+
+																	return editData.dataHoraDefesa &&
+																		(!editData.membroBanca1 ||
+																			!editData.membroBanca2)
+																		? "⚠️ Selecione os 2 membros da banca para definir a data da defesa"
+																		: "Selecione a data e horário para a defesa";
+																})()}
+																error={
+																	editData.dataHoraDefesa &&
+																	(!editData.membroBanca1 ||
+																		!editData.membroBanca2)
 																}
+															/>
+														)}
+														ampm={false}
+														format="dd/MM/yyyy HH:mm"
+													/>
+												</LocalizationProvider>
+											</Box>
 
-																return editData.dataHoraDefesa &&
-																	(!editData.membroBanca1 || !editData.membroBanca2)
-																	? "⚠️ Selecione os 2 membros da banca para definir a data da defesa"
-																	: "Selecione a data e horário para a defesa";
-															})()}
-															error={
-																editData.dataHoraDefesa &&
-																(!editData.membroBanca1 ||
-																	!editData.membroBanca2)
+											{/* Botão para mostrar/ocultar seletor de horário baseado em disponibilidades */}
+											{editData.orientador && editData.membroBanca1 && editData.membroBanca2 && (
+												<Box sx={{ mb: 2 }}>
+													<Button
+														variant="outlined"
+														onClick={() => setMostrarSeletorHorario(!mostrarSeletorHorario)}
+														size="small"
+													>
+														{mostrarSeletorHorario
+															? "Ocultar Horários Disponíveis"
+															: "Ver Horários Disponíveis dos Docentes"}
+													</Button>
+												</Box>
+											)}
+
+											{/* Seletor de horário baseado em disponibilidades */}
+											{mostrarSeletorHorario && editData.orientador && editData.membroBanca1 && editData.membroBanca2 && (
+												<Box sx={{ mb: 3, p: 2, bgcolor: "background.default", borderRadius: 1 }}>
+													<Typography variant="h6" gutterBottom>
+														Horários Comuns Disponíveis
+													</Typography>
+													<SelecionarHorarioBanca
+														oferta={{
+															ano: parseInt(ano),
+															semestre: parseInt(semestre),
+															id_curso: parseInt(cursoSelecionado),
+															fase: (() => {
+																const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
+																return parseInt(tccAtual?.fase);
+															})()
+														}}
+														codigoOrientador={editData.orientador}
+														codigosMembrosBanca={[editData.membroBanca1, editData.membroBanca2]}
+														onChange={(slot) => {
+															setSelectedHorarioBanca(slot);
+															if (slot) {
+																// Converter data e hora para datetime
+																const dataHora = new Date(`${slot.data}T${slot.hora}`);
+																handleEditDataChange("dataHoraDefesa", dataHora);
 															}
-														/>
-													)}
-													ampm={false}
-													format="dd/MM/yyyy HH:mm"
-												/>
-											</LocalizationProvider>
-										</Box>
-										)}
+														}}
+														selectedSlot={selectedHorarioBanca}
+													/>
+												</Box>
+											)}
+										</>
+									)}
 
-
-										{/* Campos de seleção de membros da banca - apenas para etapas 5 e 8 */}
+									{/* Campos de seleção de membros da banca - apenas para etapas 5 e 8 */}
 										{(() => {
-											const etapaAtual = parseInt(editData.etapa);
-											const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
-											const faseAtual = parseInt(tccAtual?.fase);
-											const mostrarCamposSelecao = (etapaAtual === 5 && faseAtual === 1) ||
-																		(etapaAtual === 8 && faseAtual === 2);
+											const etapaAtual = parseInt(
+												editData.etapa,
+											);
+											const tccAtual =
+												trabalhosPorMatricula[
+													selectedDicente?.matricula
+												];
+											const faseAtual = parseInt(
+												tccAtual?.fase,
+											);
+											const mostrarCamposSelecao =
+												(etapaAtual === 5 &&
+													faseAtual === 1) ||
+												(etapaAtual === 8 &&
+													faseAtual === 2);
 
 											return mostrarCamposSelecao;
 										})() && (
-										<Grid container spacing={3}>
-											<Grid item xs={12} md={6}>
-												<FormControl
-													sx={{ minWidth: 400 }}
-													fullWidth
-													error={
-														editData.dataHoraDefesa &&
-														!editData.membroBanca1
-													}
-												>
-													<InputLabel>
-														{(() => {
-															const etapaAtual = parseInt(editData.etapa);
-															const tipoDefesa = etapaAtual === 8 ? "TCC" : "Projeto";
-															return `1º Membro da Banca de ${tipoDefesa}${editData.dataHoraDefesa ? " *" : ""}`;
-														})()}
-													</InputLabel>
-													<Select
-														value={
-															editData.membroBanca1
+											<Grid container spacing={3}>
+												<Grid item xs={12} md={6}>
+													<FormControl
+														sx={{ minWidth: 400 }}
+														fullWidth
+														error={
+															editData.dataHoraDefesa &&
+															!editData.membroBanca1
 														}
-														onChange={(e) => {
-															const etapaAtual = parseInt(editData.etapa);
-															const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
-															const faseAtual = parseInt(tccAtual?.fase);
-															const edicaoHabilitada = (etapaAtual === 5 && faseAtual === 1) ||
-																					(etapaAtual === 8 && faseAtual === 2);
-
-															if (edicaoHabilitada) {
-																handleEditDataChange("membroBanca1", e.target.value);
-															}
-														}}
-														disabled={(() => {
-															const etapaAtual = parseInt(editData.etapa);
-															const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
-															const faseAtual = parseInt(tccAtual?.fase);
-															return !((etapaAtual === 5 && faseAtual === 1) || (etapaAtual === 8 && faseAtual === 2));
-														})()}
-														label={(() => {
-															const etapaAtual = parseInt(editData.etapa);
-															const tipoDefesa = etapaAtual === 8 ? "TCC" : "Projeto";
-															return `1º Membro da Banca de ${tipoDefesa}${editData.dataHoraDefesa ? " *" : ""}`;
-														})()}
-														displayEmpty
 													>
-														<MenuItem value=""></MenuItem>
-														{docentesBanca
-															.filter(
-																(item) =>
-																	item.docente
-																		?.codigo !==
-																		editData.orientador &&
-																	item.docente
-																		?.codigo !==
-																		editData.membroBanca2,
-															)
-															.map((item) => (
-																<MenuItem
-																	key={
+														<InputLabel>
+															{(() => {
+																const etapaAtual =
+																	parseInt(
+																		editData.etapa,
+																	);
+																const tipoDefesa =
+																	etapaAtual ===
+																	8
+																		? "TCC"
+																		: "Projeto";
+																return `1º Membro da Banca de ${tipoDefesa}${editData.dataHoraDefesa ? " *" : ""}`;
+															})()}
+														</InputLabel>
+														<Select
+															value={
+																editData.membroBanca1
+															}
+															onChange={(e) => {
+																const etapaAtual =
+																	parseInt(
+																		editData.etapa,
+																	);
+																const tccAtual =
+																	trabalhosPorMatricula[
+																		selectedDicente
+																			?.matricula
+																	];
+																const faseAtual =
+																	parseInt(
+																		tccAtual?.fase,
+																	);
+																const edicaoHabilitada =
+																	(etapaAtual ===
+																		5 &&
+																		faseAtual ===
+																			1) ||
+																	(etapaAtual ===
+																		8 &&
+																		faseAtual ===
+																			2);
+
+																if (
+																	edicaoHabilitada
+																) {
+																	handleEditDataChange(
+																		"membroBanca1",
+																		e.target
+																			.value,
+																	);
+																}
+															}}
+															disabled={(() => {
+																const etapaAtual =
+																	parseInt(
+																		editData.etapa,
+																	);
+																const tccAtual =
+																	trabalhosPorMatricula[
+																		selectedDicente
+																			?.matricula
+																	];
+																const faseAtual =
+																	parseInt(
+																		tccAtual?.fase,
+																	);
+																return !(
+																	(etapaAtual ===
+																		5 &&
+																		faseAtual ===
+																			1) ||
+																	(etapaAtual ===
+																		8 &&
+																		faseAtual ===
+																			2)
+																);
+															})()}
+															label={(() => {
+																const etapaAtual =
+																	parseInt(
+																		editData.etapa,
+																	);
+																const tipoDefesa =
+																	etapaAtual ===
+																	8
+																		? "TCC"
+																		: "Projeto";
+																return `1º Membro da Banca de ${tipoDefesa}${editData.dataHoraDefesa ? " *" : ""}`;
+															})()}
+															displayEmpty
+														>
+															<MenuItem value=""></MenuItem>
+															{docentesBanca
+																.filter(
+																	(item) =>
 																		item
 																			.docente
-																			?.codigo
-																	}
-																	value={
+																			?.codigo !==
+																			editData.orientador &&
 																		item
 																			.docente
-																			?.codigo
-																	}
-																>
-																	{
-																		item
-																			.docente
-																			?.nome
-																	}
-																</MenuItem>
-															))}
-													</Select>
-												</FormControl>
-											</Grid>
-											<Grid item xs={12} md={6}>
-												<FormControl
-													sx={{ minWidth: 400 }}
-													fullWidth
-													error={
-														editData.dataHoraDefesa &&
-														!editData.membroBanca2
-													}
-												>
-													<InputLabel>
-														{(() => {
-															const etapaAtual = parseInt(editData.etapa);
-															const tipoDefesa = etapaAtual === 8 ? "TCC" : "Projeto";
-															return `2º Membro da Banca de ${tipoDefesa}${editData.dataHoraDefesa ? " *" : ""}`;
-														})()}
-													</InputLabel>
-													<Select
-														value={
-															editData.membroBanca2
+																			?.codigo !==
+																			editData.membroBanca2,
+																)
+																.map((item) => (
+																	<MenuItem
+																		key={
+																			item
+																				.docente
+																				?.codigo
+																		}
+																		value={
+																			item
+																				.docente
+																				?.codigo
+																		}
+																	>
+																		{
+																			item
+																				.docente
+																				?.nome
+																		}
+																	</MenuItem>
+																))}
+														</Select>
+													</FormControl>
+												</Grid>
+												<Grid item xs={12} md={6}>
+													<FormControl
+														sx={{ minWidth: 400 }}
+														fullWidth
+														error={
+															editData.dataHoraDefesa &&
+															!editData.membroBanca2
 														}
-														onChange={(e) => {
-															const etapaAtual = parseInt(editData.etapa);
-															const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
-															const faseAtual = parseInt(tccAtual?.fase);
-															const edicaoHabilitada = (etapaAtual === 5 && faseAtual === 1) ||
-																					(etapaAtual === 8 && faseAtual === 2);
-
-															if (edicaoHabilitada) {
-																handleEditDataChange("membroBanca2", e.target.value);
-															}
-														}}
-														disabled={(() => {
-															const etapaAtual = parseInt(editData.etapa);
-															const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
-															const faseAtual = parseInt(tccAtual?.fase);
-															return !((etapaAtual === 5 && faseAtual === 1) || (etapaAtual === 8 && faseAtual === 2));
-														})()}
-														label={(() => {
-															const etapaAtual = parseInt(editData.etapa);
-															const tipoDefesa = etapaAtual === 8 ? "TCC" : "Projeto";
-															return `2º Membro da Banca de ${tipoDefesa}${editData.dataHoraDefesa ? " *" : ""}`;
-														})()}
-														displayEmpty
 													>
-														<MenuItem value=""></MenuItem>
-														{docentesBanca
-															.filter(
-																(item) =>
-																	item.docente
-																		?.codigo !==
-																		editData.orientador &&
-																	item.docente
-																		?.codigo !==
-																		editData.membroBanca1,
-															)
-															.map((item) => (
-																<MenuItem
-																	key={
+														<InputLabel>
+															{(() => {
+																const etapaAtual =
+																	parseInt(
+																		editData.etapa,
+																	);
+																const tipoDefesa =
+																	etapaAtual ===
+																	8
+																		? "TCC"
+																		: "Projeto";
+																return `2º Membro da Banca de ${tipoDefesa}${editData.dataHoraDefesa ? " *" : ""}`;
+															})()}
+														</InputLabel>
+														<Select
+															value={
+																editData.membroBanca2
+															}
+															onChange={(e) => {
+																const etapaAtual =
+																	parseInt(
+																		editData.etapa,
+																	);
+																const tccAtual =
+																	trabalhosPorMatricula[
+																		selectedDicente
+																			?.matricula
+																	];
+																const faseAtual =
+																	parseInt(
+																		tccAtual?.fase,
+																	);
+																const edicaoHabilitada =
+																	(etapaAtual ===
+																		5 &&
+																		faseAtual ===
+																			1) ||
+																	(etapaAtual ===
+																		8 &&
+																		faseAtual ===
+																			2);
+
+																if (
+																	edicaoHabilitada
+																) {
+																	handleEditDataChange(
+																		"membroBanca2",
+																		e.target
+																			.value,
+																	);
+																}
+															}}
+															disabled={(() => {
+																const etapaAtual =
+																	parseInt(
+																		editData.etapa,
+																	);
+																const tccAtual =
+																	trabalhosPorMatricula[
+																		selectedDicente
+																			?.matricula
+																	];
+																const faseAtual =
+																	parseInt(
+																		tccAtual?.fase,
+																	);
+																return !(
+																	(etapaAtual ===
+																		5 &&
+																		faseAtual ===
+																			1) ||
+																	(etapaAtual ===
+																		8 &&
+																		faseAtual ===
+																			2)
+																);
+															})()}
+															label={(() => {
+																const etapaAtual =
+																	parseInt(
+																		editData.etapa,
+																	);
+																const tipoDefesa =
+																	etapaAtual ===
+																	8
+																		? "TCC"
+																		: "Projeto";
+																return `2º Membro da Banca de ${tipoDefesa}${editData.dataHoraDefesa ? " *" : ""}`;
+															})()}
+															displayEmpty
+														>
+															<MenuItem value=""></MenuItem>
+															{docentesBanca
+																.filter(
+																	(item) =>
 																		item
 																			.docente
-																			?.codigo
-																	}
-																	value={
+																			?.codigo !==
+																			editData.orientador &&
 																		item
 																			.docente
-																			?.codigo
-																	}
-																>
-																	{
-																		item
-																			.docente
-																			?.nome
-																	}
-																</MenuItem>
-															))}
-													</Select>
-												</FormControl>
+																			?.codigo !==
+																			editData.membroBanca1,
+																)
+																.map((item) => (
+																	<MenuItem
+																		key={
+																			item
+																				.docente
+																				?.codigo
+																		}
+																		value={
+																			item
+																				.docente
+																				?.codigo
+																		}
+																	>
+																		{
+																			item
+																				.docente
+																				?.nome
+																		}
+																	</MenuItem>
+																))}
+														</Select>
+													</FormControl>
+												</Grid>
 											</Grid>
-										</Grid>
 										)}
 
 										{/* Informações sobre convites existentes por fase */}
 										{(() => {
-											const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
-											const faseAtual = parseInt(tccAtual?.fase);
-											const etapaAtual = parseInt(editData.etapa);
+											const tccAtual =
+												trabalhosPorMatricula[
+													selectedDicente?.matricula
+												];
+											const faseAtual = parseInt(
+												tccAtual?.fase,
+											);
+											const etapaAtual = parseInt(
+												editData.etapa,
+											);
 
 											return (
 												<>
 													{/* Convites de Fase 1 - sempre somente leitura */}
-													{convitesBancaFase1.length > 0 && (
+													{convitesBancaFase1.length >
+														0 && (
 														<Box
 															sx={{
 																mb: 2,
 																p: 1,
-																bgcolor: "grey.100",
+																bgcolor:
+																	"grey.100",
 																borderRadius: 1,
 															}}
 														>
@@ -2107,22 +2484,33 @@ export default function Orientacao({ isOrientadorView = false }) {
 																color="text.secondary"
 															>
 																<strong>
-																	Banca de Defesa de Projeto (histórico):
+																	Banca de
+																	Defesa de
+																	Projeto
+																	(histórico):
 																</strong>
 															</Typography>
 															{convitesBancaFase1.map(
-																(convite, index) => (
+																(
+																	convite,
+																	index,
+																) => (
 																	<Typography
-																		key={index}
+																		key={
+																			index
+																		}
 																		variant="body2"
 																		color="text.secondary"
 																	>
 																		•{" "}
 																		{docentesDisponiveis.find(
-																			(d) =>
+																			(
+																				d,
+																			) =>
 																				d.codigo ===
 																				convite.codigo_docente,
-																		)?.nome ||
+																		)
+																			?.nome ||
 																			convite.codigo_docente}{" "}
 																		-
 																		{convite.aceito
@@ -2139,96 +2527,137 @@ export default function Orientacao({ isOrientadorView = false }) {
 													)}
 
 													{/* Convites de Fase 2 - editáveis quando etapa 8 */}
-													{faseAtual === 2 && convitesBancaFase2.length > 0 && (
-														<Box
-															sx={{
-																mb: 2,
-																p: 1,
-																bgcolor: etapaAtual === 8 ? "info.light" : "grey.100",
-																borderRadius: 1,
-															}}
-														>
-															<Typography
-																variant="body2"
-																color={etapaAtual === 8 ? "info.contrastText" : "text.secondary"}
+													{faseAtual === 2 &&
+														convitesBancaFase2.length >
+															0 && (
+															<Box
+																sx={{
+																	mb: 2,
+																	p: 1,
+																	bgcolor:
+																		etapaAtual ===
+																		8
+																			? "info.light"
+																			: "grey.100",
+																	borderRadius: 1,
+																}}
 															>
-																<strong>
-																	{etapaAtual === 8 ? "Banca de Defesa de TCC:" : "Banca de Defesa de TCC (histórico):"}
-																</strong>
-															</Typography>
-															{convitesBancaFase2.map(
-																(convite, index) => (
-																	<Typography
-																		key={index}
-																		variant="body2"
-																		color={etapaAtual === 8 ? "info.contrastText" : "text.secondary"}
-																	>
-																		•{" "}
-																		{docentesDisponiveis.find(
-																			(d) =>
-																				d.codigo ===
-																				convite.codigo_docente,
-																		)?.nome ||
-																			convite.codigo_docente}{" "}
-																		-
-																		{convite.aceito
-																			? " Aceito"
-																			: " Pendente"}
-																		{convite.aceito &&
-																			` (${new Date(
-																				convite.data_feedback,
-																			).toLocaleDateString()})`}
-																	</Typography>
-																),
-															)}
-														</Box>
-													)}
+																<Typography
+																	variant="body2"
+																	color={
+																		etapaAtual ===
+																		8
+																			? "info.contrastText"
+																			: "text.secondary"
+																	}
+																>
+																	<strong>
+																		{etapaAtual ===
+																		8
+																			? "Banca de Defesa de TCC:"
+																			: "Banca de Defesa de TCC (histórico):"}
+																	</strong>
+																</Typography>
+																{convitesBancaFase2.map(
+																	(
+																		convite,
+																		index,
+																	) => (
+																		<Typography
+																			key={
+																				index
+																			}
+																			variant="body2"
+																			color={
+																				etapaAtual ===
+																				8
+																					? "info.contrastText"
+																					: "text.secondary"
+																			}
+																		>
+																			•{" "}
+																			{docentesDisponiveis.find(
+																				(
+																					d,
+																				) =>
+																					d.codigo ===
+																					convite.codigo_docente,
+																			)
+																				?.nome ||
+																				convite.codigo_docente}{" "}
+																			-
+																			{convite.aceito
+																				? " Aceito"
+																				: " Pendente"}
+																			{convite.aceito &&
+																				` (${new Date(
+																					convite.data_feedback,
+																				).toLocaleDateString()})`}
+																		</Typography>
+																	),
+																)}
+															</Box>
+														)}
 
 													{/* Convites da fase atual (para compatibilidade) */}
-													{faseAtual === 1 && convitesBancaAtual.length > 0 && (
-														<Box
-															sx={{
-																mb: 2,
-																p: 1,
-																bgcolor: "info.light",
-																borderRadius: 1,
-															}}
-														>
-															<Typography
-																variant="body2"
-																color="info.contrastText"
+													{faseAtual === 1 &&
+														convitesBancaAtual.length >
+															0 && (
+															<Box
+																sx={{
+																	mb: 2,
+																	p: 1,
+																	bgcolor:
+																		"info.light",
+																	borderRadius: 1,
+																}}
 															>
-																<strong>
-																	Banca de Defesa de Projeto:
-																</strong>
-															</Typography>
-															{convitesBancaAtual.map(
-																(convite, index) => (
-																	<Typography
-																		key={index}
-																		variant="body2"
-																		color="info.contrastText"
-																	>
-																		•{" "}
-																		{docentesDisponiveis.find(
-																			(d) =>
-																				d.codigo ===
-																				convite.codigo_docente,
-																		)?.nome ||
-																			convite.codigo_docente}{" "}
-																		-
-																		{convite.aceito
-																			? " Aceito"
-																			: " Pendente"}
-																		{convite.aceito &&
-																			` (${new Date(
-																				convite.data_feedback,
-																			).toLocaleDateString()})`}
-																	</Typography>
-																),
-															)}
-														</Box>
-													)}
+																<Typography
+																	variant="body2"
+																	color="info.contrastText"
+																>
+																	<strong>
+																		Banca de
+																		Defesa
+																		de
+																		Projeto:
+																	</strong>
+																</Typography>
+																{convitesBancaAtual.map(
+																	(
+																		convite,
+																		index,
+																	) => (
+																		<Typography
+																			key={
+																				index
+																			}
+																			variant="body2"
+																			color="info.contrastText"
+																		>
+																			•{" "}
+																			{docentesDisponiveis.find(
+																				(
+																					d,
+																				) =>
+																					d.codigo ===
+																					convite.codigo_docente,
+																			)
+																				?.nome ||
+																				convite.codigo_docente}{" "}
+																			-
+																			{convite.aceito
+																				? " Aceito"
+																				: " Pendente"}
+																			{convite.aceito &&
+																				` (${new Date(
+																					convite.data_feedback,
+																				).toLocaleDateString()})`}
+																		</Typography>
+																	),
+																)}
+															</Box>
+														)}
 												</>
 											);
 										})()}
@@ -2285,7 +2714,10 @@ export default function Orientacao({ isOrientadorView = false }) {
 
 								{/* Seminário de Andamento - apenas para fase 2 */}
 								{(() => {
-									const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
+									const tccAtual =
+										trabalhosPorMatricula[
+											selectedDicente?.matricula
+										];
 									return parseInt(tccAtual?.fase) === 2;
 								})() && (
 									<TextField
