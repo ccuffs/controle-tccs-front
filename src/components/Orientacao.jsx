@@ -137,7 +137,7 @@ export default function Orientacao({ isOrientadorView = false }) {
 		// No modo orientador, carrega dicentes apenas quando filtros necessários estão selecionados
 		if (isOrientadorView) {
 			if (cursoSelecionado && ano && semestre) {
-				getDicentesOrientador();
+				getDicentes();
 			} else {
 				setDicentes([]);
 			}
@@ -283,22 +283,65 @@ export default function Orientacao({ isOrientadorView = false }) {
 	async function getDicentes() {
 		setLoadingDicentes(true);
 		try {
-			const params = {};
-			if (ano) {
-				params.ano = ano;
+			// Se estiver na visão do orientador, usar a lógica específica para orientadores
+			if (isOrientadorView) {
+				const codigoDocente = usuario?.codigo || usuario?.id;
+				if (!codigoDocente) {
+					setDicentes([]);
+					return;
+				}
+
+				// Buscar orientações do docente logado
+				const params = {
+					codigo_docente: codigoDocente,
+					orientador: true,
+				};
+				const response = await axiosInstance.get("/orientacoes", {
+					params,
+				});
+
+				// Filtrar orientações por curso, ano, semestre e fase
+				const orientacoesFiltradas = (response.orientacoes || []).filter(
+					(o) => {
+						const tcc = o.TrabalhoConclusao;
+						if (!tcc) return false;
+
+						return (
+							tcc.Curso?.id === parseInt(cursoSelecionado) &&
+							tcc.ano === parseInt(ano) &&
+							tcc.semestre === parseInt(semestre) &&
+							(fase === "" || tcc.fase === parseInt(fase))
+						);
+					},
+				);
+
+				// Extrair dicentes das orientações
+				const dicentes = orientacoesFiltradas
+					.map((o) => o.TrabalhoConclusao?.Dicente)
+					.filter((dicente) => dicente !== null && dicente !== undefined)
+					.sort((a, b) => a.nome.localeCompare(b.nome));
+
+				setDicentes(dicentes);
+			} else {
+				// Lógica original para outros tipos de usuário
+				const params = {};
+				if (ano) {
+					params.ano = ano;
+				}
+				if (semestre) {
+					params.semestre = semestre;
+				}
+				if (fase) {
+					params.fase = fase;
+				}
+				const response = await axiosInstance.get("/dicentes", { params });
+				// Ordena os dicentes por nome em ordem crescente
+				const dicentesOrdenados = (response.dicentes || []).sort((a, b) =>
+					a.nome.localeCompare(b.nome),
+				);
+				setDicentes(dicentesOrdenados);
+				console.log(dicentesOrdenados);
 			}
-			if (semestre) {
-				params.semestre = semestre;
-			}
-			if (fase) {
-				params.fase = fase;
-			}
-			const response = await axiosInstance.get("/dicentes", { params });
-			// Ordena os dicentes por nome em ordem crescente
-			const dicentesOrdenados = (response.dicentes || []).sort((a, b) =>
-				a.nome.localeCompare(b.nome),
-			);
-			setDicentes(dicentesOrdenados);
 		} catch (error) {
 			console.log(
 				"Não foi possível retornar a lista de dicentes: ",
@@ -310,56 +353,6 @@ export default function Orientacao({ isOrientadorView = false }) {
 		}
 	}
 
-	async function getDicentesOrientador() {
-		setLoadingDicentes(true);
-		try {
-			const codigoDocente = usuario?.codigo || usuario?.id;
-			if (!codigoDocente) {
-				setDicentes([]);
-				return;
-			}
-
-			// Buscar orientações do docente logado
-			const params = {
-				codigo_docente: codigoDocente,
-				orientador: true,
-			};
-			const response = await axiosInstance.get("/orientacoes", {
-				params,
-			});
-
-			// Filtrar orientações por curso, ano, semestre e fase
-			const orientacoesFiltradas = (response.orientacoes || []).filter(
-				(o) => {
-					const tcc = o.TrabalhoConclusao;
-					if (!tcc) return false;
-
-					return (
-						tcc.Curso?.id === parseInt(cursoSelecionado) &&
-						tcc.ano === parseInt(ano) &&
-						tcc.semestre === parseInt(semestre) &&
-						(fase === "" || tcc.fase === parseInt(fase))
-					);
-				},
-			);
-
-			// Extrair dicentes das orientações
-			const dicentes = orientacoesFiltradas
-				.map((o) => o.TrabalhoConclusao?.Dicente)
-				.filter((dicente) => dicente !== null && dicente !== undefined)
-				.sort((a, b) => a.nome.localeCompare(b.nome));
-
-			setDicentes(dicentes);
-		} catch (error) {
-			console.log(
-				"Não foi possível retornar a lista de dicentes orientados: ",
-				error,
-			);
-			setDicentes([]);
-		} finally {
-			setLoadingDicentes(false);
-		}
-	}
 
 	async function getOrientacoes() {
 		try {
