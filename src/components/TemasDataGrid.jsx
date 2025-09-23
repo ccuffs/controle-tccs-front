@@ -189,6 +189,7 @@ export default function TemasDataGrid({
 					grupos={[
 						Permissoes.GRUPOS.ADMIN,
 						Permissoes.GRUPOS.PROFESSOR,
+						Permissoes.GRUPOS.ORIENTADOR,
 					]}
 					showError={false}
 				>
@@ -233,6 +234,7 @@ export default function TemasDataGrid({
 			hasPermission([
 				Permissoes.GRUPOS.ADMIN,
 				Permissoes.GRUPOS.PROFESSOR,
+				Permissoes.GRUPOS.ORIENTADOR,
 			]),
 	};
 
