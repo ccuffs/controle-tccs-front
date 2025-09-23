@@ -478,7 +478,7 @@ export default function AvaliarDefesasOrientador() {
 					total += 1;
 					promises.push(
 						axiosInstance.put(`/defesas/${idTcc}/${membro}`, {
-							formData: { avaliacao: numero },
+							formData: { avaliacao: numero, fase: faseKey },
 						}),
 					);
 				}
