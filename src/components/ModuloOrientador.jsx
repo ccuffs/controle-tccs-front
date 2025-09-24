@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Box, Typography, Tabs, Tab } from "@mui/material";
 import TemasTcc from "./TemasTcc";
 import ConvitesRecebidosOrientador from "./ConvitesRecebidosOrientador";
@@ -30,8 +30,19 @@ function a11yProps(index) {
 
 export default function ModuloOrientador() {
 	const [tabValue, setTabValue] = useState(0);
+	const gerenciarDisponibilidadeRef = useRef(null);
 
 	const handleTabChange = (event, newValue) => {
+		// Verificar se há mudanças não sincronizadas na aba de disponibilidade
+		if (tabValue === 4 && newValue !== 4 && gerenciarDisponibilidadeRef.current) {
+			const hasUnsavedChanges = gerenciarDisponibilidadeRef.current.hasUnsavedChanges();
+			if (hasUnsavedChanges) {
+				const shouldProceed = gerenciarDisponibilidadeRef.current.confirmNavigation();
+				if (!shouldProceed) {
+					return; // Não muda a aba
+				}
+			}
+		}
 		setTabValue(newValue);
 	};
 
@@ -74,7 +85,7 @@ export default function ModuloOrientador() {
 			</TabPanel>
 
 			<TabPanel value={tabValue} index={4}>
-				<GerenciarDisponibilidadeBanca />
+				<GerenciarDisponibilidadeBanca ref={gerenciarDisponibilidadeRef} />
 			</TabPanel>
 
 			<TabPanel value={tabValue} index={5}>

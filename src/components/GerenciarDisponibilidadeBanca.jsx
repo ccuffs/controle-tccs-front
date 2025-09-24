@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import {
 	Box,
 	Typography,
@@ -7,13 +7,17 @@ import {
 	CircularProgress,
 	Stack,
 	Checkbox,
+	Dialog,
+	DialogTitle,
+	DialogContent,
+	DialogActions,
 } from "@mui/material";
 import axiosInstance from "../auth/axios";
 import { useAuth } from "../contexts/AuthContext";
 import CustomDataGrid from "./CustomDataGrid";
 import FiltrosPesquisa from "./FiltrosPesquisa";
 
-const GerenciarDisponibilidadeBanca = () => {
+const GerenciarDisponibilidadeBanca = forwardRef((props, ref) => {
 	const { usuario } = useAuth();
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
@@ -31,6 +35,23 @@ const GerenciarDisponibilidadeBanca = () => {
 	// Mapa de slots ("YYYY-MM-DD-HH:mm:ss") bloqueados -> tipo ("banca" | "indisp")
 	const [bloqueados, setBloqueados] = useState(new Map());
 	const [rows, setRows] = useState([]);
+	const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+	const [pendingNavigation, setPendingNavigation] = useState(null);
+
+	// Expor métodos para o componente pai
+	useImperativeHandle(ref, () => ({
+		hasUnsavedChanges: () => {
+			return calcularNumeroAlteracoes() > 0;
+		},
+		confirmNavigation: () => {
+			const alteracoes = calcularNumeroAlteracoes();
+			if (alteracoes > 0) {
+				setShowConfirmDialog(true);
+				return false; // Retorna false para indicar que a navegação foi bloqueada
+			}
+			return true; // Retorna true para permitir navegação
+		}
+	}));
 
 	function getAnoSemestreAtual() {
 		const data = new Date();
@@ -77,6 +98,84 @@ const GerenciarDisponibilidadeBanca = () => {
 			setRows([]);
 		}
 	}, [grade, disponibilidades, bloqueados]);
+
+	// Gerenciar aviso de navegação quando há mudanças não sincronizadas
+	useEffect(() => {
+		const handleBeforeUnload = (event) => {
+			const alteracoes = calcularNumeroAlteracoes();
+			if (alteracoes > 0) {
+				event.preventDefault();
+				event.returnValue = "Você tem alterações não sincronizadas. Deseja realmente sair?";
+				return "Você tem alterações não sincronizadas. Deseja realmente sair?";
+			}
+		};
+
+		// Adicionar listener para beforeunload (fechar aba/navegador)
+		window.addEventListener("beforeunload", handleBeforeUnload);
+
+		// Cleanup
+		return () => {
+			window.removeEventListener("beforeunload", handleBeforeUnload);
+		};
+	}, [disponibilidades, disponibilidadesOriginais]);
+
+	// Interceptar navegação via links do menu principal e Navbar
+	useEffect(() => {
+		// Interceptar cliques em links de navegação (menu principal)
+		const handleLinkClick = (event) => {
+			// Verificar se é um link de navegação (não dentro do componente atual)
+			const target = event.target.closest('a');
+			if (target && target.href && !target.href.includes('#') && !target.closest('[role="tabpanel"]')) {
+				const alteracoes = calcularNumeroAlteracoes();
+				if (alteracoes > 0) {
+					event.preventDefault();
+					setPendingNavigation(target.href);
+					setShowConfirmDialog(true);
+				}
+			}
+		};
+
+		// Interceptar cliques em botões da Navbar (ListItemButton) - usar capture para interceptar antes do React Router
+		const handleNavbarClick = (event) => {
+			// Verificar se é um clique em ListItemButton da Navbar
+			const listItemButton = event.target.closest('[role="button"]');
+			if (listItemButton && listItemButton.closest('.MuiDrawer-paper')) {
+				const alteracoes = calcularNumeroAlteracoes();
+				if (alteracoes > 0) {
+					event.preventDefault();
+					event.stopPropagation();
+					event.stopImmediatePropagation();
+					setShowConfirmDialog(true);
+				}
+			}
+		};
+
+		// Interceptar cliques no título da Navbar (Dashboard) - usar capture para interceptar antes do React Router
+		const handleTitleClick = (event) => {
+			// Verificar se é um clique no título do sistema
+			const titleElement = event.target.closest('[data-testid="system-title"]');
+			if (titleElement) {
+				const alteracoes = calcularNumeroAlteracoes();
+				if (alteracoes > 0) {
+					event.preventDefault();
+					event.stopPropagation();
+					event.stopImmediatePropagation();
+					setShowConfirmDialog(true);
+				}
+			}
+		};
+
+		// Adicionar listeners para interceptar navegação (usando capture para interceptar antes do React Router)
+		document.addEventListener("click", handleLinkClick);
+		document.addEventListener("click", handleNavbarClick, true); // capture = true
+		document.addEventListener("click", handleTitleClick, true); // capture = true
+
+		return () => {
+			document.removeEventListener("click", handleLinkClick);
+			document.removeEventListener("click", handleNavbarClick, true);
+			document.removeEventListener("click", handleTitleClick, true);
+		};
+	}, [disponibilidades, disponibilidadesOriginais]);
 
 	async function getCursosOrientador() {
 		try {
@@ -130,8 +229,21 @@ const GerenciarDisponibilidadeBanca = () => {
 						const key = `${disp.data_defesa}-${disp.hora_defesa}`;
 						disponibilidadesMap[key] = disp.disponivel;
 					});
-					setDisponibilidades(disponibilidadesMap);
-					setDisponibilidadesOriginais({ ...disponibilidadesMap });
+
+					// Inicializar todos os slots da grade (incluindo os não preenchidos)
+					const todasDisponibilidades = {};
+					if (response.grade.horarios && response.grade.datas) {
+						response.grade.horarios.forEach((hora) => {
+							response.grade.datas.forEach((data) => {
+								const key = `${data}-${hora}`;
+								// Se já existe no banco, usa o valor; senão, assume false (não disponível)
+								todasDisponibilidades[key] = disponibilidadesMap[key] || false;
+							});
+						});
+					}
+
+					setDisponibilidades(todasDisponibilidades);
+					setDisponibilidadesOriginais({ ...todasDisponibilidades });
 
 					// Buscar defesas do semestre e marcar slots bloqueados para este docente
 					try {
@@ -367,6 +479,34 @@ const GerenciarDisponibilidadeBanca = () => {
 		}
 	};
 
+	const handleConfirmNavigation = () => {
+		setShowConfirmDialog(false);
+		if (pendingNavigation) {
+			window.location.href = pendingNavigation;
+			setPendingNavigation(null);
+		} else {
+			// Se não há navegação pendente, significa que foi uma mudança de aba ou clique na Navbar
+			// Permitir a navegação (o React Router já processou o clique)
+		}
+	};
+
+	const handleCancelNavigation = () => {
+		setShowConfirmDialog(false);
+		setPendingNavigation(null);
+	};
+
+	const handleSincronizarESair = async () => {
+		await sincronizarDisponibilidades();
+		setShowConfirmDialog(false);
+		if (pendingNavigation) {
+			window.location.href = pendingNavigation;
+			setPendingNavigation(null);
+		} else {
+			// Se não há navegação pendente, significa que foi uma mudança de aba ou clique na Navbar
+			// Permitir a navegação (o React Router já processou o clique)
+		}
+	};
+
 	const formatarData = (data) => {
 		const [ano, mes, dia] = data.split("-");
 		return `${dia}/${mes}/${ano}`;
@@ -411,9 +551,9 @@ const GerenciarDisponibilidadeBanca = () => {
 			}
 		});
 
-		// Verificar se há novas disponibilidades que não existiam no original
-		Object.keys(disponibilidades).forEach((key) => {
-			if (!(key in disponibilidadesOriginais)) {
+		// Verificar se há chaves no original que não estão no atual
+		Object.keys(disponibilidadesOriginais).forEach((key) => {
+			if (!(key in disponibilidades)) {
 				alteracoes++;
 			}
 		});
@@ -735,8 +875,51 @@ const GerenciarDisponibilidadeBanca = () => {
 					selecionar/desselecionar todos os horários daquele dia.
 				</Alert>
 			)}
+
+			{/* Diálogo de confirmação para navegação com mudanças não sincronizadas */}
+			<Dialog
+				open={showConfirmDialog}
+				onClose={handleCancelNavigation}
+				maxWidth="sm"
+				fullWidth
+			>
+				<DialogTitle>
+					Alterações não sincronizadas
+				</DialogTitle>
+				<DialogContent>
+					<Typography>
+						Você tem {calcularNumeroAlteracoes()} alteração(ões) não sincronizada(s)
+						na sua disponibilidade para bancas.
+					</Typography>
+					<Typography sx={{ mt: 2 }}>
+						O que deseja fazer?
+					</Typography>
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={handleCancelNavigation} color="inherit">
+						Cancelar
+					</Button>
+					<Button
+						onClick={handleConfirmNavigation}
+						color="error"
+						variant="outlined"
+					>
+						Sair sem sincronizar
+					</Button>
+					<Button
+						onClick={handleSincronizarESair}
+						color="primary"
+						variant="contained"
+						disabled={loading}
+					>
+						{loading ? "Sincronizando..." : "Sincronizar e sair"}
+					</Button>
+				</DialogActions>
+			</Dialog>
 		</Box>
 	);
-};
+});
+
+GerenciarDisponibilidadeBanca.displayName = 'GerenciarDisponibilidadeBanca';
 
 export default GerenciarDisponibilidadeBanca;

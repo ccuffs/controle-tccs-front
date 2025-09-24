@@ -214,6 +214,7 @@ function Navbar() {
 						component="div"
 						sx={{ flexGrow: 1, cursor: "pointer" }}
 						onClick={handleClickHome}
+						data-testid="system-title"
 					>
 						Sistema de Gestão de TCCs
 					</Typography>
