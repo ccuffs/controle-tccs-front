@@ -52,6 +52,15 @@ export default function AvaliarDefesasOrientador() {
 	// controle de edição por TCC e backup para cancelar
 	const [editandoTcc, setEditandoTcc] = useState({});
 	const [backupAvaliacoes, setBackupAvaliacoes] = useState({});
+	// estado para comentários de TCC (apenas fase 2)
+	const [comentariosTcc, setComentariosTcc] = useState({});
+	const [backupComentarios, setBackupComentarios] = useState({});
+	// estado para controle de aprovação de TCCs (fase 2)
+	const [aprovandoTcc, setAprovandoTcc] = useState({});
+	// aprovação local imediata pós-sucesso (para refletir checkbox/botão)
+	const [tccAprovadoLocal, setTccAprovadoLocal] = useState({});
+	// estado para edição do checkbox de aprovação TCC
+	const [edicaoAprovadoTcc, setEdicaoAprovadoTcc] = useState({});
 
 	useEffect(() => {
 		getCursosOrientador();
@@ -123,6 +132,7 @@ export default function AvaliarDefesasOrientador() {
 
 			// Inicializar estados de edição conforme dados atuais
 			const novoAvals = {};
+			const novoComentarios = {};
 			defesasFiltradas.forEach((d) => {
 				novoAvals[`${d.id_tcc}|${d.membro_banca}|${d.fase}`] =
 					d.avaliacao !== null && d.avaliacao !== undefined
@@ -130,6 +140,14 @@ export default function AvaliarDefesasOrientador() {
 						: "";
 			});
 			setAvaliacoesEdicao(novoAvals);
+
+			// Inicializar comentários de TCC (apenas fase 2)
+			orientacoesFiltradas.forEach((tcc) => {
+				if (tcc.fase === 2) {
+					novoComentarios[tcc.id] = tcc.comentarios_tcc || "";
+				}
+			});
+			setComentariosTcc(novoComentarios);
 		} catch (error) {
 			setMessageText("Erro ao carregar dados de defesas/orientações.");
 			setMessageSeverity("error");
@@ -149,6 +167,20 @@ export default function AvaliarDefesasOrientador() {
 		setAvaliacoesEdicao((prev) => ({
 			...prev,
 			[`${idTcc}|${membro}|${fase}`]: valor,
+		}));
+	}
+
+	function handleComentarioChange(idTcc, valor) {
+		setComentariosTcc((prev) => ({
+			...prev,
+			[idTcc]: valor,
+		}));
+	}
+
+	function handleAprovadoTccChange(idTcc, aprovado) {
+		setEdicaoAprovadoTcc((prev) => ({
+			...prev,
+			[idTcc]: aprovado,
 		}));
 	}
 
@@ -180,6 +212,23 @@ export default function AvaliarDefesasOrientador() {
 			}
 		});
 		setBackupAvaliacoes((prev) => ({ ...prev, [chaveUnica]: snapshot }));
+
+		// Backup do comentário de TCC se for fase 2
+		const tcc = mapaTcc.get(parseInt(idTcc));
+		if (tcc && tcc.fase === 2) {
+			setBackupComentarios((prev) => ({
+				...prev,
+				[chaveUnica]: comentariosTcc[idTcc] || ""
+			}));
+
+			// Backup do estado de aprovação TCC
+			const aprovadoAtual = tccAprovadoLocal[idTcc] ?? tcc.aprovado_tcc;
+			setEdicaoAprovadoTcc((prev) => ({
+				...prev,
+				[idTcc]: aprovadoAtual
+			}));
+		}
+
 		setEditandoTcc((prev) => ({ ...prev, [chaveUnica]: true }));
 	}
 
@@ -269,6 +318,29 @@ export default function AvaliarDefesasOrientador() {
 			delete novo[chaveUnica];
 			return novo;
 		});
+
+		// Restaurar comentário de TCC se existir backup
+		const comentarioBackup = backupComentarios[chaveUnica];
+		if (comentarioBackup !== undefined) {
+			setComentariosTcc((prev) => ({
+				...prev,
+				[idTcc]: comentarioBackup
+			}));
+		}
+
+		setBackupComentarios((prev) => {
+			const novo = { ...prev };
+			delete novo[chaveUnica];
+			return novo;
+		});
+
+		// Limpar estado de edição de aprovação TCC
+		setEdicaoAprovadoTcc((prev) => {
+			const novo = { ...prev };
+			delete novo[idTcc];
+			return novo;
+		});
+
 		setEditandoTcc((prev) => ({ ...prev, [chaveUnica]: false }));
 	}
 
@@ -312,7 +384,7 @@ export default function AvaliarDefesasOrientador() {
 				const avaliacoesCompletas =
 					notas.length === defesasTccFase.length &&
 					defesasTccFase.length > 0;
-				const aprovadoAutomatico = avaliacoesCompletas && media >= 6;
+				const aprovadoAutomatico = avaliacoesCompletas && media >= 6 && parseInt(faseAtual) === 1;
 
 				const dataDefesaStr = defesasTccFase[0]?.data_defesa
 					? new Date(defesasTccFase[0].data_defesa).toLocaleString(
@@ -393,7 +465,7 @@ export default function AvaliarDefesasOrientador() {
 						: null;
 				const avaliacoesCompletas =
 					notas.length === defesasTcc.length && defesasTcc.length > 0;
-				const aprovadoAutomatico = avaliacoesCompletas && media >= 6;
+				const aprovadoAutomatico = avaliacoesCompletas && media >= 6 && defesasTcc[0]?.fase === 1;
 
 				const dataDefesaStr = defesasTcc[0]?.data_defesa
 					? new Date(defesasTcc[0].data_defesa).toLocaleString(
@@ -484,6 +556,26 @@ export default function AvaliarDefesasOrientador() {
 				}
 			});
 
+			// Salvar comentário e aprovação de TCC se for fase 2
+			const tcc = mapaTcc.get(parseInt(idTccAlvo));
+			if (tcc && tcc.fase === 2) {
+				const comentario = comentariosTcc[idTccAlvo] || "";
+				const aprovadoTcc = edicaoAprovadoTcc[idTccAlvo];
+
+				const dadosAtualizacao = {
+					comentarios_tcc: comentario,
+				};
+
+				// Incluir aprovação TCC se foi alterada
+				if (aprovadoTcc !== undefined) {
+					dadosAtualizacao.aprovado_tcc = aprovadoTcc;
+				}
+
+				promises.push(
+					axiosInstance.put(`/trabalho-conclusao/${idTccAlvo}`, dadosAtualizacao),
+				);
+			}
+
 			if (promises.length > 0) {
 				await Promise.all(promises);
 				const descricaoCard = faseAlvo
@@ -504,6 +596,26 @@ export default function AvaliarDefesasOrientador() {
 					delete novo[chaveUnicaAlvo];
 					return novo;
 				});
+				setBackupComentarios((prev) => {
+					const novo = { ...prev };
+					delete novo[chaveUnicaAlvo];
+					return novo;
+				});
+
+				// Limpar estado de edição de aprovação TCC
+				setEdicaoAprovadoTcc((prev) => {
+					const novo = { ...prev };
+					delete novo[idTccAlvo];
+					return novo;
+				});
+
+				// Atualizar estado local de aprovação se foi alterado
+				if (edicaoAprovadoTcc[idTccAlvo] !== undefined) {
+					setTccAprovadoLocal((prev) => ({
+						...prev,
+						[idTccAlvo]: edicaoAprovadoTcc[idTccAlvo]
+					}));
+				}
 			} else {
 				setMessageText("Nenhuma avaliação válida para este card.");
 				setMessageSeverity("warning");
@@ -514,6 +626,39 @@ export default function AvaliarDefesasOrientador() {
 			setMessageText("Erro ao salvar avaliações.");
 			setMessageSeverity("error");
 			setOpenMessage(true);
+		}
+	}
+
+	// Função para aprovar TCC (fase 2)
+	async function aprovarTcc(idTcc) {
+		try {
+			setAprovandoTcc((prev) => ({ ...prev, [idTcc]: true }));
+
+			await axiosInstance.put(`/trabalho-conclusao/${idTcc}`, {
+				aprovado_tcc: true,
+			});
+
+			// Atualização imediata do UI: marcar aprovado localmente para refletir no checkbox e esconder botão
+			setOrientacoes((prev) =>
+				prev.map((t) =>
+					t.id === parseInt(idTcc) ? { ...t, aprovado_tcc: true } : t,
+				),
+			);
+			setTccAprovadoLocal((prev) => ({ ...prev, [idTcc]: true }));
+
+			setMessageText("TCC aprovado com sucesso!");
+			setMessageSeverity("success");
+			setOpenMessage(true);
+
+			// Recarregar dados para atualizar o status
+			await carregarDados();
+		} catch (error) {
+			console.error("Erro ao aprovar TCC:", error);
+			setMessageText("Erro ao aprovar TCC.");
+			setMessageSeverity("error");
+			setOpenMessage(true);
+		} finally {
+			setAprovandoTcc((prev) => ({ ...prev, [idTcc]: false }));
 		}
 	}
 
@@ -687,15 +832,30 @@ export default function AvaliarDefesasOrientador() {
 														control={
 															<Checkbox
 																checked={Boolean(
-																	card.aprovadoAutomatico,
+																	card.fase === 1
+																		? card.aprovadoAutomatico
+																		: (editandoTcc[card.chaveUnica]
+																			? edicaoAprovadoTcc[card.idTcc]
+																			: (tccAprovadoLocal[card.idTcc] ?? mapaTcc.get(card.idTcc)?.aprovado_tcc))
 																)}
 																disabled={
-																	!card.avaliacoesCompletas
+																	card.fase === 1
+																		? !card.avaliacoesCompletas
+																		: !editandoTcc[card.chaveUnica] // Para fase 2, habilitado apenas em modo edição
 																}
+																onChange={(e) => {
+																	if (card.fase === 2 && editandoTcc[card.chaveUnica]) {
+																		handleAprovadoTccChange(card.idTcc, e.target.checked);
+																	}
+																}}
 																color={
-																	card.aprovadoAutomatico
-																		? "success"
-																		: "default"
+																	(card.fase === 1
+																		? card.aprovadoAutomatico
+																		: (editandoTcc[card.chaveUnica]
+																			? edicaoAprovadoTcc[card.idTcc]
+																			: (tccAprovadoLocal[card.idTcc] ?? mapaTcc.get(card.idTcc)?.aprovado_tcc)))
+																	? "success"
+																	: "default"
 																}
 															/>
 														}
@@ -781,6 +941,33 @@ export default function AvaliarDefesasOrientador() {
 														</Stack>
 													))}
 												</Box>
+
+												{/* Campo de comentários apenas para fase 2 (TCC) */}
+												{card.fase === 2 && (
+													<>
+														<Divider sx={{ my: 2 }} />
+														<Typography variant="subtitle1">
+															Comentários do TCC
+														</Typography>
+														<TextField
+															fullWidth
+															multiline
+															rows={3}
+															placeholder="Digite os comentários sobre o TCC..."
+															value={comentariosTcc[card.idTcc] || ""}
+															onChange={(e) =>
+																handleComentarioChange(
+																	card.idTcc,
+																	e.target.value,
+																)
+															}
+															disabled={
+																!editandoTcc[card.chaveUnica]
+															}
+															sx={{ mt: 1 }}
+														/>
+													</>
+												)}
 											</Stack>
 										</CardContent>
 										<CardActions
@@ -824,17 +1011,42 @@ export default function AvaliarDefesasOrientador() {
 													{card.membros.some(
 														(m) => m.salvo,
 													) ? (
-														<Button
-															variant="outlined"
-															color="primary"
-															onClick={() =>
-																iniciarEdicao(
-																	card.chaveUnica,
-																)
-															}
+														<Stack
+															direction="row"
+															spacing={1}
 														>
-															Editar
-														</Button>
+															<Button
+																variant="outlined"
+																color="primary"
+																onClick={() =>
+																	iniciarEdicao(
+																		card.chaveUnica,
+																	)
+																}
+															>
+																Editar
+															</Button>
+															{/* Botão Aprovar TCC apenas para fase 2 */}
+															{card.fase === 2 &&
+																!(editandoTcc[card.chaveUnica]
+																	? edicaoAprovadoTcc[card.idTcc]
+																	: (tccAprovadoLocal[card.idTcc] ?? mapaTcc.get(card.idTcc)?.aprovado_tcc)) && (
+																<Button
+																	variant="contained"
+																	color="success"
+																	onClick={() =>
+																		aprovarTcc(card.idTcc)
+																	}
+																	disabled={aprovandoTcc[card.idTcc]}
+																>
+																	{aprovandoTcc[card.idTcc] ? (
+																		<CircularProgress size={20} />
+																	) : (
+																		"Aprovar TCC"
+																	)}
+																</Button>
+															)}
+														</Stack>
 													) : (
 														<Stack
 															direction="row"
