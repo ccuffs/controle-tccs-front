@@ -31,6 +31,11 @@ export default function FiltrosPesquisa({
 	semestresDisponiveis = [],
 	fasesDisponiveis = [],
 }) {
+	// Função para validar se um valor existe nas opções disponíveis
+	const isValidValue = (value, options) => {
+		if (!value) return true; // Valor vazio é sempre válido
+		return options.includes(value);
+	};
 	function handleCursoChange(e) {
 		setCursoSelecionado(e.target.value);
 	}
@@ -53,7 +58,7 @@ export default function FiltrosPesquisa({
 				<FormControl fullWidth size="small" disabled={loading}>
 					<InputLabel>Curso</InputLabel>
 					<Select
-						value={cursoSelecionado}
+						value={cursoSelecionado || ""}
 						label="Curso"
 						onChange={handleCursoChange}
 					>
@@ -78,7 +83,7 @@ export default function FiltrosPesquisa({
 					disabled={loading}
 				>
 					<InputLabel>Ano</InputLabel>
-					<Select value={ano} label="Ano" onChange={handleAnoChange}>
+					<Select value={ano || ""} label="Ano" onChange={handleAnoChange}>
 						<MenuItem value="">
 							<em>Todos</em>
 						</MenuItem>
@@ -111,7 +116,7 @@ export default function FiltrosPesquisa({
 				>
 					<InputLabel>Semestre</InputLabel>
 					<Select
-						value={semestre}
+						value={isValidValue(semestre, [...semestresDisponiveis, 1, 2]) ? semestre : ""}
 						label="Semestre"
 						onChange={handleSemestreChange}
 					>
@@ -143,7 +148,7 @@ export default function FiltrosPesquisa({
 				>
 					<InputLabel>Fase</InputLabel>
 					<Select
-						value={fase}
+						value={fase || ""}
 						label="Fase"
 						onChange={handleFaseChange}
 					>
