@@ -43,6 +43,7 @@ export default function Orientadores() {
 		nome: "",
 		email: "",
 		sala: "",
+		siape: "",
 	});
 
 	useEffect(() => {
@@ -130,6 +131,7 @@ export default function Orientadores() {
 			nome: "",
 			email: "",
 			sala: "",
+			siape: "",
 		});
 	}
 
@@ -148,11 +150,14 @@ export default function Orientadores() {
 				return;
 			}
 
-			// Converter sala para número se não estiver vazio
+			// Converter sala e siape para número se não estiverem vazios
 			const docenteParaEnviar = {
 				...novoDocenteData,
 				sala: novoDocenteData.sala
 					? parseInt(novoDocenteData.sala)
+					: null,
+				siape: novoDocenteData.siape
+					? parseInt(novoDocenteData.siape)
 					: null,
 			};
 
@@ -264,16 +269,25 @@ export default function Orientadores() {
 		{
 			field: "docente_nome",
 			headerName: "Nome do Orientador",
-			width: 350,
+			width: 300,
 			renderCell: (params) => {
 				const docente = params?.row?.docente;
 				return docente?.nome || "N/A";
 			},
 		},
 		{
+			field: "docente_siape",
+			headerName: "SIAPE",
+			width: 120,
+			renderCell: (params) => {
+				const docente = params?.row?.docente;
+				return docente?.siape || "N/A";
+			},
+		},
+		{
 			field: "docente_email",
 			headerName: "Email",
-			width: 300,
+			width: 250,
 			renderCell: (params) => {
 				const docente = params?.row?.docente;
 				return docente?.email || "N/A";
@@ -452,6 +466,15 @@ export default function Orientadores() {
 									onChange={handleNovoDocenteChange}
 									fullWidth
 									size="small"
+								/>
+								<TextField
+									name="siape"
+									label="SIAPE"
+									value={novoDocenteData.siape}
+									onChange={handleNovoDocenteChange}
+									fullWidth
+									size="small"
+									type="number"
 								/>
 							</Stack>
 						</DialogContent>
