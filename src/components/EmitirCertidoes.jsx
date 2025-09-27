@@ -101,11 +101,46 @@ export default function EmitirCertidoes() {
 		}
 	};
 
-	const handleBaixarCertidao = (certidao) => {
-		// Por enquanto apenas exibe mensagem de sucesso
-		setSnackbarMessage("Certidão baixada com sucesso!");
-		setSnackbarOpen(true);
-		console.log("Baixando certidão para:", certidao);
+	const handleBaixarCertidao = async (certidao) => {
+		try {
+			// Determinar tipo de participação baseado no campo foi_orientador
+			const tipoParticipacao = certidao.foi_orientador ? 'orientacao' : 'banca';
+
+			// Construir URL da API
+			const url = `/certidoes/gerar/${certidao.id_tcc}/${tipoParticipacao}`;
+
+			// Abrir certidão em nova aba
+			const novaAba = window.open('', '_blank');
+
+			if (!novaAba) {
+				setSnackbarMessage("Por favor, permita pop-ups para visualizar a certidão");
+				setSnackbarOpen(true);
+				return;
+			}
+
+			// Fazer requisição para obter o HTML da certidão
+			const response = await axios.get(url, {
+				responseType: 'text'
+			});
+
+			// Escrever o HTML na nova aba
+			// Note: o interceptor axios já retorna response.data, então response já é o HTML
+			novaAba.document.write(response);
+			novaAba.document.close();
+
+			setSnackbarMessage("Certidão gerada com sucesso!");
+			setSnackbarOpen(true);
+		} catch (error) {
+			console.error("Erro ao gerar certidão:", error);
+
+			let mensagemErro = "Erro ao gerar certidão";
+			if (error.response?.data?.message) {
+				mensagemErro = error.response.data.message;
+			}
+
+			setSnackbarMessage(mensagemErro);
+			setSnackbarOpen(true);
+		}
 	};
 
 	const handleCloseSnackbar = () => {
