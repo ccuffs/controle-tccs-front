@@ -11,6 +11,7 @@ import FiltrosPesquisa from "./FiltrosPesquisa";
 import CustomDataGrid from "./CustomDataGrid";
 import axios from "../auth/axios";
 import { useAuth } from "../contexts/AuthContext";
+import html2pdf from 'html2pdf.js';
 
 export default function EmitirCertidoes() {
 	const { usuario } = useAuth();
@@ -123,12 +124,99 @@ export default function EmitirCertidoes() {
 				responseType: 'text'
 			});
 
-			// Escrever o HTML na nova aba
-			// Note: o interceptor axios já retorna response.data, então response já é o HTML
-			novaAba.document.write(response);
+			// Adicionar CSS específico para impressão A4 sem headers/footers
+			const cssImpressao = `
+				<style>
+					@media print {
+						@page {
+							size: A4;
+							margin: 0.5in;
+						}
+
+						/* Remove headers e footers do navegador */
+						@page {
+							@top-left { content: ""; }
+							@top-center { content: ""; }
+							@top-right { content: ""; }
+							@bottom-left { content: ""; }
+							@bottom-center { content: ""; }
+							@bottom-right { content: ""; }
+						}
+
+						/* Garante que o conteúdo ocupe toda a página */
+						body {
+							margin: 0;
+							padding: 0;
+							font-size: 12pt;
+							line-height: 1.4;
+						}
+
+						/* Otimiza para A4 */
+						* {
+							-webkit-print-color-adjust: exact;
+							color-adjust: exact;
+						}
+					}
+				</style>
+			`;
+
+			// Escrever o HTML na nova aba com CSS de impressão
+			novaAba.document.write(cssImpressao + response);
 			novaAba.document.close();
 
-			setSnackbarMessage("Certidão gerada com sucesso!");
+			// Adicionar função para converter para PDF na nova aba
+			novaAba.onload = () => {
+				// Função para carregar html2pdf.js dinamicamente
+				const carregarHtml2Pdf = () => {
+					return new Promise((resolve, reject) => {
+						const script = novaAba.document.createElement('script');
+						script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+						script.onload = () => resolve();
+						script.onerror = () => reject(new Error('Erro ao carregar html2pdf.js'));
+						novaAba.document.head.appendChild(script);
+					});
+				};
+
+				// Função para converter para PDF automaticamente
+				const converterParaPDFAutomatico = async () => {
+					try {
+						// Carregar html2pdf.js se ainda não estiver carregado
+						if (!novaAba.html2pdf) {
+							await carregarHtml2Pdf();
+						}
+
+						// Configurações do PDF
+						const opt = {
+							margin: 0.5,
+							filename: `certidao_${certidao.nome_dicente}_${tipoParticipacao}.pdf`,
+							image: { type: 'jpeg', quality: 0.98 },
+							html2canvas: {
+								scale: 2,
+								useCORS: true,
+								letterRendering: true
+							},
+							jsPDF: {
+								unit: 'in',
+								format: 'a4',
+								orientation: 'portrait'
+							}
+						};
+
+						// Gerar e baixar o PDF
+						await novaAba.html2pdf().set(opt).from(novaAba.document.body).save();
+
+					} catch (error) {
+						console.error('Erro ao converter para PDF:', error);
+					}
+				};
+
+				// Executar conversão para PDF automaticamente quando a página carregar
+				setTimeout(() => {
+					converterParaPDFAutomatico();
+				}, 1000);
+			};
+
+			setSnackbarMessage("Certidão aberta! PDF será baixado automaticamente.");
 			setSnackbarOpen(true);
 		} catch (error) {
 			console.error("Erro ao gerar certidão:", error);
