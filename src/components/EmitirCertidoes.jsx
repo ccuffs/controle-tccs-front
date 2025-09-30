@@ -292,7 +292,7 @@ export default function EmitirCertidoes() {
 						onClick={() => handleBaixarCertidao(params.row)}
 						sx={{ fontSize: "0.75rem" }}
 					>
-						Baixar Certidão
+						Baixar Declaração
 					</Button>
 				);
 			},
@@ -302,11 +302,11 @@ export default function EmitirCertidoes() {
 	return (
 		<Box>
 			<Typography variant="h5" component="h2" gutterBottom>
-				Emitir Certidões
+				Emitir Declarações
 			</Typography>
 
 			<Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-				Aqui você pode baixar certidões dos trabalhos em que participou como orientador ou membro de banca.
+				Aqui você pode baixar declarações dos trabalhos em que participou como orientador ou membro de banca.
 			</Typography>
 
 			<Box sx={{ mb: 3 }}>
@@ -361,7 +361,7 @@ export default function EmitirCertidoes() {
 					}}
 				>
 					<Typography variant="h6" color="text.secondary">
-						Selecione um curso para visualizar as certidões disponíveis
+						Selecione um curso para visualizar as declarações disponíveis
 					</Typography>
 				</Box>
 			)}

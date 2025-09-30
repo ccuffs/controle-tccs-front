@@ -65,7 +65,7 @@ export default function ModuloOrientador() {
 					<Tab label="Convites Recebidos" {...a11yProps(3)} />
 					<Tab label="Disponibilidade Bancas" {...a11yProps(4)} />
 					<Tab label="Avaliar Defesas" {...a11yProps(5)} />
-					<Tab label="Emitir Certidões" {...a11yProps(6)} />
+					<Tab label="Emitir Declarações" {...a11yProps(6)} />
 					<Tab label="Outras Funcionalidades" {...a11yProps(7)} />
 				</Tabs>
 			</Box>
