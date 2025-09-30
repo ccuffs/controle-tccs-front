@@ -6,7 +6,7 @@ import Orientacao from "./Orientacao";
 import GerenciarDisponibilidadeBanca from "./GerenciarDisponibilidadeBanca";
 import AvaliarDefesasOrientador from "./AvaliarDefesasOrientador";
 import Dashboard from "./Dashboard";
-import EmitirCertidoes from "./EmitirCertidoes";
+import EmitirDeclaracoes from "./EmitirDeclaracoes";
 
 function TabPanel({ children, value, index, ...other }) {
 	return (
@@ -95,7 +95,7 @@ export default function ModuloOrientador() {
 			</TabPanel>
 
 			<TabPanel value={tabValue} index={6}>
-				<EmitirCertidoes />
+				<EmitirDeclaracoes />
 			</TabPanel>
 
 			<TabPanel value={tabValue} index={7}>

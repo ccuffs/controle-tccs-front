@@ -13,9 +13,9 @@ import axios from "../auth/axios";
 import { useAuth } from "../contexts/AuthContext";
 import html2pdf from 'html2pdf.js';
 
-export default function EmitirCertidoes() {
+export default function EmitirDeclaracoes() {
 	const { usuario } = useAuth();
-	const [certidoes, setCertidoes] = useState([]);
+	const [declaracoes, setDeclaracoes] = useState([]);
 	const [loading, setLoading] = useState(false);
 	const [cursos, setCursos] = useState([]);
 	const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -42,13 +42,13 @@ export default function EmitirCertidoes() {
 		}
 	}, [usuario, cursoSelecionado]);
 
-	// Carregar certidões apenas quando pelo menos o curso estiver selecionado
+	// Carregar declarações apenas quando pelo menos o curso estiver selecionado
 	useEffect(() => {
 		if (cursoSelecionado) {
-			carregarCertidoes();
+			carregarDeclaracoes();
 		} else {
 			// Limpar dados quando não há curso selecionado
-			setCertidoes([]);
+			setDeclaracoes([]);
 			setAnosDisponiveis([]);
 			setSemestresDisponiveis([]);
 			// Resetar filtros quando não há curso selecionado
@@ -72,7 +72,7 @@ export default function EmitirCertidoes() {
 		}
 	};
 
-	const carregarCertidoes = async () => {
+	const carregarDeclaracoes = async () => {
 		// Só carregar se pelo menos o curso estiver selecionado
 		if (!cursoSelecionado) {
 			return;
@@ -86,15 +86,15 @@ export default function EmitirCertidoes() {
 			if (semestre) params.append("semestre", semestre);
 			if (fase) params.append("fase", fase);
 
-			const response = await axios.get(`/certidoes/?${params.toString()}`);
+			const response = await axios.get(`/declaracoes/?${params.toString()}`);
 
 			// O axios interceptor já retorna response.data, então response já é o objeto de dados
-			setCertidoes(response?.certidoes || []);
+			setDeclaracoes(response?.declaracoes || []);
 			setAnosDisponiveis(response?.anosDisponiveis || []);
 			setSemestresDisponiveis(response?.semestresDisponiveis || []);
 		} catch (error) {
-			console.error("Erro ao carregar certidões:", error);
-			setCertidoes([]);
+			console.error("Erro ao carregar declarações:", error);
+			setDeclaracoes([]);
 			setAnosDisponiveis([]);
 			setSemestresDisponiveis([]);
 		} finally {
@@ -102,24 +102,24 @@ export default function EmitirCertidoes() {
 		}
 	};
 
-	const handleBaixarCertidao = async (certidao) => {
+	const handleBaixarDeclaracao = async (declaracao) => {
 		try {
 			// Determinar tipo de participação baseado no campo foi_orientador
-			const tipoParticipacao = certidao.foi_orientador ? 'orientacao' : 'banca';
+			const tipoParticipacao = declaracao.foi_orientador ? 'orientacao' : 'banca';
 
 			// Construir URL da API
-			const url = `/certidoes/gerar/${certidao.id_tcc}/${tipoParticipacao}`;
+			const url = `/declaracoes/gerar/${declaracao.id_tcc}/${tipoParticipacao}`;
 
-			// Abrir certidão em nova aba
+			// Abrir declaração em nova aba
 			const novaAba = window.open('', '_blank');
 
 			if (!novaAba) {
-				setSnackbarMessage("Por favor, permita pop-ups para visualizar a certidão");
+				setSnackbarMessage("Por favor, permita pop-ups para visualizar a declaração");
 				setSnackbarOpen(true);
 				return;
 			}
 
-			// Fazer requisição para obter o HTML da certidão
+			// Fazer requisição para obter o HTML da declaração
 			const response = await axios.get(url, {
 				responseType: 'text'
 			});
@@ -188,7 +188,7 @@ export default function EmitirCertidoes() {
 						// Configurações do PDF
 						const opt = {
 							margin: 0.5,
-							filename: `certidao_${certidao.nome_dicente}_${tipoParticipacao}.pdf`,
+							filename: `declaracao_${declaracao.nome_dicente}_${tipoParticipacao}.pdf`,
 							image: { type: 'jpeg', quality: 0.98 },
 							html2canvas: {
 								scale: 2,
@@ -216,12 +216,12 @@ export default function EmitirCertidoes() {
 				}, 1000);
 			};
 
-			setSnackbarMessage("Certidão aberta! PDF será baixado automaticamente.");
+			setSnackbarMessage("Declaração aberta! PDF será baixado automaticamente.");
 			setSnackbarOpen(true);
 		} catch (error) {
-			console.error("Erro ao gerar certidão:", error);
+			console.error("Erro ao gerar declaração:", error);
 
-			let mensagemErro = "Erro ao gerar certidão";
+			let mensagemErro = "Erro ao gerar declaração";
 			if (error.response?.data?.message) {
 				mensagemErro = error.response.data.message;
 			}
@@ -289,7 +289,7 @@ export default function EmitirCertidoes() {
 						color="primary"
 						size="small"
 						startIcon={<Download />}
-						onClick={() => handleBaixarCertidao(params.row)}
+						onClick={() => handleBaixarDeclaracao(params.row)}
 						sx={{ fontSize: "0.75rem" }}
 					>
 						Baixar Declaração
@@ -338,7 +338,7 @@ export default function EmitirCertidoes() {
 			{cursoSelecionado ? (
 				<Box sx={{ height: 600, width: "100%" }}>
 					<CustomDataGrid
-						rows={certidoes}
+						rows={declaracoes}
 						columns={columns}
 						pageSize={10}
 						loading={loading}
