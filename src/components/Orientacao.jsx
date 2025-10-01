@@ -301,24 +301,26 @@ export default function Orientacao({ isOrientadorView = false }) {
 				});
 
 				// Filtrar orientações por curso, ano, semestre e fase
-				const orientacoesFiltradas = (response.orientacoes || []).filter(
-					(o) => {
-						const tcc = o.TrabalhoConclusao;
-						if (!tcc) return false;
+				const orientacoesFiltradas = (
+					response.orientacoes || []
+				).filter((o) => {
+					const tcc = o.TrabalhoConclusao;
+					if (!tcc) return false;
 
-						return (
-							tcc.Curso?.id === parseInt(cursoSelecionado) &&
-							tcc.ano === parseInt(ano) &&
-							tcc.semestre === parseInt(semestre) &&
-							(fase === "" || tcc.fase === parseInt(fase))
-						);
-					},
-				);
+					return (
+						tcc.Curso?.id === parseInt(cursoSelecionado) &&
+						tcc.ano === parseInt(ano) &&
+						tcc.semestre === parseInt(semestre) &&
+						(fase === "" || tcc.fase === parseInt(fase))
+					);
+				});
 
 				// Extrair dicentes das orientações
 				const dicentes = orientacoesFiltradas
 					.map((o) => o.TrabalhoConclusao?.Dicente)
-					.filter((dicente) => dicente !== null && dicente !== undefined)
+					.filter(
+						(dicente) => dicente !== null && dicente !== undefined,
+					)
 					.sort((a, b) => a.nome.localeCompare(b.nome));
 
 				setDicentes(dicentes);
@@ -334,10 +336,12 @@ export default function Orientacao({ isOrientadorView = false }) {
 				if (fase) {
 					params.fase = fase;
 				}
-				const response = await axiosInstance.get("/dicentes", { params });
+				const response = await axiosInstance.get("/dicentes", {
+					params,
+				});
 				// Ordena os dicentes por nome em ordem crescente
-				const dicentesOrdenados = (response.dicentes || []).sort((a, b) =>
-					a.nome.localeCompare(b.nome),
+				const dicentesOrdenados = (response.dicentes || []).sort(
+					(a, b) => a.nome.localeCompare(b.nome),
 				);
 				setDicentes(dicentesOrdenados);
 				console.log(dicentesOrdenados);
@@ -352,7 +356,6 @@ export default function Orientacao({ isOrientadorView = false }) {
 			setLoadingDicentes(false);
 		}
 	}
-
 
 	async function getOrientacoes() {
 		try {
@@ -736,11 +739,11 @@ export default function Orientacao({ isOrientadorView = false }) {
 				etapa: tcc?.etapa || 0,
 				membroBanca1,
 				membroBanca2,
-							dataHoraDefesa,
-		});
-		setSelectedHorarioBanca(null);
-		setMostrarSeletorHorario(false);
-	} catch (error) {
+				dataHoraDefesa,
+			});
+			setSelectedHorarioBanca(null);
+			setMostrarSeletorHorario(false);
+		} catch (error) {
 			console.log("Erro ao carregar dados do TCC:", error);
 		} finally {
 			setLoadingEdit(false);
@@ -754,7 +757,11 @@ export default function Orientacao({ isOrientadorView = false }) {
 		}));
 
 		// Se alterar orientador ou membros da banca, resetar seleção de horário
-		if (field === "orientador" || field === "membroBanca1" || field === "membroBanca2") {
+		if (
+			field === "orientador" ||
+			field === "membroBanca1" ||
+			field === "membroBanca2"
+		) {
 			setSelectedHorarioBanca(null);
 			setMostrarSeletorHorario(false);
 		}
@@ -832,17 +839,28 @@ export default function Orientacao({ isOrientadorView = false }) {
 			);
 
 			// Se há horário selecionado, agendar a defesa (fazer reserva do horário)
-			if (selectedHorarioBanca && editData.orientador && editData.membroBanca1 && editData.membroBanca2) {
+			if (
+				selectedHorarioBanca &&
+				editData.orientador &&
+				editData.membroBanca1 &&
+				editData.membroBanca2
+			) {
 				const agendamentoPayload = {
 					id_tcc: idTcc,
 					fase: parseInt(tccAtual?.fase || fase),
 					data: selectedHorarioBanca.data,
 					hora: selectedHorarioBanca.hora,
 					codigo_orientador: editData.orientador,
-					membros_banca: [editData.membroBanca1, editData.membroBanca2]
+					membros_banca: [
+						editData.membroBanca1,
+						editData.membroBanca2,
+					],
 				};
 
-				await axiosInstance.post("/defesas/agendar", agendamentoPayload);
+				await axiosInstance.post(
+					"/defesas/agendar",
+					agendamentoPayload,
+				);
 			}
 		} catch (error) {
 			console.log("Erro ao gerenciar banca de defesa:", error);
@@ -1978,178 +1996,232 @@ export default function Orientacao({ isOrientadorView = false }) {
 											<>
 												<Box sx={{ mb: 3 }}>
 													<LocalizationProvider
-													dateAdapter={AdapterDateFns}
-													adapterLocale={ptBR}
-												>
-													<DateTimePicker
-														label="Data e Hora da Defesa"
-														value={
-															editData.dataHoraDefesa
+														dateAdapter={
+															AdapterDateFns
 														}
-														onChange={(
-															newValue,
-														) => {
-															const etapaAtual =
-																parseInt(
-																	editData.etapa,
-																);
-															const tccAtual =
-																trabalhosPorMatricula[
-																	selectedDicente
-																		?.matricula
-																];
-															const faseAtual =
-																parseInt(
-																	tccAtual?.fase,
-																);
-															const edicaoHabilitada =
-																(etapaAtual ===
-																	5 &&
-																	faseAtual ===
-																		1) ||
-																(etapaAtual ===
-																	8 &&
-																	faseAtual ===
-																		2);
-
-															if (
-																edicaoHabilitada
-															) {
-																handleEditDataChange(
-																	"dataHoraDefesa",
-																	newValue,
-																);
+														adapterLocale={ptBR}
+													>
+														<DateTimePicker
+															label="Data e Hora da Defesa"
+															value={
+																editData.dataHoraDefesa
 															}
-														}}
-														disabled={(() => {
-															const etapaAtual =
-																parseInt(
-																	editData.etapa,
-																);
-															const tccAtual =
-																trabalhosPorMatricula[
-																	selectedDicente
-																		?.matricula
-																];
-															const faseAtual =
-																parseInt(
-																	tccAtual?.fase,
-																);
-															return !(
-																(etapaAtual ===
-																	5 &&
-																	faseAtual ===
-																		1) ||
-																(etapaAtual ===
-																	8 &&
-																	faseAtual ===
-																		2)
-															);
-														})()}
-														renderInput={(
-															params,
-														) => (
-															<TextField
-																{...params}
-																fullWidth
-																helperText={(() => {
-																	const etapaAtual =
-																		parseInt(
-																			editData.etapa,
-																		);
-																	const tccAtual =
-																		trabalhosPorMatricula[
-																			selectedDicente
-																				?.matricula
-																		];
-																	const faseAtual =
-																		parseInt(
-																			tccAtual?.fase,
-																		);
-																	const edicaoHabilitada =
-																		(etapaAtual ===
-																			5 &&
-																			faseAtual ===
-																				1) ||
-																		(etapaAtual ===
-																			8 &&
-																			faseAtual ===
-																				2);
+															onChange={(
+																newValue,
+															) => {
+																const etapaAtual =
+																	parseInt(
+																		editData.etapa,
+																	);
+																const tccAtual =
+																	trabalhosPorMatricula[
+																		selectedDicente
+																			?.matricula
+																	];
+																const faseAtual =
+																	parseInt(
+																		tccAtual?.fase,
+																	);
+																const edicaoHabilitada =
+																	(etapaAtual ===
+																		5 &&
+																		faseAtual ===
+																			1) ||
+																	(etapaAtual ===
+																		8 &&
+																		faseAtual ===
+																			2);
 
-																	if (
-																		!edicaoHabilitada
-																	) {
-																		return `Edição disponível apenas na etapa ${faseAtual === 1 ? "5" : "8"}`;
-																	}
+																if (
+																	edicaoHabilitada
+																) {
+																	handleEditDataChange(
+																		"dataHoraDefesa",
+																		newValue,
+																	);
+																}
+															}}
+															disabled={(() => {
+																const etapaAtual =
+																	parseInt(
+																		editData.etapa,
+																	);
+																const tccAtual =
+																	trabalhosPorMatricula[
+																		selectedDicente
+																			?.matricula
+																	];
+																const faseAtual =
+																	parseInt(
+																		tccAtual?.fase,
+																	);
+																return !(
+																	(etapaAtual ===
+																		5 &&
+																		faseAtual ===
+																			1) ||
+																	(etapaAtual ===
+																		8 &&
+																		faseAtual ===
+																			2)
+																);
+															})()}
+															renderInput={(
+																params,
+															) => (
+																<TextField
+																	{...params}
+																	fullWidth
+																	helperText={(() => {
+																		const etapaAtual =
+																			parseInt(
+																				editData.etapa,
+																			);
+																		const tccAtual =
+																			trabalhosPorMatricula[
+																				selectedDicente
+																					?.matricula
+																			];
+																		const faseAtual =
+																			parseInt(
+																				tccAtual?.fase,
+																			);
+																		const edicaoHabilitada =
+																			(etapaAtual ===
+																				5 &&
+																				faseAtual ===
+																					1) ||
+																			(etapaAtual ===
+																				8 &&
+																				faseAtual ===
+																					2);
 
-																	return editData.dataHoraDefesa &&
+																		if (
+																			!edicaoHabilitada
+																		) {
+																			return `Edição disponível apenas na etapa ${faseAtual === 1 ? "5" : "8"}`;
+																		}
+
+																		return editData.dataHoraDefesa &&
+																			(!editData.membroBanca1 ||
+																				!editData.membroBanca2)
+																			? "⚠️ Selecione os 2 membros da banca para definir a data da defesa"
+																			: "Selecione a data e horário para a defesa";
+																	})()}
+																	error={
+																		editData.dataHoraDefesa &&
 																		(!editData.membroBanca1 ||
 																			!editData.membroBanca2)
-																		? "⚠️ Selecione os 2 membros da banca para definir a data da defesa"
-																		: "Selecione a data e horário para a defesa";
-																})()}
-																error={
-																	editData.dataHoraDefesa &&
-																	(!editData.membroBanca1 ||
-																		!editData.membroBanca2)
+																	}
+																/>
+															)}
+															ampm={false}
+															format="dd/MM/yyyy HH:mm"
+														/>
+													</LocalizationProvider>
+												</Box>
+
+												{/* Botão para mostrar/ocultar seletor de horário baseado em disponibilidades */}
+												{editData.orientador &&
+													editData.membroBanca1 &&
+													editData.membroBanca2 && (
+														<Box sx={{ mb: 2 }}>
+															<Button
+																variant="outlined"
+																onClick={() =>
+																	setMostrarSeletorHorario(
+																		!mostrarSeletorHorario,
+																	)
+																}
+																size="small"
+															>
+																{mostrarSeletorHorario
+																	? "Ocultar Horários Disponíveis"
+																	: "Ver Horários Disponíveis dos Docentes"}
+															</Button>
+														</Box>
+													)}
+
+												{/* Seletor de horário baseado em disponibilidades */}
+												{mostrarSeletorHorario &&
+													editData.orientador &&
+													editData.membroBanca1 &&
+													editData.membroBanca2 && (
+														<Box
+															sx={{
+																mb: 3,
+																p: 2,
+																bgcolor:
+																	"background.default",
+																borderRadius: 1,
+															}}
+														>
+															<Typography
+																variant="h6"
+																gutterBottom
+															>
+																Horários Comuns
+																Disponíveis
+															</Typography>
+															<SelecionarHorarioBanca
+																oferta={{
+																	ano: parseInt(
+																		ano,
+																	),
+																	semestre:
+																		parseInt(
+																			semestre,
+																		),
+																	id_curso:
+																		parseInt(
+																			cursoSelecionado,
+																		),
+																	fase: (() => {
+																		const tccAtual =
+																			trabalhosPorMatricula[
+																				selectedDicente
+																					?.matricula
+																			];
+																		return parseInt(
+																			tccAtual?.fase,
+																		);
+																	})(),
+																}}
+																codigoOrientador={
+																	editData.orientador
+																}
+																codigosMembrosBanca={[
+																	editData.membroBanca1,
+																	editData.membroBanca2,
+																]}
+																onChange={(
+																	slot,
+																) => {
+																	setSelectedHorarioBanca(
+																		slot,
+																	);
+																	if (slot) {
+																		// Converter data e hora para datetime
+																		const dataHora =
+																			new Date(
+																				`${slot.data}T${slot.hora}`,
+																			);
+																		handleEditDataChange(
+																			"dataHoraDefesa",
+																			dataHora,
+																		);
+																	}
+																}}
+																selectedSlot={
+																	selectedHorarioBanca
 																}
 															/>
-														)}
-														ampm={false}
-														format="dd/MM/yyyy HH:mm"
-													/>
-												</LocalizationProvider>
-											</Box>
+														</Box>
+													)}
+											</>
+										)}
 
-											{/* Botão para mostrar/ocultar seletor de horário baseado em disponibilidades */}
-											{editData.orientador && editData.membroBanca1 && editData.membroBanca2 && (
-												<Box sx={{ mb: 2 }}>
-													<Button
-														variant="outlined"
-														onClick={() => setMostrarSeletorHorario(!mostrarSeletorHorario)}
-														size="small"
-													>
-														{mostrarSeletorHorario
-															? "Ocultar Horários Disponíveis"
-															: "Ver Horários Disponíveis dos Docentes"}
-													</Button>
-												</Box>
-											)}
-
-											{/* Seletor de horário baseado em disponibilidades */}
-											{mostrarSeletorHorario && editData.orientador && editData.membroBanca1 && editData.membroBanca2 && (
-												<Box sx={{ mb: 3, p: 2, bgcolor: "background.default", borderRadius: 1 }}>
-													<Typography variant="h6" gutterBottom>
-														Horários Comuns Disponíveis
-													</Typography>
-													<SelecionarHorarioBanca
-														oferta={{
-															ano: parseInt(ano),
-															semestre: parseInt(semestre),
-															id_curso: parseInt(cursoSelecionado),
-															fase: (() => {
-																const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
-																return parseInt(tccAtual?.fase);
-															})()
-														}}
-														codigoOrientador={editData.orientador}
-														codigosMembrosBanca={[editData.membroBanca1, editData.membroBanca2]}
-														onChange={(slot) => {
-															setSelectedHorarioBanca(slot);
-															if (slot) {
-																// Converter data e hora para datetime
-																const dataHora = new Date(`${slot.data}T${slot.hora}`);
-																handleEditDataChange("dataHoraDefesa", dataHora);
-															}
-														}}
-														selectedSlot={selectedHorarioBanca}
-													/>
-												</Box>
-											)}
-										</>
-									)}
-
-									{/* Campos de seleção de membros da banca - apenas para etapas 5 e 8 */}
+										{/* Campos de seleção de membros da banca - apenas para etapas 5 e 8 */}
 										{(() => {
 											const etapaAtual = parseInt(
 												editData.etapa,

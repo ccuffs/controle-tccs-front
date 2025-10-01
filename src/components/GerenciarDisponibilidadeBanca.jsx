@@ -1,4 +1,9 @@
-import React, { useState, useEffect, forwardRef, useImperativeHandle } from "react";
+import React, {
+	useState,
+	useEffect,
+	forwardRef,
+	useImperativeHandle,
+} from "react";
 import {
 	Box,
 	Typography,
@@ -50,7 +55,7 @@ const GerenciarDisponibilidadeBanca = forwardRef((props, ref) => {
 				return false; // Retorna false para indicar que a navegação foi bloqueada
 			}
 			return true; // Retorna true para permitir navegação
-		}
+		},
 	}));
 
 	function getAnoSemestreAtual() {
@@ -105,7 +110,8 @@ const GerenciarDisponibilidadeBanca = forwardRef((props, ref) => {
 			const alteracoes = calcularNumeroAlteracoes();
 			if (alteracoes > 0) {
 				event.preventDefault();
-				event.returnValue = "Você tem alterações não sincronizadas. Deseja realmente sair?";
+				event.returnValue =
+					"Você tem alterações não sincronizadas. Deseja realmente sair?";
 				return "Você tem alterações não sincronizadas. Deseja realmente sair?";
 			}
 		};
@@ -124,8 +130,13 @@ const GerenciarDisponibilidadeBanca = forwardRef((props, ref) => {
 		// Interceptar cliques em links de navegação (menu principal)
 		const handleLinkClick = (event) => {
 			// Verificar se é um link de navegação (não dentro do componente atual)
-			const target = event.target.closest('a');
-			if (target && target.href && !target.href.includes('#') && !target.closest('[role="tabpanel"]')) {
+			const target = event.target.closest("a");
+			if (
+				target &&
+				target.href &&
+				!target.href.includes("#") &&
+				!target.closest('[role="tabpanel"]')
+			) {
 				const alteracoes = calcularNumeroAlteracoes();
 				if (alteracoes > 0) {
 					event.preventDefault();
@@ -139,7 +150,7 @@ const GerenciarDisponibilidadeBanca = forwardRef((props, ref) => {
 		const handleNavbarClick = (event) => {
 			// Verificar se é um clique em ListItemButton da Navbar
 			const listItemButton = event.target.closest('[role="button"]');
-			if (listItemButton && listItemButton.closest('.MuiDrawer-paper')) {
+			if (listItemButton && listItemButton.closest(".MuiDrawer-paper")) {
 				const alteracoes = calcularNumeroAlteracoes();
 				if (alteracoes > 0) {
 					event.preventDefault();
@@ -153,7 +164,9 @@ const GerenciarDisponibilidadeBanca = forwardRef((props, ref) => {
 		// Interceptar cliques no título da Navbar (Dashboard) - usar capture para interceptar antes do React Router
 		const handleTitleClick = (event) => {
 			// Verificar se é um clique no título do sistema
-			const titleElement = event.target.closest('[data-testid="system-title"]');
+			const titleElement = event.target.closest(
+				'[data-testid="system-title"]',
+			);
 			if (titleElement) {
 				const alteracoes = calcularNumeroAlteracoes();
 				if (alteracoes > 0) {
@@ -237,7 +250,8 @@ const GerenciarDisponibilidadeBanca = forwardRef((props, ref) => {
 							response.grade.datas.forEach((data) => {
 								const key = `${data}-${hora}`;
 								// Se já existe no banco, usa o valor; senão, assume false (não disponível)
-								todasDisponibilidades[key] = disponibilidadesMap[key] || false;
+								todasDisponibilidades[key] =
+									disponibilidadesMap[key] || false;
 							});
 						});
 					}
@@ -883,17 +897,13 @@ const GerenciarDisponibilidadeBanca = forwardRef((props, ref) => {
 				maxWidth="sm"
 				fullWidth
 			>
-				<DialogTitle>
-					Alterações não sincronizadas
-				</DialogTitle>
+				<DialogTitle>Alterações não sincronizadas</DialogTitle>
 				<DialogContent>
 					<Typography>
-						Você tem {calcularNumeroAlteracoes()} alteração(ões) não sincronizada(s)
-						na sua disponibilidade para bancas.
+						Você tem {calcularNumeroAlteracoes()} alteração(ões) não
+						sincronizada(s) na sua disponibilidade para bancas.
 					</Typography>
-					<Typography sx={{ mt: 2 }}>
-						O que deseja fazer?
-					</Typography>
+					<Typography sx={{ mt: 2 }}>O que deseja fazer?</Typography>
 				</DialogContent>
 				<DialogActions>
 					<Button onClick={handleCancelNavigation} color="inherit">
@@ -920,6 +930,6 @@ const GerenciarDisponibilidadeBanca = forwardRef((props, ref) => {
 	);
 });
 
-GerenciarDisponibilidadeBanca.displayName = 'GerenciarDisponibilidadeBanca';
+GerenciarDisponibilidadeBanca.displayName = "GerenciarDisponibilidadeBanca";
 
 export default GerenciarDisponibilidadeBanca;

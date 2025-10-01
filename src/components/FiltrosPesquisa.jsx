@@ -83,7 +83,11 @@ export default function FiltrosPesquisa({
 					disabled={loading}
 				>
 					<InputLabel>Ano</InputLabel>
-					<Select value={ano || ""} label="Ano" onChange={handleAnoChange}>
+					<Select
+						value={ano || ""}
+						label="Ano"
+						onChange={handleAnoChange}
+					>
 						<MenuItem value="">
 							<em>Todos</em>
 						</MenuItem>
@@ -116,7 +120,15 @@ export default function FiltrosPesquisa({
 				>
 					<InputLabel>Semestre</InputLabel>
 					<Select
-						value={isValidValue(semestre, [...semestresDisponiveis, 1, 2]) ? semestre : ""}
+						value={
+							isValidValue(semestre, [
+								...semestresDisponiveis,
+								1,
+								2,
+							])
+								? semestre
+								: ""
+						}
 						label="Semestre"
 						onChange={handleSemestreChange}
 					>

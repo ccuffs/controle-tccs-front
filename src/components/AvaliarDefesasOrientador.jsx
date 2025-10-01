@@ -218,14 +218,14 @@ export default function AvaliarDefesasOrientador() {
 		if (tcc && tcc.fase === 2) {
 			setBackupComentarios((prev) => ({
 				...prev,
-				[chaveUnica]: comentariosTcc[idTcc] || ""
+				[chaveUnica]: comentariosTcc[idTcc] || "",
 			}));
 
 			// Backup do estado de aprovação TCC
 			const aprovadoAtual = tccAprovadoLocal[idTcc] ?? tcc.aprovado_tcc;
 			setEdicaoAprovadoTcc((prev) => ({
 				...prev,
-				[idTcc]: aprovadoAtual
+				[idTcc]: aprovadoAtual,
 			}));
 		}
 
@@ -324,7 +324,7 @@ export default function AvaliarDefesasOrientador() {
 		if (comentarioBackup !== undefined) {
 			setComentariosTcc((prev) => ({
 				...prev,
-				[idTcc]: comentarioBackup
+				[idTcc]: comentarioBackup,
 			}));
 		}
 
@@ -384,7 +384,10 @@ export default function AvaliarDefesasOrientador() {
 				const avaliacoesCompletas =
 					notas.length === defesasTccFase.length &&
 					defesasTccFase.length > 0;
-				const aprovadoAutomatico = avaliacoesCompletas && media >= 6 && parseInt(faseAtual) === 1;
+				const aprovadoAutomatico =
+					avaliacoesCompletas &&
+					media >= 6 &&
+					parseInt(faseAtual) === 1;
 
 				const dataDefesaStr = defesasTccFase[0]?.data_defesa
 					? new Date(defesasTccFase[0].data_defesa).toLocaleString(
@@ -465,7 +468,10 @@ export default function AvaliarDefesasOrientador() {
 						: null;
 				const avaliacoesCompletas =
 					notas.length === defesasTcc.length && defesasTcc.length > 0;
-				const aprovadoAutomatico = avaliacoesCompletas && media >= 6 && defesasTcc[0]?.fase === 1;
+				const aprovadoAutomatico =
+					avaliacoesCompletas &&
+					media >= 6 &&
+					defesasTcc[0]?.fase === 1;
 
 				const dataDefesaStr = defesasTcc[0]?.data_defesa
 					? new Date(defesasTcc[0].data_defesa).toLocaleString(
@@ -572,7 +578,10 @@ export default function AvaliarDefesasOrientador() {
 				}
 
 				promises.push(
-					axiosInstance.put(`/trabalho-conclusao/${idTccAlvo}`, dadosAtualizacao),
+					axiosInstance.put(
+						`/trabalho-conclusao/${idTccAlvo}`,
+						dadosAtualizacao,
+					),
 				);
 			}
 
@@ -613,7 +622,7 @@ export default function AvaliarDefesasOrientador() {
 				if (edicaoAprovadoTcc[idTccAlvo] !== undefined) {
 					setTccAprovadoLocal((prev) => ({
 						...prev,
-						[idTccAlvo]: edicaoAprovadoTcc[idTccAlvo]
+						[idTccAlvo]: edicaoAprovadoTcc[idTccAlvo],
 					}));
 				}
 			} else {
@@ -832,30 +841,78 @@ export default function AvaliarDefesasOrientador() {
 														control={
 															<Checkbox
 																checked={Boolean(
-																	card.fase === 1
+																	card.fase ===
+																		1
 																		? card.aprovadoAutomatico
-																		: (editandoTcc[card.chaveUnica]
-																			? edicaoAprovadoTcc[card.idTcc]
-																			: (tccAprovadoLocal[card.idTcc] ?? mapaTcc.get(card.idTcc)?.aprovado_tcc))
+																		: editandoTcc[
+																					card
+																						.chaveUnica
+																			  ]
+																			? edicaoAprovadoTcc[
+																					card
+																						.idTcc
+																				]
+																			: (tccAprovadoLocal[
+																					card
+																						.idTcc
+																				] ??
+																				mapaTcc.get(
+																					card.idTcc,
+																				)
+																					?.aprovado_tcc),
 																)}
 																disabled={
-																	card.fase === 1
+																	card.fase ===
+																	1
 																		? !card.avaliacoesCompletas
-																		: !editandoTcc[card.chaveUnica] // Para fase 2, habilitado apenas em modo edição
+																		: !editandoTcc[
+																				card
+																					.chaveUnica
+																			] // Para fase 2, habilitado apenas em modo edição
 																}
-																onChange={(e) => {
-																	if (card.fase === 2 && editandoTcc[card.chaveUnica]) {
-																		handleAprovadoTccChange(card.idTcc, e.target.checked);
+																onChange={(
+																	e,
+																) => {
+																	if (
+																		card.fase ===
+																			2 &&
+																		editandoTcc[
+																			card
+																				.chaveUnica
+																		]
+																	) {
+																		handleAprovadoTccChange(
+																			card.idTcc,
+																			e
+																				.target
+																				.checked,
+																		);
 																	}
 																}}
 																color={
-																	(card.fase === 1
-																		? card.aprovadoAutomatico
-																		: (editandoTcc[card.chaveUnica]
-																			? edicaoAprovadoTcc[card.idTcc]
-																			: (tccAprovadoLocal[card.idTcc] ?? mapaTcc.get(card.idTcc)?.aprovado_tcc)))
-																	? "success"
-																	: "default"
+																	(
+																		card.fase ===
+																		1
+																			? card.aprovadoAutomatico
+																			: editandoTcc[
+																						card
+																							.chaveUnica
+																				  ]
+																				? edicaoAprovadoTcc[
+																						card
+																							.idTcc
+																					]
+																				: (tccAprovadoLocal[
+																						card
+																							.idTcc
+																					] ??
+																					mapaTcc.get(
+																						card.idTcc,
+																					)
+																						?.aprovado_tcc)
+																	)
+																		? "success"
+																		: "default"
 																}
 															/>
 														}
@@ -945,7 +1002,9 @@ export default function AvaliarDefesasOrientador() {
 												{/* Campo de comentários apenas para fase 2 (TCC) */}
 												{card.fase === 2 && (
 													<>
-														<Divider sx={{ my: 2 }} />
+														<Divider
+															sx={{ my: 2 }}
+														/>
 														<Typography variant="subtitle1">
 															Comentários do TCC
 														</Typography>
@@ -954,15 +1013,23 @@ export default function AvaliarDefesasOrientador() {
 															multiline
 															rows={3}
 															placeholder="Digite os comentários sobre o TCC..."
-															value={comentariosTcc[card.idTcc] || ""}
+															value={
+																comentariosTcc[
+																	card.idTcc
+																] || ""
+															}
 															onChange={(e) =>
 																handleComentarioChange(
 																	card.idTcc,
-																	e.target.value,
+																	e.target
+																		.value,
 																)
 															}
 															disabled={
-																!editandoTcc[card.chaveUnica]
+																!editandoTcc[
+																	card
+																		.chaveUnica
+																]
 															}
 															sx={{ mt: 1 }}
 														/>
@@ -1028,24 +1095,51 @@ export default function AvaliarDefesasOrientador() {
 															</Button>
 															{/* Botão Aprovar TCC apenas para fase 2 */}
 															{card.fase === 2 &&
-																!(editandoTcc[card.chaveUnica]
-																	? edicaoAprovadoTcc[card.idTcc]
-																	: (tccAprovadoLocal[card.idTcc] ?? mapaTcc.get(card.idTcc)?.aprovado_tcc)) && (
-																<Button
-																	variant="contained"
-																	color="success"
-																	onClick={() =>
-																		aprovarTcc(card.idTcc)
-																	}
-																	disabled={aprovandoTcc[card.idTcc]}
-																>
-																	{aprovandoTcc[card.idTcc] ? (
-																		<CircularProgress size={20} />
-																	) : (
-																		"Aprovar TCC"
-																	)}
-																</Button>
-															)}
+																!(editandoTcc[
+																	card
+																		.chaveUnica
+																]
+																	? edicaoAprovadoTcc[
+																			card
+																				.idTcc
+																		]
+																	: (tccAprovadoLocal[
+																			card
+																				.idTcc
+																		] ??
+																		mapaTcc.get(
+																			card.idTcc,
+																		)
+																			?.aprovado_tcc)) && (
+																	<Button
+																		variant="contained"
+																		color="success"
+																		onClick={() =>
+																			aprovarTcc(
+																				card.idTcc,
+																			)
+																		}
+																		disabled={
+																			aprovandoTcc[
+																				card
+																					.idTcc
+																			]
+																		}
+																	>
+																		{aprovandoTcc[
+																			card
+																				.idTcc
+																		] ? (
+																			<CircularProgress
+																				size={
+																					20
+																				}
+																			/>
+																		) : (
+																			"Aprovar TCC"
+																		)}
+																	</Button>
+																)}
 														</Stack>
 													) : (
 														<Stack

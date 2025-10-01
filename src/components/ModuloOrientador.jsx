@@ -35,10 +35,16 @@ export default function ModuloOrientador() {
 
 	const handleTabChange = (event, newValue) => {
 		// Verificar se há mudanças não sincronizadas na aba de disponibilidade
-		if (tabValue === 4 && newValue !== 4 && gerenciarDisponibilidadeRef.current) {
-			const hasUnsavedChanges = gerenciarDisponibilidadeRef.current.hasUnsavedChanges();
+		if (
+			tabValue === 4 &&
+			newValue !== 4 &&
+			gerenciarDisponibilidadeRef.current
+		) {
+			const hasUnsavedChanges =
+				gerenciarDisponibilidadeRef.current.hasUnsavedChanges();
 			if (hasUnsavedChanges) {
-				const shouldProceed = gerenciarDisponibilidadeRef.current.confirmNavigation();
+				const shouldProceed =
+					gerenciarDisponibilidadeRef.current.confirmNavigation();
 				if (!shouldProceed) {
 					return; // Não muda a aba
 				}
@@ -87,7 +93,9 @@ export default function ModuloOrientador() {
 			</TabPanel>
 
 			<TabPanel value={tabValue} index={4}>
-				<GerenciarDisponibilidadeBanca ref={gerenciarDisponibilidadeRef} />
+				<GerenciarDisponibilidadeBanca
+					ref={gerenciarDisponibilidadeRef}
+				/>
 			</TabPanel>
 
 			<TabPanel value={tabValue} index={5}>

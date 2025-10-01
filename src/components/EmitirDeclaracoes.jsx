@@ -1,17 +1,11 @@
 import React, { useState, useEffect } from "react";
-import {
-	Box,
-	Typography,
-	Button,
-	Alert,
-	Snackbar,
-} from "@mui/material";
+import { Box, Typography, Button, Alert, Snackbar } from "@mui/material";
 import { Download } from "@mui/icons-material";
 import FiltrosPesquisa from "./FiltrosPesquisa";
 import CustomDataGrid from "./CustomDataGrid";
 import axios from "../auth/axios";
 import { useAuth } from "../contexts/AuthContext";
-import html2pdf from 'html2pdf.js';
+import html2pdf from "html2pdf.js";
 
 export default function EmitirDeclaracoes() {
 	const { usuario } = useAuth();
@@ -37,7 +31,11 @@ export default function EmitirDeclaracoes() {
 
 	// Efeito para pré-selecionar curso quando usuário tem apenas um
 	useEffect(() => {
-		if (usuario?.cursos && usuario.cursos.length === 1 && !cursoSelecionado) {
+		if (
+			usuario?.cursos &&
+			usuario.cursos.length === 1 &&
+			!cursoSelecionado
+		) {
 			setCursoSelecionado(usuario.cursos[0].id);
 		}
 	}, [usuario, cursoSelecionado]);
@@ -86,7 +84,9 @@ export default function EmitirDeclaracoes() {
 			if (semestre) params.append("semestre", semestre);
 			if (fase) params.append("fase", fase);
 
-			const response = await axios.get(`/declaracoes/?${params.toString()}`);
+			const response = await axios.get(
+				`/declaracoes/?${params.toString()}`,
+			);
 
 			// O axios interceptor já retorna response.data, então response já é o objeto de dados
 			setDeclaracoes(response?.declaracoes || []);
@@ -105,23 +105,27 @@ export default function EmitirDeclaracoes() {
 	const handleBaixarDeclaracao = async (declaracao) => {
 		try {
 			// Determinar tipo de participação baseado no campo foi_orientador
-			const tipoParticipacao = declaracao.foi_orientador ? 'orientacao' : 'banca';
+			const tipoParticipacao = declaracao.foi_orientador
+				? "orientacao"
+				: "banca";
 
 			// Construir URL da API
 			const url = `/declaracoes/gerar/${declaracao.id_tcc}/${tipoParticipacao}`;
 
 			// Abrir declaração em nova aba
-			const novaAba = window.open('', '_blank');
+			const novaAba = window.open("", "_blank");
 
 			if (!novaAba) {
-				setSnackbarMessage("Por favor, permita pop-ups para visualizar a declaração");
+				setSnackbarMessage(
+					"Por favor, permita pop-ups para visualizar a declaração",
+				);
 				setSnackbarOpen(true);
 				return;
 			}
 
 			// Fazer requisição para obter o HTML da declaração
 			const response = await axios.get(url, {
-				responseType: 'text'
+				responseType: "text",
 			});
 
 			// Adicionar CSS específico para impressão A4 sem headers/footers
@@ -173,24 +177,26 @@ export default function EmitirDeclaracoes() {
 						const opt = {
 							margin: 0.5,
 							filename: `declaracao_${declaracao.nome_dicente}_${tipoParticipacao}.pdf`,
-							image: { type: 'jpeg', quality: 0.98 },
+							image: { type: "jpeg", quality: 0.98 },
 							html2canvas: {
 								scale: 2,
 								useCORS: true,
-								letterRendering: true
+								letterRendering: true,
 							},
 							jsPDF: {
-								unit: 'in',
-								format: 'a4',
-								orientation: 'portrait'
-							}
+								unit: "in",
+								format: "a4",
+								orientation: "portrait",
+							},
 						};
 
 						// Gerar e baixar o PDF usando a biblioteca html2pdf já importada
-						await html2pdf().set(opt).from(novaAba.document.body).save();
-
+						await html2pdf()
+							.set(opt)
+							.from(novaAba.document.body)
+							.save();
 					} catch (error) {
-						console.error('Erro ao converter para PDF:', error);
+						console.error("Erro ao converter para PDF:", error);
 					}
 				};
 
@@ -200,7 +206,9 @@ export default function EmitirDeclaracoes() {
 				}, 1000);
 			};
 
-			setSnackbarMessage("Declaração aberta! PDF será baixado automaticamente.");
+			setSnackbarMessage(
+				"Declaração aberta! PDF será baixado automaticamente.",
+			);
 			setSnackbarOpen(true);
 		} catch (error) {
 			console.error("Erro ao gerar declaração:", error);
@@ -248,7 +256,7 @@ export default function EmitirDeclaracoes() {
 				const fases = {
 					0: "Orientação",
 					1: "Projeto",
-					2: "TCC"
+					2: "TCC",
 				};
 				return fases[params.row.fase] || `Fase ${params.row.fase}`;
 			},
@@ -290,7 +298,8 @@ export default function EmitirDeclaracoes() {
 			</Typography>
 
 			<Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-				Aqui você pode baixar declarações dos trabalhos em que participou como orientador ou membro de banca.
+				Aqui você pode baixar declarações dos trabalhos em que
+				participou como orientador ou membro de banca.
 			</Typography>
 
 			<Box sx={{ mb: 3 }}>
@@ -328,7 +337,9 @@ export default function EmitirDeclaracoes() {
 						loading={loading}
 						checkboxSelection={false}
 						disableSelectionOnClick={true}
-						getRowId={(row) => `${row.id_tcc}_${row.tipo_participacao}`}
+						getRowId={(row) =>
+							`${row.id_tcc}_${row.tipo_participacao}`
+						}
 					/>
 				</Box>
 			) : (
@@ -345,7 +356,8 @@ export default function EmitirDeclaracoes() {
 					}}
 				>
 					<Typography variant="h6" color="text.secondary">
-						Selecione um curso para visualizar as declarações disponíveis
+						Selecione um curso para visualizar as declarações
+						disponíveis
 					</Typography>
 				</Box>
 			)}
