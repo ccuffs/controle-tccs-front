@@ -166,25 +166,9 @@ export default function EmitirDeclaracoes() {
 
 			// Adicionar função para converter para PDF na nova aba
 			novaAba.onload = () => {
-				// Função para carregar html2pdf.js dinamicamente
-				const carregarHtml2Pdf = () => {
-					return new Promise((resolve, reject) => {
-						const script = novaAba.document.createElement('script');
-						script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
-						script.onload = () => resolve();
-						script.onerror = () => reject(new Error('Erro ao carregar html2pdf.js'));
-						novaAba.document.head.appendChild(script);
-					});
-				};
-
-				// Função para converter para PDF automaticamente
+				// Função para converter para PDF automaticamente usando html2pdf local
 				const converterParaPDFAutomatico = async () => {
 					try {
-						// Carregar html2pdf.js se ainda não estiver carregado
-						if (!novaAba.html2pdf) {
-							await carregarHtml2Pdf();
-						}
-
 						// Configurações do PDF
 						const opt = {
 							margin: 0.5,
@@ -202,8 +186,8 @@ export default function EmitirDeclaracoes() {
 							}
 						};
 
-						// Gerar e baixar o PDF
-						await novaAba.html2pdf().set(opt).from(novaAba.document.body).save();
+						// Gerar e baixar o PDF usando a biblioteca html2pdf já importada
+						await html2pdf().set(opt).from(novaAba.document.body).save();
 
 					} catch (error) {
 						console.error('Erro ao converter para PDF:', error);
