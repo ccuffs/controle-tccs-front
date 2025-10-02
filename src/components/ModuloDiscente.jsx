@@ -1,11 +1,34 @@
 import React, { useState, useEffect, useContext } from "react";
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, Tabs, Tab } from "@mui/material";
 import TccStepper from "./TccStepper";
+import PerfilDiscente from "./PerfilDiscente";
 import { AuthContext } from "../contexts/AuthContext";
 import axiosInstance from "../auth/axios";
 
+function TabPanel({ children, value, index, ...other }) {
+	return (
+		<div
+			role="tabpanel"
+			hidden={value !== index}
+			id={`dicente-tabpanel-${index}`}
+			aria-labelledby={`dicente-tab-${index}`}
+			{...other}
+		>
+			{value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+		</div>
+	);
+}
+
+function a11yProps(index) {
+	return {
+		id: `dicente-tab-${index}`,
+		"aria-controls": `dicente-tabpanel-${index}`,
+	};
+}
+
 export default function ModuloDiscente() {
 	const { usuario } = useContext(AuthContext);
+	const [tabValue, setTabValue] = useState(0);
 	const [etapaAtual, setEtapaAtual] = useState(0);
 	const [loading, setLoading] = useState(true);
 
@@ -46,6 +69,10 @@ export default function ModuloDiscente() {
 		}
 	};
 
+	const handleTabChange = (event, newValue) => {
+		setTabValue(newValue);
+	};
+
 	const renderizarConteudo = () => {
 		if (loading) {
 			return (
@@ -64,12 +91,29 @@ export default function ModuloDiscente() {
 	};
 
 	return (
-		<Box>
+		<Box sx={{ width: 1400 }}>
 			<Typography variant="h4" component="h1" gutterBottom>
 				Módulo do Discente
 			</Typography>
 
-			{renderizarConteudo()}
+			<Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+				<Tabs
+					value={tabValue}
+					onChange={handleTabChange}
+					aria-label="dicente tabs"
+				>
+					<Tab label="Meu TCC" {...a11yProps(0)} />
+					<Tab label="Meu Perfil" {...a11yProps(1)} />
+				</Tabs>
+			</Box>
+
+			<TabPanel value={tabValue} index={0}>
+				{renderizarConteudo()}
+			</TabPanel>
+
+			<TabPanel value={tabValue} index={1}>
+				<PerfilDiscente />
+			</TabPanel>
 		</Box>
 	);
 }
