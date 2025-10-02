@@ -7,6 +7,7 @@ import GerenciarDisponibilidadeBanca from "./GerenciarDisponibilidadeBanca";
 import AvaliarDefesasOrientador from "./AvaliarDefesasOrientador";
 import Dashboard from "./Dashboard";
 import EmitirDeclaracoes from "./EmitirDeclaracoes";
+import PerfilOrientador from "./PerfilOrientador";
 
 function TabPanel({ children, value, index, ...other }) {
 	return (
@@ -72,7 +73,7 @@ export default function ModuloOrientador() {
 					<Tab label="Disponibilidade Bancas" {...a11yProps(4)} />
 					<Tab label="Avaliar Defesas" {...a11yProps(5)} />
 					<Tab label="Emitir Declarações" {...a11yProps(6)} />
-					<Tab label="Outras Funcionalidades" {...a11yProps(7)} />
+					<Tab label="Meu Perfil" {...a11yProps(7)} />
 				</Tabs>
 			</Box>
 
@@ -107,13 +108,7 @@ export default function ModuloOrientador() {
 			</TabPanel>
 
 			<TabPanel value={tabValue} index={7}>
-				<Typography variant="h6" component="h2">
-					Outras Funcionalidades do Orientador
-				</Typography>
-				<Typography variant="body1" color="text.secondary">
-					Aqui serão adicionadas outras funcionalidades específicas
-					para orientadores.
-				</Typography>
+				<PerfilOrientador />
 			</TabPanel>
 		</Box>
 	);
