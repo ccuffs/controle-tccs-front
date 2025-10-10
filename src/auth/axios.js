@@ -1,7 +1,7 @@
 import axios from "axios";
 import authService from "../services/authService";
 
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3001/api";
+const API_URL = import.meta.env.VITE_APP_API_URL ;
 
 const axiosInstance = axios.create({
 	baseURL: API_URL,

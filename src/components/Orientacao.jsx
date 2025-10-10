@@ -344,7 +344,6 @@ export default function Orientacao({ isOrientadorView = false }) {
 					(a, b) => a.nome.localeCompare(b.nome),
 				);
 				setDicentes(dicentesOrdenados);
-				console.log(dicentesOrdenados);
 			}
 		} catch (error) {
 			console.log(
