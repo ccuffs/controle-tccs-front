@@ -1,70 +1,183 @@
-# Getting Started with Create React App
+# Controle TCCs Front
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Interface web para gerenciamento de Trabalhos de Conclusão de Curso (TCCs) da UFFS.
 
-## Available Scripts
+## Descrição
 
-In the project directory, you can run:
+Sistema frontend para controle e gestão de TCCs, oferecendo interfaces para docentes, discentes e coordenadores. A aplicação permite gerenciar todo o fluxo de trabalho acadêmico, incluindo propostas de temas, orientações, bancas examinadoras, disponibilidades, convites, defesas e declarações.
 
-### `yarn start`
+## Tecnologias
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- React 19
+- React Router 7
+- Material-UI (MUI) 7
+- Vite
+- Axios
+- Recharts (gráficos e visualizações)
+- date-fns (manipulação de datas)
+- html2pdf.js (geração de PDFs)
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Pré-requisitos
 
-### `yarn test`
+- Node.js (versão 14 ou superior)
+- Yarn ou npm
+- API backend do sistema (controle-tccs-api)
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Instalação
 
-### `yarn build`
+```bash
+yarn install
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+ou
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```bash
+npm install
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Configuração
 
-### `yarn eject`
+1. Configure a URL da API backend editando o arquivo de configuração do Axios em `src/auth/axios.js`:
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+```javascript
+const API_BASE_URL = 'http://localhost:3010/api';
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+2. Certifique-se de que a API backend está rodando e acessível.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## Execução
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### Modo de desenvolvimento
 
-## Learn More
+Para iniciar o servidor de desenvolvimento:
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+```bash
+yarn start
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+A aplicação estará disponível em `http://localhost:5173`
 
-### Code Splitting
+### Build de produção
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+Para gerar o build de produção:
 
-### Analyzing the Bundle Size
+```bash
+yarn build
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+### Visualizar build de produção
 
-### Making a Progressive Web App
+Para visualizar o build de produção localmente:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+```bash
+yarn serve
+```
 
-### Advanced Configuration
+## Estrutura do Projeto
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+```
+src/
+├── auth/              # Configuração de autenticação e Axios
+├── components/        # Componentes React
+│   ├── App.jsx
+│   ├── Login.jsx
+│   ├── Dashboard.jsx
+│   ├── ModuloDiscente.jsx
+│   ├── ModuloOrientador.jsx
+│   └── ...
+├── contexts/          # Contextos React (Auth, Permissions)
+├── enums/             # Enumerações e constantes
+├── hooks/             # Custom hooks
+├── services/          # Serviços de API
+├── utils/             # Utilitários e helpers
+├── entry.client.tsx   # Ponto de entrada do cliente
+├── root.tsx           # Componente raiz
+└── routes.ts          # Configuração de rotas
+```
 
-### Deployment
+## Funcionalidades Principais
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+### Para Discentes
+- Visualização do perfil acadêmico
+- Acompanhamento do processo de TCC
+- Visualização de temas disponíveis
+- Acompanhamento de orientação
+- Informações sobre banca e defesa
 
-### `yarn build` fails to minify
+### Para Orientadores
+- Gerenciamento de orientandos
+- Criação e gerenciamento de temas de TCC
+- Envio de convites para orientação
+- Gerenciamento de disponibilidade para bancas
+- Visualização de convites recebidos
+- Avaliação de defesas
+- Emissão de declarações
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+### Para Coordenadores
+- Dashboard com estatísticas gerais
+- Gerenciamento de docentes e discentes
+- Gerenciamento de cursos e ofertas de TCC
+- Acompanhamento de orientações e defesas
+- Visualização de gráficos e relatórios
+- Controle de datas de defesa
+- Gerenciamento de bancas por curso
+
+## Módulos
+
+### Dashboard
+Apresenta estatísticas e gráficos sobre:
+- Distribuição de estudantes por etapa do TCC
+- Convites de orientação por período
+- Convites para bancas
+- Defesas por docente
+- Orientandos por docente
+
+### Módulo Discente
+- Perfil do discente
+- Stepper de acompanhamento do TCC
+- Visualização de temas disponíveis
+- Informações sobre orientação atual
+
+### Módulo Orientador
+- Perfil do orientador
+- Gerenciamento de temas
+- Controle de orientandos
+- Gestão de disponibilidade para bancas
+- Convites recebidos e enviados
+- Avaliação de defesas
+
+### Gerenciamento Acadêmico
+- Cadastro e edição de docentes
+- Cadastro e edição de discentes
+- Gerenciamento de cursos
+- Controle de orientações
+- Agendamento de defesas
+- Gerenciamento de bancas
+
+## Autenticação
+
+A aplicação utiliza autenticação JWT (JSON Web Token). O token é armazenado localmente e enviado automaticamente em todas as requisições através de um interceptor do Axios.
+
+## Autorização
+
+O sistema implementa controle de permissões baseado em grupos e categorias, sincronizado com o backend. Os componentes e funcionalidades são renderizados condicionalmente de acordo com as permissões do usuário.
+
+## Temas
+
+A aplicação suporta tema claro e escuro, com alternância através do componente `ThemeSwitch`.
+
+## Licença
+
+MIT
+
+## Autor(s)
+
+Giancarlo Salton - gian@uffs.edu.br
+
+## Repositório
+
+https://github.com/ccuffs/controle-tccs-front
+
+## Integração com Backend
+
+Este frontend consome a API REST do projeto [controle-tccs-api](https://github.com/ccuffs/controle-tccs-api). Consulte a documentação da API para mais informações sobre os endpoints disponíveis.
