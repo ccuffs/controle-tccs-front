@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useMemo } from "react";
+import React, { createContext, useContext, useMemo } from "react";
 import { createTheme, ThemeProvider, CssBaseline } from "@mui/material";
+import { useTheme as useCustomTheme } from "../hooks/useTheme.js";
 
 // Contexto para o tema
 const ThemeContext = createContext({
@@ -30,13 +31,8 @@ export const customColors = {
 };
 
 export default function CustomThemeProvider({ children }) {
-	// Estado para controlar o tema atual
-	const [mode, setMode] = useState("light");
-
-	// Alternar entre temas claro e escuro
-	function toggleTheme() {
-		setMode((prevMode) => (prevMode === "light" ? "dark" : "light"));
-	}
+	// Usar o hook customizado para gerenciar o tema
+	const { mode, toggleTheme } = useCustomTheme();
 
 	// Memorizando o tema para evitar re-renderizações desnecessárias
 	const theme = useMemo(
