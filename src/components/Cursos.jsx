@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 
 import {
 	Alert,
@@ -20,129 +20,29 @@ import {
 import { DataGrid } from "@mui/x-data-grid";
 import PermissionContext from "../contexts/PermissionContext";
 import { Permissoes } from "../enums/permissoes";
-import axiosInstance from "../auth/axios";
+import { useCursos } from "../hooks/useCursos.js";
 
 export default function Cursos() {
-	const [cursos, setCursos] = useState([]);
-	const [formData, setFormData] = useState({
-		id: "",
-		codigo: "",
-		nome: "",
-		turno: "",
-	});
-	const [edit, setEdit] = useState(false);
-	const [openMessage, setOpenMessage] = React.useState(false);
-	const [openDialog, setOpenDialog] = React.useState(false);
-	const [messageText, setMessageText] = React.useState("");
-	const [messageSeverity, setMessageSeverity] = React.useState("success");
-	const [idDelete, setIdDelete] = React.useState(-1);
-	const [selectTurno, setSelectTurno] = React.useState("");
-
-	useEffect(() => {
-		getData();
-	}, []);
-
-	async function getData() {
-		try {
-			const response = await axiosInstance.get("/cursos");
-			setCursos(response.cursos);
-		} catch (error) {
-			console.log("Não foi possível retornar a lista de cursos: ", error);
-			setCursos([]);
-		}
-	}
-
-	function handleEdit(data) {
-		setFormData(data);
-		setSelectTurno(data.turno);
-		setEdit(true);
-	}
-
-	function handleDelete(row) {
-		setIdDelete(row.id);
-		setOpenDialog(true);
-	}
-
-	function handleInputChange(e) {
-		setFormData({ ...formData, [e.target.name]: e.target.value });
-	}
-
-	function handleSelectChange(e) {
-		setSelectTurno(e.target.value);
-		setFormData({ ...formData, turno: e.target.value });
-	}
-
-	async function handleAddOrUpdate() {
-		console.log(formData);
-		try {
-			if (edit) {
-				await axiosInstance.put("/cursos/", {
-					formData: formData,
-				});
-				setMessageText("Curso atualizado com sucesso!");
-			} else {
-				await axiosInstance.post("/cursos/", {
-					formData: {
-						codigo: formData.codigo,
-						nome: formData.nome,
-						turno: formData.turno,
-					},
-				});
-
-				setMessageText("Curso inserido com sucesso!");
-			}
-			setMessageSeverity("success");
-			setFormData({ id: "", codigo: "", nome: "", turno: "" });
-			setSelectTurno("");
-			setEdit(false);
-		} catch (error) {
-			console.log("Nao foi possível inserir o curso no banco de dados");
-			setMessageText("Falha ao gravar curso!");
-			setMessageSeverity("error");
-		} finally {
-			setOpenMessage(true);
-			await getData();
-		}
-	}
-
-	function handleCancelClick() {
-		setEdit(false);
-		setFormData({ id: "", codigo: "", nome: "", turno: "" });
-		setSelectTurno("");
-	}
-
-	function handleCloseMessage(_, reason) {
-		if (reason === "clickaway") {
-			return;
-		}
-		setOpenMessage(false);
-	}
-
-	function handleClose() {
-		setOpenDialog(false);
-	}
-
-	async function handleDeleteClick() {
-		try {
-			console.log(idDelete);
-			await axiosInstance.delete(`/cursos/${idDelete}`);
-			setMessageText("Curso removido com sucesso!");
-			setMessageSeverity("success");
-		} catch (error) {
-			console.log("Nao foi possível remover o curso no banco de dados");
-			setMessageText("Falha ao remover curso!");
-			setMessageSeverity("error");
-		} finally {
-			setFormData({ id: "", codigo: "", nome: "", turno: "" });
-			setOpenDialog(false);
-			setOpenMessage(true);
-			await getData();
-		}
-	}
-
-	function handleNoDeleteClick() {
-		setOpenDialog(false);
-	}
+	const {
+		cursos,
+		formData,
+		edit,
+		openMessage,
+		openDialog,
+		messageText,
+		messageSeverity,
+		selectTurno,
+		handleEdit,
+		handleDelete,
+		handleInputChange,
+		handleSelectChange,
+		handleAddOrUpdate,
+		handleCancelClick,
+		handleCloseMessage,
+		handleClose,
+		handleDeleteClick,
+		handleNoDeleteClick,
+	} = useCursos();
 
 	const columns = [
 		{ field: "codigo", headerName: "Código", width: 100 },
@@ -289,9 +189,11 @@ export default function Cursos() {
 						</DialogContentText>
 					</DialogContent>
 					<DialogActions>
-						<Button onClick={handleNoDeleteClick}>Disagree</Button>
+						<Button onClick={handleNoDeleteClick}>
+							Cancelar
+						</Button>
 						<Button onClick={handleDeleteClick} autoFocus>
-							Agree
+							Confirmar
 						</Button>
 					</DialogActions>
 				</Dialog>
