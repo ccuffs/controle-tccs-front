@@ -1,13 +1,13 @@
 import React, { useState, useRef } from "react";
 import { Box, Typography, Tabs, Tab } from "@mui/material";
-import TemasTcc from "./TemasTcc";
-import ConvitesRecebidosOrientador from "./ConvitesRecebidosOrientador";
-import Orientacao from "./Orientacao";
-import GerenciarDisponibilidadeBanca from "./GerenciarDisponibilidadeBanca";
-import AvaliarDefesasOrientador from "./AvaliarDefesasOrientador";
-import Dashboard from "./Dashboard";
-import EmitirDeclaracoes from "./EmitirDeclaracoes";
-import PerfilOrientador from "./PerfilOrientador";
+import TemasTcc from "./modulo-orientador/TemasTcc";
+import ConvitesRecebidosOrientador from "./modulo-orientador/ConvitesRecebidosOrientador";
+import Orientacao from "./modulo-orientador/Orientacao";
+import GerenciarDisponibilidadeBanca from "./modulo-orientador/GerenciarDisponibilidadeBanca";
+import AvaliarDefesasOrientador from "./modulo-orientador/AvaliarDefesasOrientador";
+import Dashboard from "./modulo-orientador/Dashboard";
+import EmitirDeclaracoes from "./modulo-orientador/EmitirDeclaracoes";
+import PerfilOrientador from "./modulo-orientador/PerfilOrientador";
 
 function TabPanel({ children, value, index, ...other }) {
 	return (
