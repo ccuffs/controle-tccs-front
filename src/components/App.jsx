@@ -10,7 +10,6 @@ import CustomThemeProvider from "./CustomThemeProvider";
 import Dashboard from "./Dashboard";
 import Navbar from "./Navbar";
 import Login from "./Login";
-import ThemeSwitch from "./ThemeSwitch";
 import Cursos from "./Cursos";
 import Orientadores from "./Orientadores";
 import Dicentes from "./Dicentes";
@@ -101,7 +100,6 @@ function AppContent() {
 				}}
 			>
 				<Toolbar /> {/* Spacing for AppBar */}
-				<ThemeSwitch />
 				<Container maxWidth="xl" sx={{ mt: 2 }}>
 					<Routes>
 						<Route path="/login" element={<Login />} />
