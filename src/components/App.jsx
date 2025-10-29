@@ -75,14 +75,6 @@ function App() {
 }
 
 function AppContent() {
-	const { gruposUsuario } = useAuth();
-	const { desktopOpen } = React.useContext(DrawerContext);
-
-	// Verifica se o usuário é um estudante
-	const isEstudante = gruposUsuario.some(
-		(grupo) => grupo.id === Permissoes.GRUPOS.ESTUDANTE,
-	);
-
 	return (
 		<Box sx={{ display: "flex" }}>
 			<Navbar />
