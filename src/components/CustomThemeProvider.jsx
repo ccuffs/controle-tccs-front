@@ -2,7 +2,10 @@ import React, { createContext, useContext, useMemo } from "react";
 import { createTheme, ThemeProvider, CssBaseline } from "@mui/material";
 import { useTheme as useCustomTheme } from "../hooks/useTheme.js";
 
-// Contexto para o tema
+/**
+ * CustomThemeProvider - Componente responsável apenas pela definição da tela (UI)
+ * A lógica de negócio e chamadas de API estão no hook useTheme
+ */
 const ThemeContext = createContext({
 	toggleTheme: () => {},
 });
