@@ -6,6 +6,7 @@ import {
 	Select,
 	MenuItem,
 } from "@mui/material";
+import { useFiltrosPesquisa } from "../hooks/useFiltrosPesquisa.js";
 
 export default function FiltrosPesquisa({
 	cursoSelecionado,
@@ -31,26 +32,23 @@ export default function FiltrosPesquisa({
 	semestresDisponiveis = [],
 	fasesDisponiveis = [],
 }) {
-	// Função para validar se um valor existe nas opções disponíveis
-	const isValidValue = (value, options) => {
-		if (!value) return true; // Valor vazio é sempre válido
-		return options.includes(value);
-	};
-	function handleCursoChange(e) {
-		setCursoSelecionado(e.target.value);
-	}
-
-	function handleAnoChange(e) {
-		setAno(e.target.value);
-	}
-
-	function handleSemestreChange(e) {
-		setSemestre(e.target.value);
-	}
-
-	function handleFaseChange(e) {
-		setFase(e.target.value);
-	}
+	const {
+		handleCursoChange,
+		handleAnoChange,
+		handleSemestreChange,
+		handleFaseChange,
+		semestreValue,
+	} = useFiltrosPesquisa({
+		cursoSelecionado,
+		setCursoSelecionado,
+		ano,
+		setAno,
+		semestre,
+		setSemestre,
+		fase,
+		setFase,
+		semestresDisponiveis,
+	});
 
 	return (
 		<Stack direction="row" spacing={2} alignItems="center">
@@ -120,15 +118,7 @@ export default function FiltrosPesquisa({
 				>
 					<InputLabel>Semestre</InputLabel>
 					<Select
-						value={
-							isValidValue(semestre, [
-								...semestresDisponiveis,
-								1,
-								2,
-							])
-								? semestre
-								: ""
-						}
+						value={semestreValue}
 						label="Semestre"
 						onChange={handleSemestreChange}
 					>
