@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
 	Alert,
 	Box,
@@ -19,250 +19,37 @@ import {
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 
-import axiosInstance from "../auth/axios";
 import PermissionContext from "../contexts/PermissionContext";
 import { Permissoes } from "../enums/permissoes";
+import { useOrientadores } from "../hooks/useOrientadores.js";
 
 export default function Orientadores() {
-	const [orientadores, setOrientadores] = useState([]);
-	const [cursos, setCursos] = useState([]);
-	const [cursoSelecionado, setCursoSelecionado] = useState("");
-	const [formData, setFormData] = useState({
-		id_curso: "",
-		codigo_docente: "",
-	});
-	const [docentes, setDocentes] = useState([]);
-	const [openMessage, setOpenMessage] = React.useState(false);
-	const [openDialog, setOpenDialog] = React.useState(false);
-	const [openDocenteModal, setOpenDocenteModal] = React.useState(false);
-	const [messageText, setMessageText] = React.useState("");
-	const [messageSeverity, setMessageSeverity] = React.useState("success");
-	const [orientacaoDelete, setOrientacaoDelete] = React.useState(null);
-	const [novoDocenteData, setNovoDocenteData] = useState({
-		codigo: "",
-		nome: "",
-		email: "",
-		sala: "",
-		siape: "",
-	});
-
-	useEffect(() => {
-		getCursos();
-		getDocentes();
-	}, []);
-
-	useEffect(() => {
-		if (cursoSelecionado) {
-			getOrientadoresPorCurso(cursoSelecionado);
-		} else {
-			setOrientadores([]);
-		}
-	}, [cursoSelecionado]);
-
-	async function getCursos() {
-		try {
-			const response = await axiosInstance.get("/cursos");
-			setCursos(response.cursos || []);
-		} catch (error) {
-			console.log("Não foi possível retornar a lista de cursos: ", error);
-			setCursos([]);
-		}
-	}
-
-	async function getDocentes() {
-		try {
-			const response = await axiosInstance.get("/docentes");
-			setDocentes(response.docentes || []);
-		} catch (error) {
-			console.log(
-				"Não foi possível retornar a lista de docentes: ",
-				error,
-			);
-			setDocentes([]);
-		}
-	}
-
-	async function getOrientadoresPorCurso(idCurso) {
-		try {
-			const response = await axiosInstance.get(
-				`/orientadores/curso/${idCurso}`,
-			);
-			setOrientadores(response.orientacoes || []);
-		} catch (error) {
-			console.log(
-				"Não foi possível retornar a lista de orientadores: ",
-				error,
-			);
-			setOrientadores([]);
-		}
-	}
-
-	function handleDelete(row) {
-		setOrientacaoDelete({
-			id_curso: row.id_curso,
-			codigo_docente: row.codigo_docente,
-		});
-		setOpenDialog(true);
-	}
-
-	function handleInputChange(e) {
-		setFormData({ ...formData, [e.target.name]: e.target.value });
-	}
-
-	function handleCursoChange(e) {
-		setCursoSelecionado(e.target.value);
-	}
-
-	function handleNovoDocenteChange(e) {
-		setNovoDocenteData({
-			...novoDocenteData,
-			[e.target.name]: e.target.value,
-		});
-	}
-
-	function handleOpenDocenteModal() {
-		setOpenDocenteModal(true);
-	}
-
-	function handleCloseDocenteModal() {
-		setOpenDocenteModal(false);
-		setNovoDocenteData({
-			codigo: "",
-			nome: "",
-			email: "",
-			sala: "",
-			siape: "",
-		});
-	}
-
-	async function handleCreateDocente() {
-		try {
-			if (
-				!novoDocenteData.codigo ||
-				!novoDocenteData.nome ||
-				!novoDocenteData.email
-			) {
-				setMessageText(
-					"Por favor, preencha os campos obrigatórios (código, nome e email)!",
-				);
-				setMessageSeverity("error");
-				setOpenMessage(true);
-				return;
-			}
-
-			// Converter sala e siape para número se não estiverem vazios
-			const docenteParaEnviar = {
-				...novoDocenteData,
-				sala: novoDocenteData.sala
-					? parseInt(novoDocenteData.sala)
-					: null,
-				siape: novoDocenteData.siape
-					? parseInt(novoDocenteData.siape)
-					: null,
-			};
-
-			await axiosInstance.post("/docentes", {
-				formData: docenteParaEnviar,
-			});
-
-			setMessageText("Docente criado com sucesso!");
-			setMessageSeverity("success");
-			handleCloseDocenteModal();
-			// Atualiza a lista de docentes
-			await getDocentes();
-		} catch (error) {
-			console.log(
-				"Não foi possível criar o docente no banco de dados",
-				error,
-			);
-			setMessageText("Falha ao criar docente!");
-			setMessageSeverity("error");
-		} finally {
-			setOpenMessage(true);
-		}
-	}
-
-	async function handleAddOrientacao() {
-		try {
-			if (!cursoSelecionado || !formData.codigo_docente) {
-				setMessageText("Por favor, selecione o docente!");
-				setMessageSeverity("error");
-				setOpenMessage(true);
-				return;
-			}
-
-			const orientacaoData = {
-				id_curso: cursoSelecionado,
-				codigo_docente: formData.codigo_docente,
-			};
-
-			await axiosInstance.post("/orientadores", {
-				formData: orientacaoData,
-			});
-
-			setMessageText("Orientação adicionada com sucesso!");
-			setMessageSeverity("success");
-			setFormData({ id_curso: "", codigo_docente: "" });
-
-			// Atualiza a lista
-			await getOrientadoresPorCurso(cursoSelecionado);
-		} catch (error) {
-			console.log(
-				"Não foi possível inserir a orientação no banco de dados",
-			);
-			setMessageText("Falha ao gravar orientação!");
-			setMessageSeverity("error");
-		} finally {
-			setOpenMessage(true);
-		}
-	}
-
-	function handleCancelClick() {
-		setFormData({ id_curso: "", codigo_docente: "" });
-	}
-
-	function handleCloseMessage(_, reason) {
-		if (reason === "clickaway") {
-			return;
-		}
-		setOpenMessage(false);
-	}
-
-	function handleClose() {
-		setOpenDialog(false);
-	}
-
-	async function handleDeleteClick() {
-		try {
-			if (!orientacaoDelete) return;
-
-			await axiosInstance.delete(
-				`/orientadores/${orientacaoDelete.id_curso}/${orientacaoDelete.codigo_docente}`,
-			);
-			setMessageText("Orientação removida com sucesso!");
-			setMessageSeverity("success");
-
-			// Atualiza a lista
-			if (cursoSelecionado) {
-				await getOrientadoresPorCurso(cursoSelecionado);
-			}
-		} catch (error) {
-			console.log(
-				"Não foi possível remover a orientação no banco de dados",
-			);
-			setMessageText("Falha ao remover orientação!");
-			setMessageSeverity("error");
-		} finally {
-			setOrientacaoDelete(null);
-			setOpenDialog(false);
-			setOpenMessage(true);
-		}
-	}
-
-	function handleNoDeleteClick() {
-		setOpenDialog(false);
-		setOrientacaoDelete(null);
-	}
+	const {
+		orientadores,
+		cursos,
+		docentes,
+		cursoSelecionado,
+		formData,
+		novoDocenteData,
+		openMessage,
+		openDialog,
+		openDocenteModal,
+		messageText,
+		messageSeverity,
+		handleInputChange,
+		handleCursoChange,
+		handleNovoDocenteChange,
+		handleOpenDocenteModal,
+		handleCloseDocenteModal,
+		handleCreateDocente,
+		handleAddOrientacao,
+		handleCancelClick,
+		handleDelete,
+		handleDeleteClick,
+		handleNoDeleteClick,
+		handleCloseMessage,
+		handleClose,
+	} = useOrientadores();
 
 	const columns = [
 		{ field: "codigo_docente", headerName: "Código Docente", width: 150 },
