@@ -6,14 +6,14 @@ import { Permissoes } from "../enums/permissoes";
 import FiltrosPesquisa from "./FiltrosPesquisa";
 
 // Componentes de gráficos
-import GraficoEstudantesOrientador from "./GraficoEstudantesOrientador";
-import GraficoDistribuicaoEtapas from "./GraficoDistribuicaoEtapas";
-import TabelaDefesasAgendadas from "./TabelaDefesasAgendadas";
-import GraficoConvitesOrientacao from "./GraficoConvitesOrientacao";
-import GraficoConvitesBanca from "./GraficoConvitesBanca";
-import GraficoConvitesPeriodo from "./GraficoConvitesPeriodo";
-import GraficoOrientandosPorDocente from "./GraficoOrientandosPorDocente";
-import GraficoDefesasPorDocente from "./GraficoDefesasPorDocente";
+import GraficoEstudantesOrientador from "./dashboard/GraficoEstudantesOrientador";
+import GraficoDistribuicaoEtapas from "./dashboard/GraficoDistribuicaoEtapas";
+import TabelaDefesasAgendadas from "./dashboard/TabelaDefesasAgendadas";
+import GraficoConvitesOrientacao from "./dashboard/GraficoConvitesOrientacao";
+import GraficoConvitesBanca from "./dashboard/GraficoConvitesBanca";
+import GraficoConvitesPeriodo from "./dashboard/GraficoConvitesPeriodo";
+import GraficoOrientandosPorDocente from "./dashboard/GraficoOrientandosPorDocente";
+import GraficoDefesasPorDocente from "./dashboard/GraficoDefesasPorDocente";
 
 export default function Dashboard({ forceOrientador = false }) {
 	const { gruposUsuario, usuario } = useAuth();
