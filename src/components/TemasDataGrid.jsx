@@ -4,6 +4,7 @@ import { Button, Stack, Typography, Chip } from "@mui/material";
 import PermissionContext from "../contexts/PermissionContext";
 import { Permissoes } from "../enums/permissoes";
 import { usePermissions } from "../hooks/usePermissions";
+import { useTemasDataGrid } from "../hooks/useTemasDataGrid.js";
 
 import CustomDataGrid from "./CustomDataGrid";
 
@@ -15,60 +16,11 @@ export default function TemasDataGrid({
 	isDiscenteView = false,
 	isOrientadorView = false,
 }) {
-	// Preparar dados para o DataGrid sem agrupamento
-	const temasParaGrid = temas
-		.map((tema) => ({
-			...tema,
-			docenteNome: tema?.Docente?.nome || "N/A",
-			areaNome: tema?.AreaTcc?.descricao || "N/A",
-			vagasOferta: tema?.vagasOferta || tema?.vagas || 0,
-		}))
-		.sort((a, b) => {
-			// No modo orientador, não ordenar por docente já que só há um
-			if (!isOrientadorView) {
-				// Primeiro ordenar por nome do docente
-				const nomeA = a.docenteNome || "";
-				const nomeB = b.docenteNome || "";
-				if (nomeA !== nomeB) {
-					return nomeA.localeCompare(nomeB);
-				}
-			}
-
-			// Ordenar por área TCC
-			const areaA = a.areaNome || "";
-			const areaB = b.areaNome || "";
-			if (areaA !== areaB) {
-				return areaA.localeCompare(areaB);
-			}
-
-			// Se mesma área, ordenar por descrição do tema
-			return (a.descricao || "").localeCompare(b.descricao || "");
-		});
-
-	// Função para determinar se uma linha deve ter borda inferior
 	const { hasPermission } = usePermissions();
-
-	const getRowClassName = (params) => {
-		// No modo orientador, não criar bordas baseadas no docente
-		if (isOrientadorView) {
-			return "";
-		}
-
-		const currentDocente = params.row.docenteNome;
-
-		// Encontrar o índice da linha atual no array temasParaGrid
-		const currentIndex = temasParaGrid.findIndex(
-			(tema) => tema.id === params.row.id,
-		);
-
-		// Verificar se a próxima linha tem um docente diferente
-		const nextRow = temasParaGrid[currentIndex + 1];
-		if (nextRow && nextRow.docenteNome !== currentDocente) {
-			return "row-with-bottom-border";
-		}
-
-		return "";
-	};
+	const { temasParaGrid, getRowClassName } = useTemasDataGrid({
+		temas,
+		isOrientadorView,
+	});
 
 	const columns = [
 		{
