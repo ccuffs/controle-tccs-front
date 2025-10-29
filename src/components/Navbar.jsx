@@ -1,5 +1,4 @@
 import React from "react";
-import { useNavigate } from "react-router";
 import {
 	AppBar,
 	Toolbar,
@@ -12,89 +11,45 @@ import {
 	ListItemButton,
 	ListItemText,
 	Box,
-	useTheme,
-	useMediaQuery,
 	Divider,
+	useTheme,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 
 import { useAuth } from "../contexts/AuthContext";
 import PermissionContext from "../contexts/PermissionContext";
 import { Permissoes } from "../enums/permissoes";
+import { useNavbar } from "../hooks/useNavbar.js";
 
 import { DrawerContext } from "./App";
 import UserMenu from "./UserMenu";
 
-const drawerWidth = 240;
-
 function Navbar() {
-	const [mobileOpen, setMobileOpen] = React.useState(false);
+	const theme = useTheme();
 	const { desktopOpen, setDesktopOpen } = React.useContext(DrawerContext);
 	const { isAuthenticated, gruposUsuario } = useAuth();
-	const navigate = useNavigate();
-	const theme = useTheme();
-	const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
 	// Verifica se o usuário é um estudante
 	const isEstudante = gruposUsuario.some(
 		(grupo) => grupo.id === Permissoes.GRUPOS.ESTUDANTE,
 	);
 
-	function handleDrawerToggle() {
-		setMobileOpen(!mobileOpen);
-	}
-
-	function handleDesktopDrawerToggle() {
-		setDesktopOpen(!desktopOpen);
-	}
-
-	function closeAnyDrawer() {
-		if (isMobile) {
-			setMobileOpen(false);
-		} else if (desktopOpen) {
-			setDesktopOpen(false);
-		}
-	}
-
-	function handleClickHome() {
-		navigate("/");
-		closeAnyDrawer();
-	}
-
-	function handleClickCursos() {
-		navigate("/cursos");
-		closeAnyDrawer();
-	}
-
-	function handleClickOrientadores() {
-		navigate("/orientadores");
-		closeAnyDrawer();
-	}
-
-	function handleClickDicentes() {
-		navigate("/dicentes");
-		closeAnyDrawer();
-	}
-
-	function handleClickOrientacoes() {
-		navigate("/orientacoes");
-		closeAnyDrawer();
-	}
-
-	function handleClickTemasTcc() {
-		navigate("/temas-tcc");
-		closeAnyDrawer();
-	}
-
-	function handleClickModuloOrientador() {
-		navigate("/modulo-orientador");
-		closeAnyDrawer();
-	}
-
-	function handleClickModuloDiscente() {
-		navigate("/modulo-discente");
-		closeAnyDrawer();
-	}
+	const {
+		mobileOpen,
+		isMobile,
+		drawerWidth,
+		handleDrawerToggle,
+		handleDesktopDrawerToggle,
+		handleClickHome,
+		handleClickCursos,
+		handleClickOrientadores,
+		handleClickDicentes,
+		handleClickOrientacoes,
+		handleClickTemasTcc,
+		handleClickModuloOrientador,
+		handleClickModuloDiscente,
+		handleClickLogin,
+	} = useNavbar({ desktopOpen, setDesktopOpen });
 
 	const drawerContent = (
 		<Box sx={{ overflow: "auto" }}>
@@ -223,10 +178,7 @@ function Navbar() {
 					{isAuthenticated ? (
 						<UserMenu />
 					) : (
-						<Button
-							color="inherit"
-							onClick={() => navigate("/login")}
-						>
+						<Button color="inherit" onClick={handleClickLogin}>
 							Login
 						</Button>
 					)}
