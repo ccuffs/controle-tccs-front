@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
-import axiosInstance from "../auth/axios";
+import React from "react";
 import PermissionContext from "../contexts/PermissionContext";
 import { Permissoes } from "../enums/permissoes";
 import CustomDataGrid from "./CustomDataGrid";
 import FiltrosPesquisa from "./FiltrosPesquisa";
 import DicenteModal from "./DicenteModal";
+import { useDicentes } from "../hooks/useDicentes.js";
+import dicentesController from "../controllers/dicentes-controller.js";
 
 import {
 	Alert,
@@ -24,179 +25,30 @@ import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import EditIcon from "@mui/icons-material/Edit";
 
 export default function Dicentes() {
-	const [dicentes, setDicentes] = useState([]);
-	const [cursos, setCursos] = useState([]);
-	const [selectedCurso, setSelectedCurso] = useState(null);
-	const [loadingCursos, setLoadingCursos] = useState(false);
-	const [loadingDicentes, setLoadingDicentes] = useState(false);
-	const [openMessage, setOpenMessage] = React.useState(false);
-	const [openDialog, setOpenDialog] = React.useState(false);
-	const [openDicenteModal, setOpenDicenteModal] = React.useState(false);
-	const [messageText, setMessageText] = React.useState("");
-	const [messageSeverity, setMessageSeverity] = React.useState("success");
-	const [dicenteDelete, setDicenteDelete] = React.useState(null);
-	const [isEditing, setIsEditing] = useState(false);
-	const [dicenteToEdit, setDicenteToEdit] = useState(null);
-
-	useEffect(() => {
-		getCursos();
-		getDicentes();
-	}, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-	useEffect(() => {
-		// Atualiza a lista quando o curso muda
-		getDicentes();
-	}, [selectedCurso]); // eslint-disable-line react-hooks/exhaustive-deps
-
-	async function getCursos() {
-		setLoadingCursos(true);
-		try {
-			const response = await axiosInstance.get("/cursos");
-			setCursos(response.cursos || []);
-		} catch (error) {
-			console.log("Não foi possível retornar a lista de cursos: ", error);
-			setCursos([]);
-		} finally {
-			setLoadingCursos(false);
-		}
-	}
-
-	async function getDicentes() {
-		setLoadingDicentes(true);
-		try {
-			const response = await axiosInstance.get("/dicentes");
-			setDicentes(response.dicentes || []);
-		} catch (error) {
-			console.log(
-				"Não foi possível retornar a lista de dicentes: ",
-				error,
-			);
-			setDicentes([]);
-		} finally {
-			setLoadingDicentes(false);
-		}
-	}
-
-	function handleDelete(row) {
-		setDicenteDelete(row.matricula);
-		setOpenDialog(true);
-	}
-
-	function handleEdit(row) {
-		setDicenteToEdit(row);
-		setIsEditing(true);
-		setOpenDicenteModal(true);
-	}
-
-	function handleCursoChange(cursoId) {
-		const curso = cursos.find((c) => c.id === cursoId);
-		setSelectedCurso(curso || null);
-	}
-
-	function handleOpenDicenteModal() {
-		setIsEditing(false);
-		setDicenteToEdit(null);
-		setOpenDicenteModal(true);
-	}
-
-	function handleCloseDicenteModal() {
-		setOpenDicenteModal(false);
-		setIsEditing(false);
-		setDicenteToEdit(null);
-	}
-
-	async function handleCreateDicente(formData) {
-		try {
-			if (!formData.matricula || !formData.nome || !formData.email) {
-				setMessageText(
-					"Por favor, preencha todos os campos obrigatórios!",
-				);
-				setMessageSeverity("error");
-				setOpenMessage(true);
-				return;
-			}
-
-			if (isEditing) {
-				// Atualizar dicente existente
-				await axiosInstance.put(
-					`/dicentes/${dicenteToEdit.matricula}`,
-					{
-						formData: {
-							nome: formData.nome,
-							email: formData.email,
-						},
-					},
-				);
-				setMessageText("Dicente atualizado com sucesso!");
-			} else {
-				// Criar novo dicente
-				const dicenteParaEnviar = {
-					...formData,
-					matricula: parseInt(formData.matricula),
-				};
-
-				await axiosInstance.post("/dicentes", {
-					formData: dicenteParaEnviar,
-				});
-				setMessageText("Dicente criado com sucesso!");
-			}
-
-			setMessageSeverity("success");
-			handleCloseDicenteModal();
-			// Atualiza a lista de dicentes
-			await getDicentes();
-		} catch (error) {
-			console.log(
-				`Não foi possível ${
-					isEditing ? "atualizar" : "criar"
-				} o dicente no banco de dados`,
-				error,
-			);
-			setMessageText(
-				`Falha ao ${isEditing ? "atualizar" : "criar"} dicente!`,
-			);
-			setMessageSeverity("error");
-		} finally {
-			setOpenMessage(true);
-		}
-	}
-
-	function handleCloseMessage(_, reason) {
-		if (reason === "clickaway") {
-			return;
-		}
-		setOpenMessage(false);
-	}
-
-	function handleClose() {
-		setOpenDialog(false);
-	}
-
-	async function handleDeleteClick() {
-		try {
-			if (!dicenteDelete) return;
-
-			await axiosInstance.delete(`/dicentes/${dicenteDelete}`);
-
-			setMessageText("Dicente removido com sucesso!");
-			setMessageSeverity("success");
-			// Atualiza a lista
-			await getDicentes();
-		} catch (error) {
-			console.log("Não foi possível remover o dicente no banco de dados");
-			setMessageText("Falha ao remover dicente!");
-			setMessageSeverity("error");
-		} finally {
-			setDicenteDelete(null);
-			setOpenDialog(false);
-			setOpenMessage(true);
-		}
-	}
-
-	function handleNoDeleteClick() {
-		setOpenDialog(false);
-		setDicenteDelete(null);
-	}
+	const {
+		dicentes,
+		cursos,
+		selectedCurso,
+		loadingCursos,
+		loadingDicentes,
+		openMessage,
+		openDialog,
+		openDicenteModal,
+		messageText,
+		messageSeverity,
+		isEditing,
+		dicenteToEdit,
+		handleDelete,
+		handleEdit,
+		handleCursoChange,
+		handleOpenDicenteModal,
+		handleCloseDicenteModal,
+		handleCreateDicente,
+		handleDeleteClick,
+		handleNoDeleteClick,
+		handleCloseMessage,
+		handleClose,
+	} = useDicentes();
 
 	const columns = [
 		{ field: "matricula", headerName: "Matrícula", width: 150 },
@@ -290,11 +142,7 @@ export default function Dicentes() {
 							</Box>
 						) : (
 							<Typography variant="body2" color="text.secondary">
-								{`${dicentes.length} dicente${
-									dicentes.length !== 1 ? "s" : ""
-								} encontrado${
-									dicentes.length !== 1 ? "s" : ""
-								}`}
+								{dicentesController.formatDicentesCount(dicentes.length)}
 							</Typography>
 						)}
 					</Box>
