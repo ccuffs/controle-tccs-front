@@ -1,8 +1,4 @@
 import React, { useState, useEffect } from "react";
-import axiosInstance from "../auth/axios";
-import PermissionContext from "../contexts/PermissionContext";
-import { Permissoes } from "../enums/permissoes";
-
 import {
 	Alert,
 	Box,
@@ -22,6 +18,10 @@ import {
 	Typography,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
+
+import axiosInstance from "../auth/axios";
+import PermissionContext from "../contexts/PermissionContext";
+import { Permissoes } from "../enums/permissoes";
 
 export default function Orientadores() {
 	const [orientadores, setOrientadores] = useState([]);

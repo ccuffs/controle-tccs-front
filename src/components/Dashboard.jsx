@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Box, Grid, Typography, Stack } from "@mui/material";
+
 import axios from "../auth/axios";
 import { useAuth } from "../contexts/AuthContext";
 import { Permissoes } from "../enums/permissoes";
-import FiltrosPesquisa from "./FiltrosPesquisa";
 
-// Componentes de gráficos
+import FiltrosPesquisa from "./FiltrosPesquisa";
 import GraficoEstudantesOrientador from "./dashboard/GraficoEstudantesOrientador";
 import GraficoDistribuicaoEtapas from "./dashboard/GraficoDistribuicaoEtapas";
 import TabelaDefesasAgendadas from "./dashboard/TabelaDefesasAgendadas";

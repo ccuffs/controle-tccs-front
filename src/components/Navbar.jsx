@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router";
 import {
 	AppBar,
 	Toolbar,
@@ -16,11 +17,12 @@ import {
 	Divider,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
-import { useNavigate } from "react-router";
-import { DrawerContext } from "./App";
+
 import { useAuth } from "../contexts/AuthContext";
 import PermissionContext from "../contexts/PermissionContext";
 import { Permissoes } from "../enums/permissoes";
+
+import { DrawerContext } from "./App";
 import UserMenu from "./UserMenu";
 
 const drawerWidth = 240;

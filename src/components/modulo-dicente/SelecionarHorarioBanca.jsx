@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useTheme } from "@mui/material/styles";
 import {
 	Box,
 	Typography,
@@ -9,9 +10,9 @@ import {
 	Chip,
 	Divider,
 } from "@mui/material";
-import axiosInstance from "../../auth/axios";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
-import { useTheme } from "@mui/material/styles";
+
+import axiosInstance from "../../auth/axios";
 
 // Props esperadas:
 // - oferta: { ano, semestre, id_curso, fase }

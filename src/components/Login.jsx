@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router";
 import {
 	Box,
 	Paper,
@@ -9,8 +10,8 @@ import {
 	CircularProgress,
 	Container,
 } from "@mui/material";
+
 import { useAuth } from "../contexts/AuthContext";
-import { useNavigate } from "react-router";
 
 export default function Login() {
 	const [formData, setFormData] = useState({

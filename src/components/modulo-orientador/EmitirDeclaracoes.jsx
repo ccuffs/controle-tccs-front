@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Box, Typography, Button, Alert, Snackbar } from "@mui/material";
 import { Download } from "@mui/icons-material";
-import FiltrosPesquisa from "./FiltrosPesquisa";
-import CustomDataGrid from "./CustomDataGrid";
-import axios from "../auth/axios";
-import { useAuth } from "../contexts/AuthContext";
 import html2pdf from "html2pdf.js";
+
+import axios from "../../auth/axios";
+import { useAuth } from "../../contexts/AuthContext";
+
+import CustomDataGrid from "../CustomDataGrid";
+import FiltrosPesquisa from "../FiltrosPesquisa";
 
 export default function EmitirDeclaracoes() {
 	const { usuario } = useAuth();

@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import axiosInstance from "../../auth/axios";
-import { AuthContext } from "../../contexts/AuthContext";
-
+import { useTheme } from "@mui/material/styles";
 import {
 	Alert,
 	Box,
@@ -15,8 +13,11 @@ import {
 	CircularProgress,
 	Grid,
 } from "@mui/material";
+
+import axiosInstance from "../../auth/axios";
+import { AuthContext } from "../../contexts/AuthContext";
+
 import TemasDataGrid from "../TemasDataGrid";
-import { useTheme } from "@mui/material/styles";
 
 export default function VisualizarTemasTCC({ onAvancarEtapa }) {
 	const theme = useTheme();

@@ -1,12 +1,4 @@
 import React from "react";
-import PermissionContext from "../contexts/PermissionContext";
-import { Permissoes } from "../enums/permissoes";
-import CustomDataGrid from "./CustomDataGrid";
-import FiltrosPesquisa from "./FiltrosPesquisa";
-import DicenteModal from "./DicenteModal";
-import { useDicentes } from "../hooks/useDicentes.js";
-import dicentesController from "../controllers/dicentes-controller.js";
-
 import {
 	Alert,
 	Box,
@@ -23,6 +15,15 @@ import {
 } from "@mui/material";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import EditIcon from "@mui/icons-material/Edit";
+
+import PermissionContext from "../contexts/PermissionContext";
+import { Permissoes } from "../enums/permissoes";
+import { useDicentes } from "../hooks/useDicentes.js";
+import dicentesController from "../controllers/dicentes-controller.js";
+
+import CustomDataGrid from "./CustomDataGrid";
+import FiltrosPesquisa from "./FiltrosPesquisa";
+import DicenteModal from "./DicenteModal";
 
 export default function Dicentes() {
 	const {

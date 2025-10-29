@@ -1,11 +1,12 @@
 import React, { useState, useRef } from "react";
 import { Box, Typography, Tabs, Tab } from "@mui/material";
+
+import Dashboard from "./Dashboard";
+import Orientacao from "./modulo-orientador/Orientacao";
 import TemasTcc from "./modulo-orientador/TemasTcc";
 import ConvitesRecebidosOrientador from "./modulo-orientador/ConvitesRecebidosOrientador";
-import Orientacao from "./modulo-orientador/Orientacao";
 import GerenciarDisponibilidadeBanca from "./modulo-orientador/GerenciarDisponibilidadeBanca";
 import AvaliarDefesasOrientador from "./modulo-orientador/AvaliarDefesasOrientador";
-import Dashboard from "./modulo-orientador/Dashboard";
 import EmitirDeclaracoes from "./modulo-orientador/EmitirDeclaracoes";
 import PerfilOrientador from "./modulo-orientador/PerfilOrientador";
 

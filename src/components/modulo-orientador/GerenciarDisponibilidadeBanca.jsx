@@ -17,10 +17,12 @@ import {
 	DialogContent,
 	DialogActions,
 } from "@mui/material";
-import axiosInstance from "../auth/axios";
-import { useAuth } from "../contexts/AuthContext";
-import CustomDataGrid from "./CustomDataGrid";
-import FiltrosPesquisa from "./FiltrosPesquisa";
+
+import axiosInstance from "../../auth/axios";
+import { useAuth } from "../../contexts/AuthContext";
+
+import CustomDataGrid from "../CustomDataGrid";
+import FiltrosPesquisa from "../FiltrosPesquisa";
 
 const GerenciarDisponibilidadeBanca = forwardRef((props, ref) => {
 	const { usuario } = useAuth();

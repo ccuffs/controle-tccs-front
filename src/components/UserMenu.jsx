@@ -9,6 +9,7 @@ import {
 	Divider,
 } from "@mui/material";
 import LogoutIcon from "@mui/icons-material/Logout";
+
 import { useAuth } from "../contexts/AuthContext";
 
 export default function UserMenu() {

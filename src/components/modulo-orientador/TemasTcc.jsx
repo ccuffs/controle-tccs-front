@@ -1,7 +1,4 @@
 import React, { useState, useEffect } from "react";
-import axiosInstance from "../auth/axios";
-import { useAuth } from "../contexts/AuthContext";
-
 import {
 	Alert,
 	Box,
@@ -20,9 +17,13 @@ import {
 	InputLabel,
 	Typography,
 } from "@mui/material";
-import PermissionContext from "../contexts/PermissionContext";
-import { Permissoes } from "../enums/permissoes";
-import TemasDataGrid from "./TemasDataGrid";
+
+import axiosInstance from "../../auth/axios";
+import { useAuth } from "../../contexts/AuthContext";
+import PermissionContext from "../../contexts/PermissionContext";
+import { Permissoes } from "../../enums/permissoes";
+
+import TemasDataGrid from "../TemasDataGrid";
 
 export default function TemasTcc({ isOrientadorView = false }) {
 	const { usuario } = useAuth();

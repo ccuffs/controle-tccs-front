@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import axiosInstance from "../auth/axios";
-import { useAuth } from "../contexts/AuthContext";
+import { useTheme } from "@mui/material/styles";
 import {
 	Box,
 	Stack,
@@ -19,8 +18,11 @@ import {
 	CardActions,
 	Divider,
 } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
-import FiltrosPesquisa from "./FiltrosPesquisa";
+
+import axiosInstance from "../../auth/axios";
+import { useAuth } from "../../contexts/AuthContext";
+
+import FiltrosPesquisa from "../FiltrosPesquisa";
 
 function getAnoSemestreAtual() {
 	const data = new Date();

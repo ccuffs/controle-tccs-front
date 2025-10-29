@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
+import { useTheme } from "@mui/material/styles";
 import {
 	Box,
 	Stepper,
@@ -19,13 +20,14 @@ import {
 	DialogContentText,
 	Chip,
 } from "@mui/material";
-import axiosInstance from "../auth/axios";
-import { AuthContext } from "../contexts/AuthContext";
+
+import axiosInstance from "../../auth/axios";
+import { AuthContext } from "../../contexts/AuthContext";
+
 import VisualizarTemasTCC from "./VisualizarTemasTCC";
 import ConviteOrientadorModal from "./ConviteOrientadorModal";
 import ConviteBancaModal from "./ConviteBancaModal";
 import SelecionarHorarioBanca from "./SelecionarHorarioBanca";
-import { useTheme } from "@mui/material/styles";
 
 const steps = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
 

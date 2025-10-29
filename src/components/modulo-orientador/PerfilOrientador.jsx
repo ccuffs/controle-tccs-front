@@ -11,8 +11,9 @@ import {
 	CircularProgress,
 	FormControl,
 } from "@mui/material";
-import axiosInstance from "../auth/axios";
-import { useAuth } from "../contexts/AuthContext";
+
+import axiosInstance from "../../auth/axios";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function PerfilOrientador() {
 	const { usuario } = useAuth();

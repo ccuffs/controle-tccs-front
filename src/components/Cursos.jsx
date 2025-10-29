@@ -1,5 +1,4 @@
 import React from "react";
-
 import {
 	Alert,
 	Box,
@@ -18,6 +17,7 @@ import {
 	TextField,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
+
 import PermissionContext from "../contexts/PermissionContext";
 import { Permissoes } from "../enums/permissoes";
 import { useCursos } from "../hooks/useCursos.js";

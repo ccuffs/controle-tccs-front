@@ -1,24 +1,23 @@
-import { Container, Box, Toolbar } from "@mui/material";
-import { Route, Routes } from "react-router";
 import React from "react";
+import { Route, Routes } from "react-router";
+import { Container, Box, Toolbar } from "@mui/material";
 
-import Navbar from "./Navbar";
-import Login from "./Login";
+import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import ProtectedRoute from "../contexts/ProtectedRoute";
-import { useAuth } from "../contexts/AuthContext";
 import { Permissoes } from "../enums/permissoes";
 
+import CustomThemeProvider from "./CustomThemeProvider";
+import Dashboard from "./Dashboard";
+import Navbar from "./Navbar";
+import Login from "./Login";
+import ThemeSwitch from "./ThemeSwitch";
 import Cursos from "./Cursos";
 import Orientadores from "./Orientadores";
 import Dicentes from "./Dicentes";
-import Orientacao from "./Orientacao";
-import TemasTcc from "./TemasTcc";
 import ModuloOrientador from "./ModuloOrientador";
 import ModuloDiscente from "./ModuloDiscente";
-import CustomThemeProvider from "./CustomThemeProvider";
-import ThemeSwitch from "./ThemeSwitch";
-import { AuthProvider } from "../contexts/AuthContext";
-import Dashboard from "./Dashboard";
+import Orientacao from "./modulo-orientador/Orientacao";
+import TemasTcc from "./modulo-orientador/TemasTcc";
 
 // Contexto para gerenciar o estado do drawer
 export const DrawerContext = React.createContext();

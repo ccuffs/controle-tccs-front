@@ -1,12 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axiosInstance from "../auth/axios";
-import PermissionContext from "../contexts/PermissionContext";
-import { Permissoes } from "../enums/permissoes";
-import permissoesService from "../services/permissoesService";
-import { useAuth } from "../contexts/AuthContext";
-import FiltrosPesquisa from "./FiltrosPesquisa";
-import SelecionarHorarioBanca from "./SelecionarHorarioBanca";
-
+import { ptBR } from "date-fns/locale";
 import {
 	Alert,
 	Box,
@@ -33,13 +26,21 @@ import {
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { ptBR } from "date-fns/locale";
 import { DataGrid } from "@mui/x-data-grid";
 import SaveIcon from "@mui/icons-material/Save";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import EditIcon from "@mui/icons-material/Edit";
+
+import axiosInstance from "../../auth/axios";
+import { useAuth } from "../../contexts/AuthContext";
+import PermissionContext from "../../contexts/PermissionContext";
+import { Permissoes } from "../../enums/permissoes";
+import permissoesService from "../../services/permissoesService";
+
+import FiltrosPesquisa from "../FiltrosPesquisa";
+import SelecionarHorarioBanca from "../modulo-dicente/SelecionarHorarioBanca";
 
 export default function Orientacao({ isOrientadorView = false }) {
 	const [dicentes, setDicentes] = useState([]);

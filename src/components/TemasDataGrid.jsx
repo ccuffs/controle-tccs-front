@@ -1,9 +1,11 @@
 import React from "react";
 import { Button, Stack, Typography, Chip } from "@mui/material";
-import CustomDataGrid from "./CustomDataGrid";
+
 import PermissionContext from "../contexts/PermissionContext";
 import { Permissoes } from "../enums/permissoes";
 import { usePermissions } from "../hooks/usePermissions";
+
+import CustomDataGrid from "./CustomDataGrid";
 
 export default function TemasDataGrid({
 	temas,

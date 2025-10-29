@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useContext } from "react";
 import { Box, Typography, Tabs, Tab } from "@mui/material";
-import TccStepper from "./modulo-discente/TccStepper";
-import PerfilDiscente from "./modulo-discente/PerfilDiscente";
-import { AuthContext } from "../contexts/AuthContext";
+
 import axiosInstance from "../auth/axios";
+import { AuthContext } from "../contexts/AuthContext";
+
+import TccStepper from "./modulo-dicente/TccStepper";
+import PerfilDiscente from "./modulo-dicente/PerfilDiscente";
 
 function TabPanel({ children, value, index, ...other }) {
 	return (

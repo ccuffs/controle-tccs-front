@@ -12,12 +12,14 @@ import {
 	Typography,
 	Chip,
 } from "@mui/material";
-import PermissionContext from "../contexts/PermissionContext";
-import { Permissoes } from "../enums/permissoes";
-import axiosInstance from "../auth/axios";
-import { useAuth } from "../contexts/AuthContext";
-import CustomDataGrid from "./CustomDataGrid";
-import FiltrosPesquisa from "./FiltrosPesquisa";
+
+import axiosInstance from "../../auth/axios";
+import { useAuth } from "../../contexts/AuthContext";
+import PermissionContext from "../../contexts/PermissionContext";
+import { Permissoes } from "../../enums/permissoes";
+
+import CustomDataGrid from "../CustomDataGrid";
+import FiltrosPesquisa from "../FiltrosPesquisa";
 
 function getAnoSemestreAtual() {
 	const data = new Date();
