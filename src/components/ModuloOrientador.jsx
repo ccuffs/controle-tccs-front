@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React from "react";
 import { Box, Typography, Tabs, Tab } from "@mui/material";
 
 import Dashboard from "./Dashboard";
@@ -9,6 +9,7 @@ import GerenciarDisponibilidadeBanca from "./modulo-orientador/GerenciarDisponib
 import AvaliarDefesasOrientador from "./modulo-orientador/AvaliarDefesasOrientador";
 import EmitirDeclaracoes from "./modulo-orientador/EmitirDeclaracoes";
 import PerfilOrientador from "./modulo-orientador/PerfilOrientador";
+import { useModuloOrientador } from "../hooks/useModuloOrientador.js";
 
 function TabPanel({ children, value, index, ...other }) {
 	return (
@@ -32,28 +33,8 @@ function a11yProps(index) {
 }
 
 export default function ModuloOrientador() {
-	const [tabValue, setTabValue] = useState(0);
-	const gerenciarDisponibilidadeRef = useRef(null);
-
-	const handleTabChange = (event, newValue) => {
-		// Verificar se há mudanças não sincronizadas na aba de disponibilidade
-		if (
-			tabValue === 4 &&
-			newValue !== 4 &&
-			gerenciarDisponibilidadeRef.current
-		) {
-			const hasUnsavedChanges =
-				gerenciarDisponibilidadeRef.current.hasUnsavedChanges();
-			if (hasUnsavedChanges) {
-				const shouldProceed =
-					gerenciarDisponibilidadeRef.current.confirmNavigation();
-				if (!shouldProceed) {
-					return; // Não muda a aba
-				}
-			}
-		}
-		setTabValue(newValue);
-	};
+	const { tabValue, gerenciarDisponibilidadeRef, handleTabChange } =
+		useModuloOrientador();
 
 	return (
 		<Box sx={{ width: 1400 }}>
