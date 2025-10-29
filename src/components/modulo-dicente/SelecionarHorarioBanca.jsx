@@ -9,7 +9,7 @@ import {
 	Chip,
 	Divider,
 } from "@mui/material";
-import axiosInstance from "../auth/axios";
+import axiosInstance from "../../auth/axios";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import { useTheme } from "@mui/material/styles";
 

@@ -15,7 +15,7 @@ import {
 	Alert,
 	CircularProgress,
 } from "@mui/material";
-import axiosInstance from "../auth/axios";
+import axiosInstance from "../../auth/axios";
 
 export default function ConviteOrientadorModal({
 	open,

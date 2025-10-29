@@ -19,7 +19,7 @@ import {
 	ListItemText,
 	Checkbox,
 } from "@mui/material";
-import axiosInstance from "../auth/axios";
+import axiosInstance from "../../auth/axios";
 
 export default function ConviteBancaModal({
 	open,
