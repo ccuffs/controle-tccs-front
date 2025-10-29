@@ -1,11 +1,9 @@
-import React, { useState, useEffect, useContext } from "react";
+import React from "react";
 import { Box, Typography, Tabs, Tab } from "@mui/material";
-
-import axiosInstance from "../auth/axios";
-import { AuthContext } from "../contexts/AuthContext";
 
 import TccStepper from "./modulo-dicente/TccStepper";
 import PerfilDiscente from "./modulo-dicente/PerfilDiscente";
+import { useModuloDiscente } from "../hooks/useModuloDiscente.js";
 
 function TabPanel({ children, value, index, ...other }) {
 	return (
@@ -29,51 +27,13 @@ function a11yProps(index) {
 }
 
 export default function ModuloDiscente() {
-	const { usuario } = useContext(AuthContext);
-	const [tabValue, setTabValue] = useState(0);
-	const [etapaAtual, setEtapaAtual] = useState(0);
-	const [loading, setLoading] = useState(true);
-
-	useEffect(() => {
-		if (usuario) {
-			carregarEtapaAtual();
-		}
-	}, [usuario]);
-
-	const carregarEtapaAtual = async () => {
-		try {
-			setLoading(true);
-
-			// Buscar o discente pelo id_usuario
-			const responseDiscente = await axiosInstance.get(
-				`/dicentes/usuario/${usuario.id}`,
-			);
-
-			if (responseDiscente && responseDiscente.matricula) {
-				// Buscar o trabalho de conclusão do discente
-				const responseTcc = await axiosInstance.get(
-					`/trabalho-conclusao/discente/${responseDiscente.matricula}`,
-				);
-
-				if (responseTcc) {
-					setEtapaAtual(responseTcc.etapa || 0);
-				} else {
-					setEtapaAtual(0); // Se não existe TCC, começa na etapa 0
-				}
-			} else {
-				setEtapaAtual(0); // Se não existe discente, começa na etapa 0
-			}
-		} catch (error) {
-			console.error("Erro ao carregar etapa atual:", error);
-			setEtapaAtual(0); // Em caso de erro, começa na etapa 0
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	const handleTabChange = (event, newValue) => {
-		setTabValue(newValue);
-	};
+	const {
+		tabValue,
+		etapaAtual,
+		setEtapaAtual,
+		loading,
+		handleTabChange,
+	} = useModuloDiscente();
 
 	const renderizarConteudo = () => {
 		if (loading) {

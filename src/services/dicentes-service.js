@@ -1,5 +1,20 @@
 import axiosInstance from "../auth/axios.js";
 
+// GET - Buscar dicente por ID de usuário
+export async function getDicenteByUsuario(usuarioId) {
+	try {
+		const response = await axiosInstance.get(`/dicentes/usuario/${usuarioId}`);
+		return response;
+	} catch (error) {
+		console.error("Erro ao buscar dicente por usuário:", error);
+		throw new Error(
+			error.response?.data?.message ||
+				error.message ||
+				"Erro ao buscar dicente",
+		);
+	}
+}
+
 // GET - Buscar todos os dicentes
 export async function getDicentes() {
 	try {
@@ -54,6 +69,7 @@ export async function deleteDicente(matricula) {
 
 // Exportação padrão para manter compatibilidade
 const dicentesService = {
+	getDicenteByUsuario,
 	getDicentes,
 	createDicente,
 	updateDicente,
@@ -61,4 +77,3 @@ const dicentesService = {
 };
 
 export default dicentesService;
-
