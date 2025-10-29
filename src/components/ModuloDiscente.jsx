@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { Box, Typography, Tabs, Tab } from "@mui/material";
-import TccStepper from "./TccStepper";
-import PerfilDiscente from "./PerfilDiscente";
+import TccStepper from "./modulo-discente/TccStepper";
+import PerfilDiscente from "./modulo-discente/PerfilDiscente";
 import { AuthContext } from "../contexts/AuthContext";
 import axiosInstance from "../auth/axios";
 
