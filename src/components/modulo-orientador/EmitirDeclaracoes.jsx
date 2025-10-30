@@ -6,8 +6,8 @@ import html2pdf from "html2pdf.js";
 import axios from "../../auth/axios";
 import { useAuth } from "../../contexts/AuthContext";
 
-import CustomDataGrid from "../CustomDataGrid";
-import FiltrosPesquisa from "../FiltrosPesquisa";
+import CustomDataGrid from "../customs/CustomDataGrid";
+import FiltrosPesquisa from "../utils/FiltrosPesquisa";
 
 export default function EmitirDeclaracoes() {
 	const { usuario } = useAuth();

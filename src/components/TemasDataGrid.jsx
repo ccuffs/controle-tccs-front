@@ -6,7 +6,7 @@ import { Permissoes } from "../enums/permissoes";
 import { usePermissions } from "../hooks/usePermissions";
 import { useTemasDataGrid } from "../hooks/useTemasDataGrid.js";
 
-import CustomDataGrid from "./CustomDataGrid";
+import CustomDataGrid from "./customs/CustomDataGrid.jsx";
 
 export default function TemasDataGrid({
 	temas,

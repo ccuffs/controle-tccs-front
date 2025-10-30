@@ -18,8 +18,8 @@ import { useAuth } from "../../contexts/AuthContext";
 import PermissionContext from "../../contexts/PermissionContext";
 import { Permissoes } from "../../enums/permissoes";
 
-import CustomDataGrid from "../CustomDataGrid";
-import FiltrosPesquisa from "../FiltrosPesquisa";
+import CustomDataGrid from "../customs/CustomDataGrid";
+import FiltrosPesquisa from "../utils/FiltrosPesquisa";
 
 function getAnoSemestreAtual() {
 	const data = new Date();

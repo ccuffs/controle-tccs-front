@@ -6,10 +6,10 @@ import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import ProtectedRoute from "../contexts/ProtectedRoute";
 import { Permissoes } from "../enums/permissoes";
 
-import CustomThemeProvider from "./CustomThemeProvider";
+import CustomThemeProvider from "./customs/CustomThemeProvider";
 import Dashboard from "./Dashboard";
 import Navbar from "./Navbar";
-import Login from "./Login";
+import Login from "./utils/Login";
 import Cursos from "./Cursos";
 import Orientadores from "./Orientadores";
 import Dicentes from "./Dicentes";

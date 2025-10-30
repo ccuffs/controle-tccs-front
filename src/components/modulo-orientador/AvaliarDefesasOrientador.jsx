@@ -22,7 +22,7 @@ import {
 import axiosInstance from "../../auth/axios";
 import { useAuth } from "../../contexts/AuthContext";
 
-import FiltrosPesquisa from "../FiltrosPesquisa";
+import FiltrosPesquisa from "../utils/FiltrosPesquisa";
 
 function getAnoSemestreAtual() {
 	const data = new Date();

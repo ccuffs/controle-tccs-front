@@ -21,8 +21,8 @@ import {
 import axiosInstance from "../../auth/axios";
 import { useAuth } from "../../contexts/AuthContext";
 
-import CustomDataGrid from "../CustomDataGrid";
-import FiltrosPesquisa from "../FiltrosPesquisa";
+import CustomDataGrid from "../customs/CustomDataGrid";
+import FiltrosPesquisa from "../utils/FiltrosPesquisa";
 
 const GerenciarDisponibilidadeBanca = forwardRef((props, ref) => {
 	const { usuario } = useAuth();

@@ -11,7 +11,7 @@ import {
 	Container,
 } from "@mui/material";
 
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function Login() {
 	const [formData, setFormData] = useState({

@@ -5,7 +5,7 @@ import axios from "../auth/axios";
 import { useAuth } from "../contexts/AuthContext";
 import { Permissoes } from "../enums/permissoes";
 
-import FiltrosPesquisa from "./FiltrosPesquisa";
+import FiltrosPesquisa from "./utils/FiltrosPesquisa";
 import GraficoEstudantesOrientador from "./dashboard/GraficoEstudantesOrientador";
 import GraficoDistribuicaoEtapas from "./dashboard/GraficoDistribuicaoEtapas";
 import TabelaDefesasAgendadas from "./dashboard/TabelaDefesasAgendadas";

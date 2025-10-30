@@ -1,6 +1,6 @@
 import React from "react";
 import { Switch } from "@mui/material";
-import { useThemeContext } from "./CustomThemeProvider";
+import { useThemeContext } from "../customs/CustomThemeProvider";
 
 export default function ThemeSwitch() {
 	const { toggleTheme } = useThemeContext();

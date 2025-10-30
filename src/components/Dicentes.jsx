@@ -21,8 +21,8 @@ import { Permissoes } from "../enums/permissoes";
 import { useDicentes } from "../hooks/useDicentes.js";
 import dicentesController from "../controllers/dicentes-controller.js";
 
-import CustomDataGrid from "./CustomDataGrid";
-import FiltrosPesquisa from "./FiltrosPesquisa";
+import CustomDataGrid from "./customs/CustomDataGrid";
+import FiltrosPesquisa from "./utils/FiltrosPesquisa";
 import DicenteModal from "./DicenteModal";
 
 export default function Dicentes() {

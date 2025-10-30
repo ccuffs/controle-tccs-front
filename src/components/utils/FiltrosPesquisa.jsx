@@ -6,7 +6,7 @@ import {
 	Select,
 	MenuItem,
 } from "@mui/material";
-import { useFiltrosPesquisa } from "../hooks/useFiltrosPesquisa.js";
+import { useFiltrosPesquisa } from "../../hooks/useFiltrosPesquisa.js";
 
 export default function FiltrosPesquisa({
 	cursoSelecionado,

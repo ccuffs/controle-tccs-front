@@ -14,7 +14,7 @@ import LightModeIcon from "@mui/icons-material/LightMode";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 
 import { useAuth } from "../contexts/AuthContext";
-import { useThemeContext } from "./CustomThemeProvider";
+import { useThemeContext } from "./customs/CustomThemeProvider";
 import { useTheme } from "@mui/material";
 
 export default function UserMenu() {

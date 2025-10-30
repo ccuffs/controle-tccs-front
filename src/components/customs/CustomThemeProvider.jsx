@@ -1,7 +1,7 @@
 import React, { createContext, useContext } from "react";
 import { ThemeProvider, CssBaseline } from "@mui/material";
-import { useTheme as useCustomTheme } from "../hooks/useTheme.js";
-import { useMuiTheme } from "../hooks/useMuiTheme.js";
+import { useTheme as useCustomTheme } from "../../hooks/useTheme.js";
+import { useMuiTheme } from "../../hooks/useMuiTheme.js";
 
 /**
  * CustomThemeProvider - Componente responsável apenas pela definição da tela (UI)

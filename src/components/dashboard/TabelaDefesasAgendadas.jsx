@@ -3,7 +3,7 @@ import { useTheme } from "@mui/material/styles";
 import { Box, Card, CardContent, Typography } from "@mui/material";
 import MuiTooltip from "@mui/material/Tooltip";
 
-import CustomDataGrid from "../CustomDataGrid";
+import CustomDataGrid from "../customs/CustomDataGrid";
 
 export default function TabelaDefesasAgendadas({ defesasAgendadas, largura }) {
 	const theme = useTheme();

@@ -39,7 +39,7 @@ import PermissionContext from "../../contexts/PermissionContext";
 import { Permissoes } from "../../enums/permissoes";
 import permissoesService from "../../services/permissoesService";
 
-import FiltrosPesquisa from "../FiltrosPesquisa";
+import FiltrosPesquisa from "../utils/FiltrosPesquisa";
 import SelecionarHorarioBanca from "../modulo-dicente/SelecionarHorarioBanca";
 
 export default function Orientacao({ isOrientadorView = false }) {
