@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
 	Box,
 	IconButton,
@@ -15,22 +15,12 @@ import DarkModeIcon from "@mui/icons-material/DarkMode";
 
 import { useAuth } from "../contexts/AuthContext";
 import { useThemeContext } from "./customs/CustomThemeProvider";
-import { useTheme } from "@mui/material";
+import { useUserMenu } from "../hooks/useUserMenu.js";
 
 export default function UserMenu() {
-	const [anchorEl, setAnchorEl] = useState(null);
 	const { usuario, logout } = useAuth();
 	const { toggleTheme } = useThemeContext();
-	const theme = useTheme();
-	const isDarkMode = theme.palette.mode === "dark";
-
-	const handleMenu = (event) => {
-		setAnchorEl(event.currentTarget);
-	};
-
-	const handleClose = () => {
-		setAnchorEl(null);
-	};
+	const { anchorEl, isDarkMode, handleMenu, handleClose } = useUserMenu();
 
 	const handleLogout = () => {
 		handleClose();
