@@ -4,27 +4,7 @@ import { Box, Typography, Tabs, Tab } from "@mui/material";
 import TccStepper from "./modulo-dicente/TccStepper";
 import PerfilDiscente from "./modulo-dicente/PerfilDiscente";
 import { useModuloDiscente } from "../hooks/useModuloDiscente.js";
-
-function TabPanel({ children, value, index, ...other }) {
-	return (
-		<div
-			role="tabpanel"
-			hidden={value !== index}
-			id={`dicente-tabpanel-${index}`}
-			aria-labelledby={`dicente-tab-${index}`}
-			{...other}
-		>
-			{value === index && <Box sx={{ p: 3 }}>{children}</Box>}
-		</div>
-	);
-}
-
-function a11yProps(index) {
-	return {
-		id: `dicente-tab-${index}`,
-		"aria-controls": `dicente-tabpanel-${index}`,
-	};
-}
+import { AccessibleTabPanel, getA11yProps } from "./customs/AccessibleTabs.jsx";
 
 export default function ModuloDiscente() {
 	const {
@@ -64,18 +44,18 @@ export default function ModuloDiscente() {
 					onChange={handleTabChange}
 					aria-label="dicente tabs"
 				>
-					<Tab label="Meu TCC" {...a11yProps(0)} />
-					<Tab label="Meu Perfil" {...a11yProps(1)} />
+					<Tab label="Meu TCC" {...getA11yProps("dicente", 0)} />
+					<Tab label="Meu Perfil" {...getA11yProps("dicente", 1)} />
 				</Tabs>
 			</Box>
 
-			<TabPanel value={tabValue} index={0}>
+			<AccessibleTabPanel idPrefix="dicente" value={tabValue} index={0}>
 				{renderizarConteudo()}
-			</TabPanel>
+			</AccessibleTabPanel>
 
-			<TabPanel value={tabValue} index={1}>
+			<AccessibleTabPanel idPrefix="dicente" value={tabValue} index={1}>
 				<PerfilDiscente />
-			</TabPanel>
+			</AccessibleTabPanel>
 		</Box>
 	);
 }

@@ -10,27 +10,9 @@ import AvaliarDefesasOrientador from "./modulo-orientador/AvaliarDefesasOrientad
 import EmitirDeclaracoes from "./modulo-orientador/EmitirDeclaracoes";
 import PerfilOrientador from "./modulo-orientador/PerfilOrientador";
 import { useModuloOrientador } from "../hooks/useModuloOrientador.js";
+import { AccessibleTabPanel, getA11yProps } from "./customs/AccessibleTabs.jsx";
 
-function TabPanel({ children, value, index, ...other }) {
-	return (
-		<div
-			role="tabpanel"
-			hidden={value !== index}
-			id={`orientador-tabpanel-${index}`}
-			aria-labelledby={`orientador-tab-${index}`}
-			{...other}
-		>
-			{value === index && <Box sx={{ p: 3 }}>{children}</Box>}
-		</div>
-	);
-}
 
-function a11yProps(index) {
-	return {
-		id: `orientador-tab-${index}`,
-		"aria-controls": `orientador-tabpanel-${index}`,
-	};
-}
 
 export default function ModuloOrientador() {
 	const { tabValue, gerenciarDisponibilidadeRef, handleTabChange } =
@@ -48,50 +30,50 @@ export default function ModuloOrientador() {
 					onChange={handleTabChange}
 					aria-label="orientador tabs"
 				>
-					<Tab label="Dashboard" {...a11yProps(0)} />
-					<Tab label="Trabalhos Orientados" {...a11yProps(1)} />
-					<Tab label="Gerenciar Temas TCC" {...a11yProps(2)} />
-					<Tab label="Convites Recebidos" {...a11yProps(3)} />
-					<Tab label="Disponibilidade Bancas" {...a11yProps(4)} />
-					<Tab label="Avaliar Defesas" {...a11yProps(5)} />
-					<Tab label="Emitir Declarações" {...a11yProps(6)} />
-					<Tab label="Meu Perfil" {...a11yProps(7)} />
+					<Tab label="Dashboard" {...getA11yProps("orientador", 0)} />
+					<Tab label="Trabalhos Orientados" {...getA11yProps("orientador", 1)} />
+					<Tab label="Gerenciar Temas TCC" {...getA11yProps("orientador", 2)} />
+					<Tab label="Convites Recebidos" {...getA11yProps("orientador", 3)} />
+					<Tab label="Disponibilidade Bancas" {...getA11yProps("orientador", 4)} />
+					<Tab label="Avaliar Defesas" {...getA11yProps("orientador", 5)} />
+					<Tab label="Emitir Declarações" {...getA11yProps("orientador", 6)} />
+					<Tab label="Meu Perfil" {...getA11yProps("orientador", 7)} />
 				</Tabs>
 			</Box>
 
-			<TabPanel value={tabValue} index={0}>
+			<AccessibleTabPanel idPrefix="orientador" value={tabValue} index={0}>
 				<Dashboard forceOrientador={true} />
-			</TabPanel>
+			</AccessibleTabPanel>
 
-			<TabPanel value={tabValue} index={1}>
+			<AccessibleTabPanel idPrefix="orientador" value={tabValue} index={1}>
 				<Orientacao isOrientadorView={true} />
-			</TabPanel>
+			</AccessibleTabPanel>
 
-			<TabPanel value={tabValue} index={2}>
+			<AccessibleTabPanel idPrefix="orientador" value={tabValue} index={2}>
 				<TemasTcc isOrientadorView={true} />
-			</TabPanel>
+			</AccessibleTabPanel>
 
-			<TabPanel value={tabValue} index={3}>
+			<AccessibleTabPanel idPrefix="orientador" value={tabValue} index={3}>
 				<ConvitesRecebidosOrientador />
-			</TabPanel>
+			</AccessibleTabPanel>
 
-			<TabPanel value={tabValue} index={4}>
+			<AccessibleTabPanel idPrefix="orientador" value={tabValue} index={4}>
 				<GerenciarDisponibilidadeBanca
 					ref={gerenciarDisponibilidadeRef}
 				/>
-			</TabPanel>
+			</AccessibleTabPanel>
 
-			<TabPanel value={tabValue} index={5}>
+			<AccessibleTabPanel idPrefix="orientador" value={tabValue} index={5}>
 				<AvaliarDefesasOrientador />
-			</TabPanel>
+			</AccessibleTabPanel>
 
-			<TabPanel value={tabValue} index={6}>
+			<AccessibleTabPanel idPrefix="orientador" value={tabValue} index={6}>
 				<EmitirDeclaracoes />
-			</TabPanel>
+			</AccessibleTabPanel>
 
-			<TabPanel value={tabValue} index={7}>
+			<AccessibleTabPanel idPrefix="orientador" value={tabValue} index={7}>
 				<PerfilOrientador />
-			</TabPanel>
+			</AccessibleTabPanel>
 		</Box>
 	);
 }
