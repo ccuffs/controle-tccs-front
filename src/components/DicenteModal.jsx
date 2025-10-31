@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
 	Dialog,
 	DialogTitle,
@@ -8,6 +8,7 @@ import {
 	Stack,
 	TextField,
 } from "@mui/material";
+import { useDicenteModal } from "../hooks/useDicenteModal.js";
 
 export default function DicenteModal({
 	open,
@@ -16,48 +17,14 @@ export default function DicenteModal({
 	dicenteToEdit,
 	onSubmit,
 }) {
-	const [formData, setFormData] = useState({
-		matricula: "",
-		nome: "",
-		email: "",
-	});
-
-	// Atualiza o formData quando o modal abre para edição
-	useEffect(() => {
-		if (isEditing && dicenteToEdit) {
-			setFormData({
-				matricula: dicenteToEdit.matricula.toString(),
-				nome: dicenteToEdit.nome,
-				email: dicenteToEdit.email,
-			});
-		} else {
-			setFormData({
-				matricula: "",
-				nome: "",
-				email: "",
-			});
-		}
-	}, [isEditing, dicenteToEdit, open]);
-
-	function handleInputChange(e) {
-		setFormData({
-			...formData,
-			[e.target.name]: e.target.value,
+	const { formData, handleInputChange, handleSubmit, handleClose } =
+		useDicenteModal({
+			open,
+			isEditing,
+			dicenteToEdit,
+			onSubmit,
+			onClose,
 		});
-	}
-
-	function handleSubmit() {
-		onSubmit(formData);
-	}
-
-	function handleClose() {
-		setFormData({
-			matricula: "",
-			nome: "",
-			email: "",
-		});
-		onClose();
-	}
 
 	return (
 		<Dialog
