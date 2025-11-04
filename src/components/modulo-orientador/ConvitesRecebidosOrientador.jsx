@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
 	Alert,
 	Box,
@@ -13,215 +13,41 @@ import {
 	Chip,
 } from "@mui/material";
 
-import axiosInstance from "../../auth/axios";
-import { useAuth } from "../../contexts/AuthContext";
 import PermissionContext from "../../contexts/PermissionContext";
 import { Permissoes } from "../../enums/permissoes";
 
 import CustomDataGrid from "../customs/CustomDataGrid";
 import FiltrosPesquisa from "../utils/FiltrosPesquisa";
-
-function getAnoSemestreAtual() {
-	const data = new Date();
-	const ano = data.getFullYear();
-	const semestre = data.getMonth() < 6 ? 1 : 2;
-	return { ano, semestre };
-}
+import { useConvitesRecebidosOrientador } from "../../hooks/useConvitesRecebidosOrientador";
 
 export default function ConvitesRecebidosOrientador() {
-	const { usuario } = useAuth();
-	const [convites, setConvites] = useState([]);
-	const [cursos, setCursos] = useState([]);
-	const [cursoSelecionado, setCursoSelecionado] = useState("");
-	const [ano, setAno] = useState(getAnoSemestreAtual().ano);
-	const [semestre, setSemestre] = useState(getAnoSemestreAtual().semestre);
-	const [fase, setFase] = useState("");
-	const [openMessage, setOpenMessage] = useState(false);
-	const [openDialog, setOpenDialog] = useState(false);
-	const [messageText, setMessageText] = useState("");
-	const [messageSeverity, setMessageSeverity] = useState("success");
-	const [conviteSelecionado, setConviteSelecionado] = useState(null);
-	const [loading, setLoading] = useState(false);
-
-	useEffect(() => {
-		if (usuario?.id) {
-			getCursosOrientador();
-		}
-	}, [usuario]);
-
-	useEffect(() => {
-		if (usuario?.id) {
-			getData();
-		}
-	}, [usuario, cursoSelecionado, ano, semestre, fase]);
-
-	async function getCursosOrientador() {
-		try {
-			const codigoDocente = usuario.codigo || usuario.id;
-			const response = await axiosInstance.get(
-				`/orientadores/docente/${codigoDocente}`,
-			);
-			const cursosOrientador = response.orientacoes || [];
-			setCursos(cursosOrientador.map((orientacao) => orientacao.curso));
-		} catch (error) {
-			console.log("Erro ao buscar cursos do orientador:", error);
-			setCursos([]);
-		}
-	}
-
-	async function getData() {
-		try {
-			setLoading(true);
-			// Buscar convites do orientador logado
-			if (usuario?.id) {
-				const response = await axiosInstance.get(
-					`/convites/docente/${usuario.id}`,
-				);
-				let convitesFiltrados = response?.convites || [];
-
-				// Aplicar filtros
-				if (cursoSelecionado) {
-					convitesFiltrados = convitesFiltrados.filter(
-						(convite) =>
-							convite?.TrabalhoConclusao?.Curso?.id ===
-							parseInt(cursoSelecionado),
-					);
-				}
-
-				if (ano) {
-					convitesFiltrados = convitesFiltrados.filter(
-						(convite) =>
-							convite?.TrabalhoConclusao?.ano === parseInt(ano),
-					);
-				}
-
-				if (semestre) {
-					convitesFiltrados = convitesFiltrados.filter(
-						(convite) =>
-							convite?.TrabalhoConclusao?.semestre ===
-							parseInt(semestre),
-					);
-				}
-
-				if (fase !== "") {
-					convitesFiltrados = convitesFiltrados.filter(
-						(convite) => convite?.fase === parseInt(fase),
-					);
-				}
-
-				setConvites(convitesFiltrados);
-			} else {
-				setConvites([]);
-			}
-		} catch (error) {
-			console.log(
-				"Não foi possível retornar a lista de convites: ",
-				error,
-			);
-			setConvites([]);
-		} finally {
-			setLoading(false);
-		}
-	}
-
-	function handleResponderConvite(convite, aceito) {
-		setConviteSelecionado({ ...convite, acao: aceito });
-		setOpenDialog(true);
-	}
-
-	function handleCloseMessage(_, reason) {
-		if (reason === "clickaway") {
-			return;
-		}
-		setOpenMessage(false);
-	}
-
-	function handleClose() {
-		setOpenDialog(false);
-		setConviteSelecionado(null);
-	}
-
-	async function handleConfirmarResposta() {
-		try {
-			const { id_tcc, codigo_docente, fase, acao } = conviteSelecionado;
-
-			const response = await axiosInstance.put(
-				`/convites/${id_tcc}/${codigo_docente}/${fase}`,
-				{
-					aceito: acao,
-				},
-			);
-
-			setMessageText(
-				`Convite ${acao ? "aceito" : "rejeitado"} com sucesso!`,
-			);
-			setMessageSeverity("success");
-		} catch (error) {
-			console.log("Não foi possível responder ao convite: ", error);
-			setMessageText("Falha ao responder ao convite!");
-			setMessageSeverity("error");
-		} finally {
-			setOpenDialog(false);
-			setConviteSelecionado(null);
-			setOpenMessage(true);
-			await getData();
-		}
-	}
-
-	function handleCancelarResposta() {
-		setOpenDialog(false);
-		setConviteSelecionado(null);
-	}
-
-	// Preparar dados para o DataGrid seguindo o padrão do TemasDataGrid (modo discente)
-	const convitesParaGrid = convites
-		.map((convite) => {
-			return {
-				...convite,
-				nomeDicente: convite?.TrabalhoConclusao?.Dicente?.nome || "N/A",
-				matriculaDicente:
-					convite?.TrabalhoConclusao?.Dicente?.matricula || "N/A",
-				tituloTcc: convite?.TrabalhoConclusao?.titulo || "N/A",
-				nomeCurso: convite?.TrabalhoConclusao?.Curso?.nome || "N/A",
-				mensagemEnvio: convite?.mensagem_envio || "Sem mensagem",
-				dataEnvio: convite?.data_envio
-					? new Date(convite.data_envio).toLocaleDateString("pt-BR")
-					: "N/A",
-				dataFeedback: convite?.data_feedback
-					? new Date(convite.data_feedback).toLocaleDateString(
-							"pt-BR",
-						)
-					: null,
-				// Determinar se o convite foi respondido baseado na data_feedback
-				foiRespondido: !!convite?.data_feedback,
-				// Mapear fase para texto descritivo
-				faseDescricao:
-					convite?.fase === 0
-						? "Orientação"
-						: convite?.fase === 1
-							? "Projeto"
-							: convite?.fase === 2
-								? "TCC"
-								: `Fase ${convite?.fase || 0}`,
-			};
-		})
-		.sort((a, b) => {
-			// Primeiro ordenar por status (não respondidos primeiro)
-			const statusA = a.foiRespondido ? 1 : 0;
-			const statusB = b.foiRespondido ? 1 : 0;
-			if (statusA !== statusB) {
-				return statusA - statusB;
-			}
-
-			// Se mesmo status, ordenar por nome do estudante
-			const nomeA = a.nomeDicente || "";
-			const nomeB = b.nomeDicente || "";
-			if (nomeA !== nomeB) {
-				return nomeA.localeCompare(nomeB);
-			}
-			// Se mesmo estudante, ordenar por data de envio
-			return new Date(a.data_envio || 0) - new Date(b.data_envio || 0);
-		});
+	const {
+		// Estados de filtros
+		cursos,
+		cursoSelecionado,
+		setCursoSelecionado,
+		ano,
+		setAno,
+		semestre,
+		setSemestre,
+		fase,
+		setFase,
+		// Estados de dados
+		convitesParaGrid,
+		// Estados de UI
+		loading,
+		openMessage,
+		openDialog,
+		messageText,
+		messageSeverity,
+		conviteSelecionado,
+		// Handlers
+		handleResponderConvite,
+		handleCloseMessage,
+		handleClose,
+		handleConfirmarResposta,
+		handleCancelarResposta,
+	} = useConvitesRecebidosOrientador();
 
 	const columns = [
 		{
