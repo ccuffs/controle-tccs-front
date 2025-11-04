@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
 	Alert,
 	Box,
@@ -12,85 +12,28 @@ import {
 	FormControl,
 } from "@mui/material";
 
-import axiosInstance from "../../auth/axios";
-import { useAuth } from "../../contexts/AuthContext";
+import { usePerfilOrientador } from "../../hooks/usePerfilOrientador";
 
 export default function PerfilOrientador() {
-	const { usuario } = useAuth();
-	const [docente, setDocente] = useState(null);
-	const [siape, setSiape] = useState("");
-	const [sala, setSala] = useState("");
-	const [loading, setLoading] = useState(true);
-	const [edit, setEdit] = useState(false);
-	const [openMessage, setOpenMessage] = useState(false);
-	const [messageText, setMessageText] = useState("");
-	const [messageSeverity, setMessageSeverity] = useState("success");
-
-	useEffect(() => {
-		getData();
-	}, []);
-
-	async function getData() {
-		try {
-			setLoading(true);
-			const response = await axiosInstance.get("/docentes/meu-perfil");
-			setDocente(response.docente);
-			setSiape(response.docente.siape || "");
-			setSala(response.docente.sala || "");
-		} catch (error) {
-			console.log(
-				"Não foi possível retornar os dados do docente: ",
-				error,
-			);
-			setMessageText(
-				"Erro ao carregar dados. Você pode não estar vinculado a um perfil de docente.",
-			);
-			setMessageSeverity("error");
-			setOpenMessage(true);
-		} finally {
-			setLoading(false);
-		}
-	}
-
-	function handleEdit() {
-		setEdit(true);
-	}
-
-	function handleCancelClick() {
-		setEdit(false);
-		setSiape(docente?.siape || "");
-		setSala(docente?.sala || "");
-	}
-
-	async function handleUpdateSiape() {
-		try {
-			await axiosInstance.put("/docentes/", {
-				formData: {
-					codigo: docente.codigo,
-					siape: siape || null,
-					sala: sala || null,
-				},
-			});
-
-			setMessageText("SIAPE e Sala atualizados com sucesso!");
-			setMessageSeverity("success");
-			setEdit(false);
-			await getData();
-		} catch (error) {
-			console.log("Não foi possível atualizar o SIAPE e Sala");
-			setMessageText("Falha ao atualizar SIAPE e Sala!");
-			setMessageSeverity("error");
-		} finally {
-			setOpenMessage(true);
-		}
-	}
-
-	function handleCloseMessage(_, reason) {
-		if (reason === "clickaway") {
-			return;
-		}
-		setOpenMessage(false);
-	}
+	const {
+		// Estados de dados
+		docente,
+		siape,
+		setSiape,
+		sala,
+		setSala,
+		// Estados de UI
+		loading,
+		edit,
+		openMessage,
+		messageText,
+		messageSeverity,
+		// Handlers
+		handleEdit,
+		handleCancelClick,
+		handleUpdateSiape,
+		handleCloseMessage,
+	} = usePerfilOrientador();
 
 	if (loading) {
 		return (
