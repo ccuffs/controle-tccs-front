@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { ptBR } from "date-fns/locale";
 import {
 	Alert,
@@ -33,1052 +33,93 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import EditIcon from "@mui/icons-material/Edit";
 
-import axiosInstance from "../../auth/axios";
-import { useAuth } from "../../contexts/AuthContext";
 import PermissionContext from "../../contexts/PermissionContext";
 import { Permissoes } from "../../enums/permissoes";
-import permissoesService from "../../services/permissoesService";
 
 import FiltrosPesquisa from "../utils/FiltrosPesquisa";
 import SelecionarHorarioBanca from "../modulo-dicente/SelecionarHorarioBanca";
+import { useOrientacao } from "../../hooks/useOrientacao";
+import orientacaoController from "../../controllers/orientacao-controller";
 
 export default function Orientacao({ isOrientadorView = false }) {
-	const [dicentes, setDicentes] = useState([]);
-	const [cursos, setCursos] = useState([]);
-	const [orientadoresCurso, setOrientadoresCurso] = useState([]);
-	const [ofertasTcc, setOfertasTcc] = useState([]);
-	const [orientacoes, setOrientacoes] = useState([]);
-	const [cursoSelecionado, setCursoSelecionado] = useState("");
-	const [ano, setAno] = useState(
-		isOrientadorView ? getAnoSemestreAtual().ano : new Date().getFullYear(),
-	);
-	const [semestre, setSemestre] = useState(
-		isOrientadorView ? getAnoSemestreAtual().semestre : "",
-	);
-	const [fase, setFase] = useState("");
-	const [loadingCursos, setLoadingCursos] = useState(false);
-	const [loadingOfertasTcc, setLoadingOfertasTcc] = useState(false);
-	const [loadingDicentes, setLoadingDicentes] = useState(false);
-	const [openMessage, setOpenMessage] = React.useState(false);
-	const [messageText, setMessageText] = React.useState("");
-	const [messageSeverity, setMessageSeverity] = React.useState("success");
-	const [orientacoesAlteradas, setOrientacoesAlteradas] = useState({});
-	const [trabalhosPorMatricula, setTrabalhosPorMatricula] = useState({});
-	const [loadingTrabalhos, setLoadingTrabalhos] = useState(false);
-	const [convitesPorTcc, setConvitesPorTcc] = useState({});
-
-	// Estados para upload de PDF
-	const [openUploadModal, setOpenUploadModal] = React.useState(false);
-	const [uploadFile, setUploadFile] = useState(null);
-	const [uploading, setUploading] = useState(false);
-	const [uploadResults, setUploadResults] = useState(null);
-	const [modalAno, setModalAno] = useState("");
-	const [modalSemestre, setModalSemestre] = useState("");
-	const [modalFase, setModalFase] = useState("");
-	const [modalCurso, setModalCurso] = useState(null);
-
-	// Estados para modal de edição de orientação
-	const [openEditModal, setOpenEditModal] = useState(false);
-	const [selectedDicente, setSelectedDicente] = useState(null);
-	const [editData, setEditData] = useState({
-		orientador: "",
-		tema: "",
-		titulo: "",
-		resumo: "",
-		seminarioAndamento: "",
-		etapa: 0,
-		membroBanca1: "",
-		membroBanca2: "",
-		dataHoraDefesa: null,
-	});
-	const [mostrarSeletorHorario, setMostrarSeletorHorario] = useState(false);
-	const [loadingEdit, setLoadingEdit] = useState(false);
-	const [areasTcc, setAreasTcc] = useState([]);
-	const [loadingAreas, setLoadingAreas] = useState(false);
-	const [defesasAtual, setDefesasAtual] = useState([]);
-	const [convitesBancaAtual, setConvitesBancaAtual] = useState([]);
-	const [convitesBancaFase1, setConvitesBancaFase1] = useState([]);
-	const [convitesBancaFase2, setConvitesBancaFase2] = useState([]);
-	const [selectedHorarioBanca, setSelectedHorarioBanca] = useState(null);
-
-	// Helper function para retornar ano/semestre atual
-	function getAnoSemestreAtual() {
-		const data = new Date();
-		const anoAtual = data.getFullYear();
-		const semestreAtual = data.getMonth() < 6 ? 1 : 2;
-		return { ano: anoAtual, semestre: semestreAtual };
-	}
-
-	const { permissoesUsuario, gruposUsuario, usuario } = useAuth();
-
-	// Função para verificar se o usuário é professor
-	const isProfessor = permissoesService.verificarPermissaoPorGrupos(
-		gruposUsuario,
-		[Permissoes.GRUPOS.PROFESSOR],
-	);
-
-	// Função para verificar se o usuário é admin
-	const isAdmin = permissoesService.verificarPermissaoPorGrupos(
-		gruposUsuario,
-		[Permissoes.GRUPOS.ADMIN],
-	);
-
-	useEffect(() => {
-		getCursos();
-		getOfertasTcc();
-		getAreasTcc();
-		// Para admins, não carregar dicentes automaticamente
-		// Para professores, só carregar após o curso ser definido
-		if (!isAdmin && !isProfessor) {
-			getDicentes();
-		}
-	}, [isAdmin, isProfessor]); // eslint-disable-line react-hooks/exhaustive-deps
-
-	useEffect(() => {
-		// No modo orientador, carrega dicentes apenas quando filtros necessários estão selecionados
-		if (isOrientadorView) {
-			if (cursoSelecionado && ano && semestre) {
-				getDicentes();
-			} else {
-				setDicentes([]);
-			}
-		} else {
-			// Modo admin/professor original
-			if (isProfessor) {
-				if (cursoSelecionado) {
-					getDicentes();
-				}
-			} else if (isAdmin) {
-				if (cursoSelecionado) {
-					getDicentes();
-				} else {
-					setDicentes([]);
-				}
-			} else {
-				// Para outros tipos de usuário, comportamento original
-				getDicentes();
-			}
-		}
-
-		// Busca orientações quando todos os filtros estão preenchidos
-		if (cursoSelecionado && ano && semestre && fase) {
-			getOrientacoes();
-		} else {
-			setOrientacoes([]);
-		}
-
-		// Busca TCCs quando ano e semestre estão selecionados (para exibir ícones)
-		if (ano && semestre) {
-			getTrabalhosComDetalhes();
-		} else {
-			setTrabalhosPorMatricula({});
-		}
-	}, [
-		cursoSelecionado,
-		ano,
-		semestre,
-		fase,
+	const {
+		// Estados de permissão
 		isProfessor,
 		isAdmin,
-		isOrientadorView,
-	]); // eslint-disable-line react-hooks/exhaustive-deps
-
-	useEffect(() => {
-		// Busca orientadores do curso selecionado
-		if (cursoSelecionado) {
-			getOrientadoresCurso(cursoSelecionado);
-			getDocentesBancaCurso(cursoSelecionado);
-		} else {
-			setOrientadoresCurso([]);
-			setDocentesBanca([]);
-		}
-	}, [cursoSelecionado]); // eslint-disable-line react-hooks/exhaustive-deps
-
-	async function getCursos() {
-		setLoadingCursos(true);
-		try {
-			if (isOrientadorView || isProfessor) {
-				// Para orientadores, buscar apenas seus cursos
-				const codigoDocente = usuario?.codigo || usuario?.id;
-				if (!codigoDocente) {
-					setCursos([]);
-					return;
-				}
-
-				const response = await axiosInstance.get(
-					`/orientadores/docente/${codigoDocente}`,
-				);
-				const cursosOrientador = response.orientacoes || [];
-				const cursosUnicos = cursosOrientador.map(
-					(orientacao) => orientacao.curso,
-				);
-				setCursos(cursosUnicos);
-
-				// Se o professor possui apenas 1 curso, pré-selecionar
-				if (cursosUnicos.length === 1) {
-					setCursoSelecionado(cursosUnicos[0].id);
-				}
-			} else {
-				// Para admins, buscar todos os cursos
-				const response = await axiosInstance.get("/cursos");
-				setCursos(response.cursos || []);
-			}
-		} catch (error) {
-			console.log("Não foi possível retornar a lista de cursos: ", error);
-			setCursos([]);
-		} finally {
-			setLoadingCursos(false);
-		}
-	}
-
-	async function getOrientadoresCurso(idCurso) {
-		try {
-			const response = await axiosInstance.get(
-				`/orientadores/curso/${idCurso}`,
-			);
-			setOrientadoresCurso(response.orientacoes || []);
-		} catch (error) {
-			console.log(
-				"Não foi possível retornar a lista de orientadores do curso: ",
-				error,
-			);
-			setOrientadoresCurso([]);
-		}
-	}
-
-	async function getDocentesBancaCurso(idCurso) {
-		try {
-			const response = await axiosInstance.get(
-				`/banca-curso/curso/${idCurso}`,
-			);
-
-			// Corrigir acesso aos dados - o axios coloca a resposta em .data
-			const docentesBanca =
-				response.data?.docentesBanca || response.docentesBanca || [];
-			setDocentesBanca(docentesBanca);
-		} catch (error) {
-			console.log(
-				"Não foi possível retornar a lista de docentes de banca do curso: ",
-				error,
-			);
-			setDocentesBanca([]);
-		}
-	}
-
-	async function getOfertasTcc() {
-		setLoadingOfertasTcc(true);
-		try {
-			const response = await axiosInstance.get("/ofertas-tcc");
-			setOfertasTcc(response.ofertas || []);
-		} catch (error) {
-			console.log(
-				"Não foi possível retornar a lista de ofertas TCC: ",
-				error,
-			);
-			setOfertasTcc([]);
-		} finally {
-			setLoadingOfertasTcc(false);
-		}
-	}
-
-	async function getDicentes() {
-		setLoadingDicentes(true);
-		try {
-			// Se estiver na visão do orientador, usar a lógica específica para orientadores
-			if (isOrientadorView) {
-				const codigoDocente = usuario?.codigo || usuario?.id;
-				if (!codigoDocente) {
-					setDicentes([]);
-					return;
-				}
-
-				// Buscar orientações do docente logado
-				const params = {
-					codigo_docente: codigoDocente,
-					orientador: true,
-				};
-				const response = await axiosInstance.get("/orientacoes", {
-					params,
-				});
-
-				// Filtrar orientações por curso, ano, semestre e fase
-				const orientacoesFiltradas = (
-					response.orientacoes || []
-				).filter((o) => {
-					const tcc = o.TrabalhoConclusao;
-					if (!tcc) return false;
-
-					return (
-						tcc.Curso?.id === parseInt(cursoSelecionado) &&
-						tcc.ano === parseInt(ano) &&
-						tcc.semestre === parseInt(semestre) &&
-						(fase === "" || tcc.fase === parseInt(fase))
-					);
-				});
-
-				// Extrair dicentes das orientações
-				const dicentes = orientacoesFiltradas
-					.map((o) => o.TrabalhoConclusao?.Dicente)
-					.filter(
-						(dicente) => dicente !== null && dicente !== undefined,
-					)
-					.sort((a, b) => a.nome.localeCompare(b.nome));
-
-				setDicentes(dicentes);
-			} else {
-				// Lógica original para outros tipos de usuário
-				const params = {};
-				if (ano) {
-					params.ano = ano;
-				}
-				if (semestre) {
-					params.semestre = semestre;
-				}
-				if (fase) {
-					params.fase = fase;
-				}
-				const response = await axiosInstance.get("/dicentes", {
-					params,
-				});
-				// Ordena os dicentes por nome em ordem crescente
-				const dicentesOrdenados = (response.dicentes || []).sort(
-					(a, b) => a.nome.localeCompare(b.nome),
-				);
-				setDicentes(dicentesOrdenados);
-			}
-		} catch (error) {
-			console.log(
-				"Não foi possível retornar a lista de dicentes: ",
-				error,
-			);
-			setDicentes([]);
-		} finally {
-			setLoadingDicentes(false);
-		}
-	}
-
-	async function getOrientacoes() {
-		try {
-			const response = await axiosInstance.get("/orientacoes");
-			setOrientacoes(response.orientacoes || []);
-		} catch (error) {
-			console.log(
-				"Não foi possível retornar a lista de orientações: ",
-				error,
-			);
-			setOrientacoes([]);
-		}
-	}
-
-	async function getTrabalhosComDetalhes() {
-		try {
-			setLoadingTrabalhos(true);
-			const params = {};
-			if (ano) {
-				params.ano = ano;
-			}
-			if (semestre) {
-				params.semestre = semestre;
-			}
-			if (fase) {
-				params.fase = fase;
-			}
-			if (cursoSelecionado) {
-				params.id_curso = cursoSelecionado;
-			}
-
-			const resp = await axiosInstance.get("/trabalho-conclusao", {
-				params,
-			});
-			const lista = resp.data?.trabalhos || resp.trabalhos || [];
-
-			// Mapear por matrícula do dicente, escolhendo o TCC com maior id (mais recente)
-			const mapa = {};
-			for (const t of lista) {
-				const mat = t.Dicente?.matricula || t.matricula;
-				if (!mat) continue;
-				if (
-					!mapa[mat] ||
-					(t.id && mapa[mat].id && t.id > mapa[mat].id)
-				) {
-					mapa[mat] = t;
-				}
-			}
-			setTrabalhosPorMatricula(mapa);
-
-			// Carregar convites para cada TCC (orientação e banca)
-			const idsTcc = Array.from(
-				new Set(lista.map((t) => t.id).filter(Boolean)),
-			);
-			const resultados = await Promise.all(
-				idsTcc.map(async (id) => {
-					try {
-						const res = await axiosInstance.get("/convites", {
-							params: { id_tcc: id },
-						});
-						const convites =
-							res.data?.convites || res.convites || [];
-						return { id, convites };
-					} catch (e) {
-						return { id, convites: [] };
-					}
-				}),
-			);
-			const mapaConvites = {};
-			for (const { id, convites } of resultados) {
-				mapaConvites[id] = convites;
-			}
-			setConvitesPorTcc(mapaConvites);
-		} catch (error) {
-			console.log("Não foi possível carregar TCCs:", error);
-			setTrabalhosPorMatricula({});
-			setConvitesPorTcc({});
-		} finally {
-			setLoadingTrabalhos(false);
-		}
-	}
-
-	async function getAreasTcc() {
-		setLoadingAreas(true);
-		try {
-			const response = await axiosInstance.get("/areas-tcc");
-			setAreasTcc(response.areas || []);
-		} catch (error) {
-			console.log(
-				"Não foi possível retornar a lista de áreas TCC: ",
-				error,
-			);
-			setAreasTcc([]);
-		} finally {
-			setLoadingAreas(false);
-		}
-	}
-
-	function getOrientadorAtual(matricula) {
-		if (!cursoSelecionado || !ano || !semestre || !fase) return null;
-
-		const orientacao = orientacoes.find((o) => {
-			const tcc = o.TrabalhoConclusao || o.trabalhoConclusao;
-			const mat = tcc?.matricula;
-			const cursoId = tcc?.Curso?.id || tcc?.id_curso || tcc?.idCurso;
-			const faseTcc = tcc?.fase != null ? parseInt(tcc.fase) : undefined;
-			const anoT = tcc?.ano;
-			const semestreT = tcc?.semestre;
-			const isOrientador = o.orientador === true;
-			return (
-				isOrientador &&
-				mat === matricula &&
-				anoT === parseInt(ano) &&
-				semestreT === parseInt(semestre) &&
-				cursoId === cursoSelecionado &&
-				faseTcc === parseInt(fase)
-			);
-		});
-
-		return orientacao
-			? {
-					id: orientacao.id,
-					codigo:
-						orientacao.codigo_docente || orientacao.codigo || "",
-					nome: orientacao.Docente?.nome || "Orientador",
-				}
-			: null;
-	}
-
-	function getOrientacaoAtual(matricula) {
-		if (!cursoSelecionado || !ano || !semestre || !fase) return null;
-
-		const orientacao = orientacoes.find((o) => {
-			const tcc = o.TrabalhoConclusao || o.trabalhoConclusao;
-			const mat = tcc?.matricula;
-			const cursoId = tcc?.Curso?.id || tcc?.id_curso || tcc?.idCurso;
-			const faseTcc = tcc?.fase != null ? parseInt(tcc.fase) : undefined;
-			const anoT = tcc?.ano;
-			const semestreT = tcc?.semestre;
-			const isOrientador = o.orientador === true;
-			return (
-				isOrientador &&
-				mat === matricula &&
-				anoT === parseInt(ano) &&
-				semestreT === parseInt(semestre) &&
-				cursoId === cursoSelecionado &&
-				faseTcc === parseInt(fase)
-			);
-		});
-
-		return orientacao || null;
-	}
-
-	function getOrientadorNome(matricula) {
-		const orientador = getOrientadorAtual(matricula);
-		return orientador?.nome || "Sem orientador";
-	}
-
-	// Função para limpar alterações quando qualquer filtro muda
-	useEffect(() => {
-		setOrientacoesAlteradas({});
-	}, [cursoSelecionado, ano, semestre, fase]);
-
-	function handleCloseMessage(_, reason) {
-		if (reason === "clickaway") {
-			return;
-		}
-		setOpenMessage(false);
-	}
-
-	function handleOpenUploadModal() {
-		// Pré-popular com os valores da tela principal
-		const curso = cursos.find((c) => c.id === cursoSelecionado);
-		setModalCurso(curso || null);
-		setModalAno(ano);
-		setModalSemestre(semestre);
-		setModalFase(fase);
-		setOpenUploadModal(true);
-	}
-
-	function handleCloseUploadModal() {
-		setOpenUploadModal(false);
-		setUploadFile(null);
-		setUploadResults(null);
-		// Resetar os valores do modal
-		setModalCurso(null);
-		setModalAno("");
-		setModalSemestre("");
-		setModalFase("");
-	}
-
-	function handleFileChange(e) {
-		const file = e.target.files[0];
-		if (file && file.type === "application/pdf") {
-			setUploadFile(file);
-		} else {
-			setMessageText("Por favor, selecione um arquivo PDF válido!");
-			setMessageSeverity("error");
-			setOpenMessage(true);
-		}
-	}
-
-	async function handleUploadPDF() {
-		if (!uploadFile) {
-			setMessageText("Por favor, selecione um arquivo PDF!");
-			setMessageSeverity("error");
-			setOpenMessage(true);
-			return;
-		}
-
-		if (!modalAno || !modalSemestre || !modalFase || !modalCurso) {
-			setMessageText(
-				"Por favor, selecione o curso, ano, semestre e a fase!",
-			);
-			setMessageSeverity("error");
-			setOpenMessage(true);
-			return;
-		}
-
-		setUploading(true);
-		const formData = new FormData();
-		formData.append("pdf", uploadFile);
-
-		// Adicionar ano, semestre, fase e curso aos dados
-		formData.append("ano", modalAno);
-		formData.append("semestre", modalSemestre);
-		formData.append("fase", modalFase);
-		formData.append("id_curso", modalCurso.id);
-
-		try {
-			const response = await axiosInstance.post(
-				"/dicentes/processar-pdf",
-				formData,
-				{
-					headers: {
-						"Content-Type": "multipart/form-data",
-					},
-				},
-			);
-
-			setUploadResults(response);
-			setMessageText(
-				`PDF processado com sucesso! ${response.sucessos} dicentes inseridos, ${response.erros} erros.`,
-			);
-			setMessageSeverity("success");
-			// Atualiza a lista de dicentes
-			await getDicentes();
-		} catch (error) {
-			console.log("Erro ao fazer upload do PDF:", error);
-			setMessageText("Falha ao processar PDF!");
-			setMessageSeverity("error");
-		} finally {
-			setUploading(false);
-			setOpenMessage(true);
-		}
-	}
-
-	// Funções para o modal de edição
-	function handleOpenEditModal(dicente) {
-		setSelectedDicente(dicente);
-		setLoadingEdit(true);
-		setOpenEditModal(true);
-
-		// Carregar dados do TCC atual
-		loadTccData(dicente.matricula);
-	}
-
-	function handleCloseEditModal() {
-		setOpenEditModal(false);
-		setSelectedDicente(null);
-		setEditData({
-			orientador: "",
-			tema: "",
-			titulo: "",
-			resumo: "",
-			seminarioAndamento: "",
-			etapa: 0,
-			membroBanca1: "",
-			membroBanca2: "",
-			dataHoraDefesa: null,
-		});
-		setLoadingEdit(false);
-		setDefesasAtual([]);
-		setConvitesBancaAtual([]);
-		setConvitesBancaFase1([]);
-		setConvitesBancaFase2([]);
-		setSelectedHorarioBanca(null);
-		setMostrarSeletorHorario(false);
-	}
-
-	async function loadTccData(matricula) {
-		try {
-			const tcc = trabalhosPorMatricula[matricula];
-			const orientador = getOrientadorAtual(matricula);
-
-			// Carregar dados da banca de defesa se existir TCC
-			let membroBanca1 = "";
-			let membroBanca2 = "";
-			let dataHoraDefesa = null;
-
-			if (tcc?.id) {
-				try {
-					// Carregar defesas - agora sempre retorna um array (vazio ou com dados)
-					const responseDefesas = await axiosInstance.get(
-						`/defesas/tcc/${tcc.id}`,
-					);
-					const defesas =
-						responseDefesas.data?.defesas ||
-						responseDefesas.defesas ||
-						[];
-
-					// Filtrar defesas da fase atual e que não são orientador
-					const defesasFaseAtual = defesas.filter(
-						(defesa) =>
-							parseInt(defesa.fase) === parseInt(tcc.fase) &&
-							!defesa.orientador,
-					);
-
-					setDefesasAtual(defesasFaseAtual);
-
-					// Carregar convites de banca
-					const responseConvites = await axiosInstance.get(
-						"/convites",
-						{
-							params: { id_tcc: tcc.id },
-						},
-					);
-					const todosConvitesBanca = (
-						responseConvites.data?.convites ||
-						responseConvites.convites ||
-						[]
-					).filter((c) => c.orientacao === false);
-
-					// Separar convites por fase
-					const convitesFase1 = todosConvitesBanca.filter(
-						(c) => parseInt(c.fase) === 1,
-					);
-					const convitesFase2 = todosConvitesBanca.filter(
-						(c) => parseInt(c.fase) === 2,
-					);
-
-					// Convites da fase atual (para manter compatibilidade)
-					const convitesFaseAtual = todosConvitesBanca.filter(
-						(c) => parseInt(c.fase) === parseInt(tcc.fase),
-					);
-
-					setConvitesBancaAtual(convitesFaseAtual);
-					setConvitesBancaFase1(convitesFase1);
-					setConvitesBancaFase2(convitesFase2);
-
-					// Pegar os dois primeiros membros da banca
-					if (defesasFaseAtual.length > 0) {
-						membroBanca1 = defesasFaseAtual[0]?.membro_banca || "";
-						// Pegar data e hora da primeira defesa (assumindo que todas têm a mesma data/hora)
-						if (defesasFaseAtual[0]?.data_defesa) {
-							dataHoraDefesa = new Date(
-								defesasFaseAtual[0].data_defesa,
-							);
-						}
-					}
-					if (defesasFaseAtual.length > 1) {
-						membroBanca2 = defesasFaseAtual[1]?.membro_banca || "";
-					}
-				} catch (error) {
-					console.log("Erro ao carregar defesas ou convites:", error);
-					setDefesasAtual([]);
-					setConvitesBancaAtual([]);
-					setConvitesBancaFase1([]);
-					setConvitesBancaFase2([]);
-				}
-			}
-
-			setEditData({
-				orientador: isOrientadorView
-					? usuario?.codigo || usuario?.id || orientador?.codigo || ""
-					: orientador?.codigo || "",
-				tema: tcc?.tema || "",
-				titulo: tcc?.titulo || "",
-				resumo: tcc?.resumo || "",
-				seminarioAndamento: tcc?.seminario_andamento || "",
-				etapa: tcc?.etapa || 0,
-				membroBanca1,
-				membroBanca2,
-				dataHoraDefesa,
-			});
-			setSelectedHorarioBanca(null);
-			setMostrarSeletorHorario(false);
-		} catch (error) {
-			console.log("Erro ao carregar dados do TCC:", error);
-		} finally {
-			setLoadingEdit(false);
-		}
-	}
-
-	function handleEditDataChange(field, value) {
-		setEditData((prev) => ({
-			...prev,
-			[field]: value,
-		}));
-
-		// Se alterar orientador ou membros da banca, resetar seleção de horário
-		if (
-			field === "orientador" ||
-			field === "membroBanca1" ||
-			field === "membroBanca2"
-		) {
-			setSelectedHorarioBanca(null);
-			setMostrarSeletorHorario(false);
-		}
-	}
-
-	async function gerenciarBancaDefesa(idTcc) {
-		try {
-			// Membros selecionados atualmente
-			const membrosNovos = [
-				editData.membroBanca1,
-				editData.membroBanca2,
-			].filter(Boolean);
-
-			// Membros que já existem na defesa
-			const membrosExistentes = defesasAtual.map(
-				(defesa) => defesa.membro_banca,
-			);
-
-			// Identificar alterações (quando um membro específico é trocado por outro)
-			const alteracoes = [];
-			for (const membroExistente of membrosExistentes) {
-				if (
-					!membrosNovos.includes(membroExistente) &&
-					membrosNovos.length > 0
-				) {
-					// Verificar se há um novo membro que substitui este
-					const membroSubstituto = membrosNovos.find(
-						(novoMembro) => !membrosExistentes.includes(novoMembro),
-					);
-
-					if (membroSubstituto) {
-						// Usar os convites da fase correta
-						const tccAtual =
-							trabalhosPorMatricula[selectedDicente?.matricula];
-						const faseAtual = parseInt(tccAtual?.fase);
-						const convitesCorretos =
-							faseAtual === 2
-								? convitesBancaFase2
-								: convitesBancaAtual;
-
-						const conviteAntigo = convitesCorretos.find(
-							(c) => c.codigo_docente === membroExistente,
-						);
-
-						if (conviteAntigo && conviteAntigo.aceito === true) {
-							alteracoes.push({
-								membro_antigo: membroExistente,
-								membro_novo: membroSubstituto,
-							});
-						}
-					}
-				}
-			}
-
-			// Fazer chamada única para a API transacional
-			const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
-			const faseAtual = parseInt(tccAtual?.fase);
-			const convitesCorretos =
-				faseAtual === 2 ? convitesBancaFase2 : convitesBancaAtual;
-
-			const payload = {
-				id_tcc: idTcc,
-				fase: parseInt(tccAtual?.fase || fase),
-				membros_novos: membrosNovos,
-				membros_existentes: membrosExistentes,
-				convites_banca_existentes: convitesCorretos,
-				alteracoes: alteracoes,
-				orientador_codigo: editData.orientador, // Incluir código do orientador
-				data_hora_defesa: editData.dataHoraDefesa, // Incluir data e hora da defesa
-			};
-
-			const response = await axiosInstance.post(
-				"/defesas/gerenciar-banca",
-				payload,
-			);
-
-			// Se há horário selecionado, agendar a defesa (fazer reserva do horário)
-			if (
-				selectedHorarioBanca &&
-				editData.orientador &&
-				editData.membroBanca1 &&
-				editData.membroBanca2
-			) {
-				const agendamentoPayload = {
-					id_tcc: idTcc,
-					fase: parseInt(tccAtual?.fase || fase),
-					data: selectedHorarioBanca.data,
-					hora: selectedHorarioBanca.hora,
-					codigo_orientador: editData.orientador,
-					membros_banca: [
-						editData.membroBanca1,
-						editData.membroBanca2,
-					],
-				};
-
-				await axiosInstance.post(
-					"/defesas/agendar",
-					agendamentoPayload,
-				);
-			}
-		} catch (error) {
-			console.log("Erro ao gerenciar banca de defesa:", error);
-			throw new Error("Falha ao atualizar banca de defesa e convites");
-		}
-	}
-
-	async function handleSaveEdit() {
-		if (!selectedDicente) return;
-
-		try {
-			setLoadingEdit(true);
-
-			const tcc = trabalhosPorMatricula[selectedDicente.matricula];
-			if (!tcc) {
-				throw new Error("TCC não encontrado para este dicente");
-			}
-
-			// Validação: se data da defesa foi selecionada, ambos os membros da banca devem estar selecionados
-			const etapaAtualSave = parseInt(editData.etapa);
-			const tccAtualSave =
-				trabalhosPorMatricula[selectedDicente.matricula];
-			const faseAtualSave = parseInt(tccAtualSave?.fase);
-			const edicaoHabilitadaSave =
-				(etapaAtualSave === 5 && faseAtualSave === 1) ||
-				(etapaAtualSave === 8 && faseAtualSave === 2);
-			const precisaBancaSave = edicaoHabilitadaSave;
-
-			if (precisaBancaSave && editData.dataHoraDefesa) {
-				if (!editData.membroBanca1 || !editData.membroBanca2) {
-					setMessageText(
-						"Para definir uma data de defesa, é necessário selecionar os 2 membros da banca!",
-					);
-					setMessageSeverity("error");
-					setOpenMessage(true);
-					setLoadingEdit(false);
-					return;
-				}
-			}
-
-			// Atualizar TCC
-			const tccData = {
-				tema: editData.tema,
-				titulo: editData.titulo,
-				resumo: editData.resumo,
-				etapa: parseInt(editData.etapa),
-			};
-
-			// Adicionar seminário de andamento se for fase 2
-			if (parseInt(tcc.fase) === 2) {
-				tccData.seminario_andamento = editData.seminarioAndamento;
-			}
-
-			await axiosInstance.put(`/trabalho-conclusao/${tcc.id}`, tccData);
-
-			// Gerenciar orientação e convites
-			const orientadorAtual = getOrientadorAtual(
-				selectedDicente.matricula,
-			);
-			const orientacaoAtual = getOrientacaoAtual(
-				selectedDicente.matricula,
-			);
-			const codigoOrientadorAtual = orientadorAtual?.codigo || "";
-
-			// No modo orientador, não permitir alteração do orientador
-			if (
-				!isOrientadorView &&
-				editData.orientador !== codigoOrientadorAtual
-			) {
-				// Buscar convites de orientação existentes para este TCC
-				const responseConvites = await axiosInstance.get("/convites", {
-					params: { id_tcc: tcc.id },
-				});
-				const convitesOrientacao = (
-					responseConvites.data?.convites ||
-					responseConvites.convites ||
-					[]
-				).filter(
-					(c) =>
-						c.orientacao === true &&
-						parseInt(c.fase) === parseInt(tcc.fase),
-				);
-
-				// Se havia orientador anterior, deletar a orientação
-				if (orientacaoAtual && orientacaoAtual.id) {
-					await axiosInstance.delete(
-						`/orientacoes/${orientacaoAtual.id}`,
-					);
-				}
-
-				// Gerenciar convites conforme as regras especificadas
-				if (editData.orientador) {
-					const dataAtual = new Date().toISOString();
-
-					// Verificar convites existentes para o novo orientador
-					const conviteNovoOrientador = convitesOrientacao.find(
-						(c) => c.codigo_docente === editData.orientador,
-					);
-
-					// Verificar convites existentes para o orientador atual (se houver)
-					const conviteOrientadorAtual = codigoOrientadorAtual
-						? convitesOrientacao.find(
-								(c) =>
-									c.codigo_docente === codigoOrientadorAtual,
-							)
-						: null;
-
-					if (!codigoOrientadorAtual) {
-						// Casos 1 e 2: Não há orientação atual
-						if (
-							!conviteNovoOrientador ||
-							conviteNovoOrientador.aceito === false
-						) {
-							// Caso 1: Não há convite OU Caso 2: Convite recusado - criar novo convite aceito
-							const mensagemPadrao =
-								"Informado pelo professor do CCR";
-
-							const convitePayload = {
-								id_tcc: tcc.id,
-								codigo_docente: editData.orientador,
-								fase: parseInt(tcc.fase),
-								data_envio: dataAtual,
-								mensagem_envio: mensagemPadrao,
-								data_feedback: dataAtual,
-								aceito: true,
-								mensagem_feedback: mensagemPadrao,
-								orientacao: true,
-							};
-
-							await axiosInstance.post("/convites", {
-								formData: convitePayload,
-							});
-						}
-					} else {
-						// Caso 3: Há orientação atual e mudando para novo orientador
-						if (editData.orientador !== codigoOrientadorAtual) {
-							const mensagemAlteracao = `Alteração de orientação informada pelo professor do CCR de ${codigoOrientadorAtual} para ${editData.orientador}`;
-
-							// Se há convite do orientador atual, deletá-lo
-							if (conviteOrientadorAtual) {
-								await axiosInstance.delete(
-									`/convites/${tcc.id}/${codigoOrientadorAtual}/${tcc.fase}`,
-								);
-							}
-
-							// Criar novo convite para o novo orientador
-							const convitePayload = {
-								id_tcc: tcc.id,
-								codigo_docente: editData.orientador,
-								fase: parseInt(tcc.fase),
-								data_envio: dataAtual,
-								mensagem_envio: mensagemAlteracao,
-								data_feedback: dataAtual,
-								aceito: true,
-								mensagem_feedback: mensagemAlteracao,
-								orientacao: true,
-							};
-
-							await axiosInstance.post("/convites", {
-								formData: convitePayload,
-							});
-						}
-					}
-
-					// Criar nova orientação
-					const orientacaoPayload = {
-						codigo_docente: editData.orientador,
-						id_tcc: tcc.id,
-						orientador: true,
-					};
-					await axiosInstance.post("/orientacoes", {
-						formData: orientacaoPayload,
-					});
-				}
-			}
-
-			// Gerenciar banca de defesa se estivermos nas etapas corretas
-			const etapaAtualBanca = parseInt(editData.etapa);
-			const faseAtualBanca = parseInt(tcc?.fase);
-			const edicaoHabilitadaBanca =
-				(etapaAtualBanca === 5 && faseAtualBanca === 1) ||
-				(etapaAtualBanca === 8 && faseAtualBanca === 2);
-			const precisaBancaBanca = edicaoHabilitadaBanca; // Etapas onde é possível editar banca
-
-			if (precisaBancaBanca) {
-				await gerenciarBancaDefesa(tcc.id);
-			}
-
-			setMessageText("Dados salvos com sucesso!");
-			setMessageSeverity("success");
-
-			// Atualizar dados na tela
-			await Promise.all([getOrientacoes(), getTrabalhosComDetalhes()]);
-
-			handleCloseEditModal();
-		} catch (error) {
-			console.error("Erro ao salvar dados:", error);
-			setMessageText(`Falha ao salvar dados: ${error.message}`);
-			setMessageSeverity("error");
-		} finally {
-			setLoadingEdit(false);
-			setOpenMessage(true);
-		}
-	}
-
-	// Filtrar apenas docentes que podem orientar no curso selecionado
-	const docentesDisponiveis = cursoSelecionado
-		? orientadoresCurso.map((oc) => oc.docente)
-		: [];
-
-	// Estado para docentes de banca
-	const [docentesBanca, setDocentesBanca] = useState([]);
-
-	// Lista de dicentes a exibir
-	const todosOsFiltrosSelecionados = isOrientadorView
-		? cursoSelecionado && ano && semestre
-		: cursoSelecionado && ano && semestre && fase;
-	const dicentesFiltrados = todosOsFiltrosSelecionados ? dicentes : [];
+		// Estados de dados
+		dicentes,
+		cursos,
+		orientadoresCurso,
+		ofertasTcc,
+		orientacoes,
+		trabalhosPorMatricula,
+		convitesPorTcc,
+		areasTcc,
+		docentesBanca,
+		docentesDisponiveis,
+		// Estados de filtros
+		cursoSelecionado,
+		setCursoSelecionado,
+		ano,
+		setAno,
+		semestre,
+		setSemestre,
+		fase,
+		setFase,
+		anosUnicos,
+		semestresUnicos,
+		fasesUnicas,
+		// Estados de loading
+		loadingCursos,
+		loadingOfertasTcc,
+		loadingDicentes,
+		loadingTrabalhos,
+		loadingAreas,
+		loadingEdit,
+		// Estados de mensagem
+		openMessage,
+		messageText,
+		messageSeverity,
+		handleCloseMessage,
+		// Estados de upload
+		openUploadModal,
+		uploadFile,
+		uploading,
+		uploadResults,
+		modalAno,
+		setModalAno,
+		modalSemestre,
+		setModalSemestre,
+		modalFase,
+		setModalFase,
+		modalCurso,
+		setModalCurso,
+		handleOpenUploadModal,
+		handleCloseUploadModal,
+		handleFileChange,
+		handleUploadPDF,
+		// Estados de edição
+		openEditModal,
+		selectedDicente,
+		editData,
+		mostrarSeletorHorario,
+		setMostrarSeletorHorario,
+		defesasAtual,
+		convitesBancaAtual,
+		convitesBancaFase1,
+		convitesBancaFase2,
+		selectedHorarioBanca,
+		setSelectedHorarioBanca,
+		handleOpenEditModal,
+		handleCloseEditModal,
+		handleEditDataChange,
+		handleSaveEdit,
+		// Funções auxiliares
+		getOrientadorAtual,
+		getOrientacaoAtual,
+		getOrientadorNome,
+		todosOsFiltrosSelecionados,
+	} = useOrientacao(isOrientadorView);
 
 	// Configuração das colunas do DataGrid
 	const columns = [
@@ -1150,13 +191,10 @@ export default function Orientacao({ isOrientadorView = false }) {
 							let successTooltip = "";
 
 							if (etapa === 0) {
-								const temConviteOrientacao = Array.isArray(
-									convites,
-								)
-									? convites.some(
-											(c) => c.orientacao === true,
-										)
-									: false;
+								const temConviteOrientacao =
+									orientacaoController.temConviteOrientacao(
+										convites,
+									);
 								const temOrientadorDefinido =
 									!!getOrientadorAtual(params.row.matricula);
 								if (
@@ -1180,25 +218,16 @@ export default function Orientacao({ isOrientadorView = false }) {
 								etapa === 7 ||
 								(etapa === 8 && parseInt(tcc?.fase) === 2)
 							) {
-								const convitesBanca = Array.isArray(convites)
-									? convites.filter(
-											(c) => c.orientacao === false,
-										)
-									: [];
-								// Considera a fase corrente do TCC para validar convites corretos
 								const faseAtualTcc =
 									tcc?.fase != null
 										? parseInt(tcc.fase)
 										: null;
-								const temConviteBancaFase = convitesBanca.some(
-									(c) =>
-										faseAtualTcc == null
-											? true
-											: fase
-												? parseInt(c.fase) ===
-													faseAtualTcc
-												: true, // Se fase não estiver filtrada, aceita qualquer fase
-								);
+								const temConviteBancaFase =
+									orientacaoController.temConviteBancaNaFase(
+										convites,
+										faseAtualTcc,
+										fase,
+									);
 								if (!temConviteBancaFase) {
 									showWarn = true;
 									tooltipText =
@@ -1209,7 +238,6 @@ export default function Orientacao({ isOrientadorView = false }) {
 										"Convite para banca enviado";
 								}
 							} else if (etapa >= 1 && etapa <= 4) {
-								// Entre as etapas 1 e 4, sucesso se já tem orientador definido
 								const temOrientadorDefinido =
 									!!getOrientadorAtual(params.row.matricula);
 								if (temOrientadorDefinido) {
@@ -1221,25 +249,16 @@ export default function Orientacao({ isOrientadorView = false }) {
 								etapa === 8 ||
 								etapa === 9
 							) {
-								// Para etapas 6, 8 e 9, sucesso se existem convites de banca enviados na fase corrente
-								const convitesBanca = Array.isArray(convites)
-									? convites.filter(
-											(c) => c.orientacao === false,
-										)
-									: [];
 								const faseAtualTcc =
 									tcc?.fase != null
 										? parseInt(tcc.fase)
 										: null;
-								const temConviteBancaFase = convitesBanca.some(
-									(c) =>
-										faseAtualTcc == null
-											? true
-											: fase
-												? parseInt(c.fase) ===
-													faseAtualTcc
-												: true, // Se fase não estiver filtrada, aceita qualquer fase
-								);
+								const temConviteBancaFase =
+									orientacaoController.temConviteBancaNaFase(
+										convites,
+										faseAtualTcc,
+										fase,
+									);
 								if (temConviteBancaFase) {
 									showSuccess = true;
 									successTooltip =
@@ -1254,17 +273,14 @@ export default function Orientacao({ isOrientadorView = false }) {
 										(d) =>
 											fase
 												? parseInt(d.fase) === faseAtual
-												: true, // Se fase não estiver filtrada, aceita todas as defesas
+												: true,
 									)
 								: [];
-							const notas = defesasFase
-								.map((d) => d.avaliacao)
-								.filter((v) => v !== null && v !== undefined);
 							const media =
-								notas.length > 0
-									? notas.reduce((a, b) => a + Number(b), 0) /
-										notas.length
-									: null;
+								orientacaoController.calcularMediaDefesa(
+									defesasFase,
+									faseAtual,
+								);
 
 							return (
 								<Box
@@ -1314,48 +330,6 @@ export default function Orientacao({ isOrientadorView = false }) {
 				]
 			: []),
 	];
-
-	// Gerar listas únicas a partir das ofertas TCC
-	const anosUnicos = [
-		...new Set(
-			ofertasTcc
-				.filter(
-					(oferta) =>
-						oferta &&
-						typeof oferta.ano === "number" &&
-						oferta.ano > 0,
-				)
-				.map((oferta) => oferta.ano),
-		),
-	].sort((a, b) => a - b);
-
-	const semestresUnicos = [
-		...new Set(
-			ofertasTcc
-				.filter(
-					(oferta) =>
-						oferta &&
-						typeof oferta.semestre === "number" &&
-						oferta.semestre > 0,
-				)
-				.map((oferta) => oferta.semestre),
-		),
-	].sort((a, b) => a - b);
-
-	const fasesUnicas = [
-		...new Set(
-			ofertasTcc
-				.filter(
-					(oferta) =>
-						oferta &&
-						oferta.fase !== null &&
-						oferta.fase !== undefined,
-				)
-				.map((oferta) => oferta.fase.toString()),
-		),
-	]
-		.filter((fase) => fase && fase !== "undefined" && fase !== "null")
-		.sort((a, b) => parseInt(a) - parseInt(b));
 
 	return (
 		<Box sx={{ width: 1400 }}>
@@ -1525,11 +499,9 @@ export default function Orientacao({ isOrientadorView = false }) {
 										</Typography>
 										<Typography variant="body2">
 											<strong>Tamanho:</strong>{" "}
-											{(
-												uploadFile.size /
-												1024 /
-												1024
-											).toFixed(2)}{" "}
+											{orientacaoController.formatarTamanhoArquivo(
+												uploadFile.size,
+											)}{" "}
 											MB
 										</Typography>
 									</Paper>
@@ -1623,55 +595,13 @@ export default function Orientacao({ isOrientadorView = false }) {
 																		:
 																	</Typography>
 																	<Chip
-																		label={
-																			detalhe.status ===
-																			"dicente_e_orientacao_inseridos"
-																				? "Novo dicente + orientação"
-																				: detalhe.status ===
-																					  "orientacao_inserida"
-																					? "Orientação criada"
-																					: detalhe.status ===
-																						  "dicente_inserido_orientacao_ja_existe"
-																						? "Novo dicente (orientação já existe)"
-																						: detalhe.status ===
-																							  "orientacao_ja_existe"
-																							? "Orientação já existe"
-																							: detalhe.status ===
-																								  "dicente_ja_existe"
-																								? "Dicente já existe"
-																								: detalhe.status ===
-																									  "inserido"
-																									? "Inserido"
-																									: detalhe.status ===
-																										  "já_existe"
-																										? "Já existe"
-																										: detalhe.status
-																		}
+																		label={orientacaoController.obterLabelStatusUpload(
+																			detalhe.status,
+																		)}
 																		size="small"
-																		color={
-																			detalhe.status ===
-																			"dicente_e_orientacao_inseridos"
-																				? "success"
-																				: detalhe.status ===
-																					  "orientacao_inserida"
-																					? "success"
-																					: detalhe.status ===
-																						  "dicente_inserido_orientacao_ja_existe"
-																						? "info"
-																						: detalhe.status ===
-																							  "orientacao_ja_existe"
-																							? "warning"
-																							: detalhe.status ===
-																								  "dicente_ja_existe"
-																								? "warning"
-																								: detalhe.status ===
-																									  "inserido"
-																									? "success"
-																									: detalhe.status ===
-																										  "já_existe"
-																										? "warning"
-																										: "error"
-																		}
+																		color={orientacaoController.obterCorStatusUpload(
+																			detalhe.status,
+																		)}
 																	/>
 																</Box>
 															),
@@ -1860,7 +790,6 @@ export default function Orientacao({ isOrientadorView = false }) {
 												label="Etapa"
 											>
 												{(() => {
-													// Usar a fase do TCC específico, não a fase do filtro
 													const tccAtual =
 														trabalhosPorMatricula[
 															selectedDicente
@@ -1869,9 +798,9 @@ export default function Orientacao({ isOrientadorView = false }) {
 													const faseTcc =
 														tccAtual?.fase;
 													const maxEtapa =
-														parseInt(faseTcc) === 2
-															? 9
-															: 6;
+														orientacaoController.obterEtapaMaxima(
+															faseTcc,
+														);
 													const etapas = [];
 													for (
 														let i = 0;
@@ -1896,28 +825,17 @@ export default function Orientacao({ isOrientadorView = false }) {
 
 								{/* Banca de Defesa - exibir a partir da etapa 5 OU se houver histórico */}
 								{(() => {
-									const etapaAtual = parseInt(editData.etapa);
-									const tccAtual =
-										trabalhosPorMatricula[
-											selectedDicente?.matricula
-										];
-									const faseAtual = parseInt(tccAtual?.fase);
-
-									// Verificar se há histórico de convites de banca
 									const temHistoricoConvites =
 										convitesBancaFase1.length > 0 ||
 										convitesBancaFase2.length > 0 ||
 										convitesBancaAtual.length > 0;
-
-									// Verificar se há histórico de defesas
 									const temHistoricoDefesas =
 										defesasAtual.length > 0;
 
-									// Exibir se etapa >= 5 OU se houver histórico
-									return (
-										etapaAtual >= 5 ||
-										temHistoricoConvites ||
-										temHistoricoDefesas
+									return orientacaoController.deveMostrarCamposBanca(
+										editData.etapa,
+										temHistoricoConvites,
+										temHistoricoDefesas,
 									);
 								})() && (
 									<Paper
@@ -1927,14 +845,11 @@ export default function Orientacao({ isOrientadorView = false }) {
 										}}
 									>
 										<Typography variant="h6" gutterBottom>
-											{(() => {
-												const etapaAtual = parseInt(
-													editData.etapa,
-												);
-												return etapaAtual === 8
-													? "Banca de Defesa de TCC"
-													: "Banca de Defesa de Projeto";
-											})()}
+											{orientacaoController.obterTipoDefesa(
+												editData.etapa,
+											) === "TCC"
+												? "Banca de Defesa de TCC"
+												: "Banca de Defesa de Projeto"}
 										</Typography>
 										<Typography
 											variant="body2"
@@ -1942,9 +857,6 @@ export default function Orientacao({ isOrientadorView = false }) {
 											gutterBottom
 										>
 											{(() => {
-												const etapaAtual = parseInt(
-													editData.etapa,
-												);
 												const tccAtual =
 													trabalhosPorMatricula[
 														selectedDicente
@@ -1953,45 +865,30 @@ export default function Orientacao({ isOrientadorView = false }) {
 												const faseAtual = parseInt(
 													tccAtual?.fase,
 												);
-												const tipoDefesa =
-													etapaAtual === 8
-														? "defesa de TCC"
-														: "defesa de projeto";
-
-												// Determinar se a edição está habilitada
 												const edicaoHabilitada =
-													(etapaAtual === 5 &&
-														faseAtual === 1) ||
-													(etapaAtual === 8 &&
-														faseAtual === 2);
+													orientacaoController.isEdicaoBancaHabilitada(
+														editData.etapa,
+														faseAtual,
+													);
 
-												if (edicaoHabilitada) {
-													return `Selecione 2 docentes para compor a banca de ${tipoDefesa} (além do orientador) e defina a data/hora da defesa`;
-												} else {
-													return `Visualização do histórico da banca de ${tipoDefesa}. Campos de seleção disponíveis apenas na etapa ${faseAtual === 1 ? "5" : "8"}.`;
-												}
+												return orientacaoController.obterMensagemAjudaBanca(
+													editData.etapa,
+													faseAtual,
+													edicaoHabilitada,
+												);
 											})()}
 										</Typography>
 
 										{/* Data e Hora da Defesa - apenas para etapas 5 e 8 */}
 										{(() => {
-											const etapaAtual = parseInt(
-												editData.etapa,
-											);
 											const tccAtual =
 												trabalhosPorMatricula[
 													selectedDicente?.matricula
 												];
-											const faseAtual = parseInt(
+											return orientacaoController.isEdicaoBancaHabilitada(
+												editData.etapa,
 												tccAtual?.fase,
 											);
-											const mostrarCamposSelecao =
-												(etapaAtual === 5 &&
-													faseAtual === 1) ||
-												(etapaAtual === 8 &&
-													faseAtual === 2);
-
-											return mostrarCamposSelecao;
 										})() && (
 											<>
 												<Box sx={{ mb: 3 }}>
@@ -2009,28 +906,16 @@ export default function Orientacao({ isOrientadorView = false }) {
 															onChange={(
 																newValue,
 															) => {
-																const etapaAtual =
-																	parseInt(
-																		editData.etapa,
-																	);
 																const tccAtual =
 																	trabalhosPorMatricula[
 																		selectedDicente
 																			?.matricula
 																	];
-																const faseAtual =
-																	parseInt(
+																const edicaoHabilitada =
+																	orientacaoController.isEdicaoBancaHabilitada(
+																		editData.etapa,
 																		tccAtual?.fase,
 																	);
-																const edicaoHabilitada =
-																	(etapaAtual ===
-																		5 &&
-																		faseAtual ===
-																			1) ||
-																	(etapaAtual ===
-																		8 &&
-																		faseAtual ===
-																			2);
 
 																if (
 																	edicaoHabilitada
@@ -2042,28 +927,14 @@ export default function Orientacao({ isOrientadorView = false }) {
 																}
 															}}
 															disabled={(() => {
-																const etapaAtual =
-																	parseInt(
-																		editData.etapa,
-																	);
 																const tccAtual =
 																	trabalhosPorMatricula[
 																		selectedDicente
 																			?.matricula
 																	];
-																const faseAtual =
-																	parseInt(
-																		tccAtual?.fase,
-																	);
-																return !(
-																	(etapaAtual ===
-																		5 &&
-																		faseAtual ===
-																			1) ||
-																	(etapaAtual ===
-																		8 &&
-																		faseAtual ===
-																			2)
+																return !orientacaoController.isEdicaoBancaHabilitada(
+																	editData.etapa,
+																	tccAtual?.fase,
 																);
 															})()}
 															renderInput={(
@@ -2073,10 +944,6 @@ export default function Orientacao({ isOrientadorView = false }) {
 																	{...params}
 																	fullWidth
 																	helperText={(() => {
-																		const etapaAtual =
-																			parseInt(
-																				editData.etapa,
-																			);
 																		const tccAtual =
 																			trabalhosPorMatricula[
 																				selectedDicente
@@ -2087,26 +954,18 @@ export default function Orientacao({ isOrientadorView = false }) {
 																				tccAtual?.fase,
 																			);
 																		const edicaoHabilitada =
-																			(etapaAtual ===
-																				5 &&
-																				faseAtual ===
-																					1) ||
-																			(etapaAtual ===
-																				8 &&
-																				faseAtual ===
-																					2);
+																			orientacaoController.isEdicaoBancaHabilitada(
+																				editData.etapa,
+																				faseAtual,
+																			);
 
-																		if (
-																			!edicaoHabilitada
-																		) {
-																			return `Edição disponível apenas na etapa ${faseAtual === 1 ? "5" : "8"}`;
-																		}
-
-																		return editData.dataHoraDefesa &&
-																			(!editData.membroBanca1 ||
-																				!editData.membroBanca2)
-																			? "⚠️ Selecione os 2 membros da banca para definir a data da defesa"
-																			: "Selecione a data e horário para a defesa";
+																		return orientacaoController.obterHelperTextDataDefesa(
+																			edicaoHabilitada,
+																			faseAtual,
+																			editData.dataHoraDefesa,
+																			editData.membroBanca1,
+																			editData.membroBanca2,
+																		);
 																	})()}
 																	error={
 																		editData.dataHoraDefesa &&
@@ -2223,23 +1082,14 @@ export default function Orientacao({ isOrientadorView = false }) {
 
 										{/* Campos de seleção de membros da banca - apenas para etapas 5 e 8 */}
 										{(() => {
-											const etapaAtual = parseInt(
-												editData.etapa,
-											);
 											const tccAtual =
 												trabalhosPorMatricula[
 													selectedDicente?.matricula
 												];
-											const faseAtual = parseInt(
+											return orientacaoController.isEdicaoBancaHabilitada(
+												editData.etapa,
 												tccAtual?.fase,
 											);
-											const mostrarCamposSelecao =
-												(etapaAtual === 5 &&
-													faseAtual === 1) ||
-												(etapaAtual === 8 &&
-													faseAtual === 2);
-
-											return mostrarCamposSelecao;
 										})() && (
 											<Grid container spacing={3}>
 												<Grid item xs={12} md={6}>
@@ -2252,46 +1102,25 @@ export default function Orientacao({ isOrientadorView = false }) {
 														}
 													>
 														<InputLabel>
-															{(() => {
-																const etapaAtual =
-																	parseInt(
-																		editData.etapa,
-																	);
-																const tipoDefesa =
-																	etapaAtual ===
-																	8
-																		? "TCC"
-																		: "Projeto";
-																return `1º Membro da Banca de ${tipoDefesa}${editData.dataHoraDefesa ? " *" : ""}`;
-															})()}
+															{`1º Membro da Banca de ${orientacaoController.obterTipoDefesa(
+																editData.etapa,
+															)}${editData.dataHoraDefesa ? " *" : ""}`}
 														</InputLabel>
 														<Select
 															value={
 																editData.membroBanca1
 															}
 															onChange={(e) => {
-																const etapaAtual =
-																	parseInt(
-																		editData.etapa,
-																	);
 																const tccAtual =
 																	trabalhosPorMatricula[
 																		selectedDicente
 																			?.matricula
 																	];
-																const faseAtual =
-																	parseInt(
+																const edicaoHabilitada =
+																	orientacaoController.isEdicaoBancaHabilitada(
+																		editData.etapa,
 																		tccAtual?.fase,
 																	);
-																const edicaoHabilitada =
-																	(etapaAtual ===
-																		5 &&
-																		faseAtual ===
-																			1) ||
-																	(etapaAtual ===
-																		8 &&
-																		faseAtual ===
-																			2);
 
 																if (
 																	edicaoHabilitada
@@ -2304,56 +1133,27 @@ export default function Orientacao({ isOrientadorView = false }) {
 																}
 															}}
 															disabled={(() => {
-																const etapaAtual =
-																	parseInt(
-																		editData.etapa,
-																	);
 																const tccAtual =
 																	trabalhosPorMatricula[
 																		selectedDicente
 																			?.matricula
 																	];
-																const faseAtual =
-																	parseInt(
-																		tccAtual?.fase,
-																	);
-																return !(
-																	(etapaAtual ===
-																		5 &&
-																		faseAtual ===
-																			1) ||
-																	(etapaAtual ===
-																		8 &&
-																		faseAtual ===
-																			2)
+																return !orientacaoController.isEdicaoBancaHabilitada(
+																	editData.etapa,
+																	tccAtual?.fase,
 																);
 															})()}
-															label={(() => {
-																const etapaAtual =
-																	parseInt(
-																		editData.etapa,
-																	);
-																const tipoDefesa =
-																	etapaAtual ===
-																	8
-																		? "TCC"
-																		: "Projeto";
-																return `1º Membro da Banca de ${tipoDefesa}${editData.dataHoraDefesa ? " *" : ""}`;
-															})()}
+															label={`1º Membro da Banca de ${orientacaoController.obterTipoDefesa(
+																editData.etapa,
+															)}${editData.dataHoraDefesa ? " *" : ""}`}
 															displayEmpty
 														>
 															<MenuItem value=""></MenuItem>
-															{docentesBanca
-																.filter(
-																	(item) =>
-																		item
-																			.docente
-																			?.codigo !==
-																			editData.orientador &&
-																		item
-																			.docente
-																			?.codigo !==
-																			editData.membroBanca2,
+															{orientacaoController
+																.filtrarDocentesDisponiveis(
+																	docentesBanca,
+																	editData.orientador,
+																	editData.membroBanca2,
 																)
 																.map((item) => (
 																	<MenuItem
@@ -2388,46 +1188,25 @@ export default function Orientacao({ isOrientadorView = false }) {
 														}
 													>
 														<InputLabel>
-															{(() => {
-																const etapaAtual =
-																	parseInt(
-																		editData.etapa,
-																	);
-																const tipoDefesa =
-																	etapaAtual ===
-																	8
-																		? "TCC"
-																		: "Projeto";
-																return `2º Membro da Banca de ${tipoDefesa}${editData.dataHoraDefesa ? " *" : ""}`;
-															})()}
+															{`2º Membro da Banca de ${orientacaoController.obterTipoDefesa(
+																editData.etapa,
+															)}${editData.dataHoraDefesa ? " *" : ""}`}
 														</InputLabel>
 														<Select
 															value={
 																editData.membroBanca2
 															}
 															onChange={(e) => {
-																const etapaAtual =
-																	parseInt(
-																		editData.etapa,
-																	);
 																const tccAtual =
 																	trabalhosPorMatricula[
 																		selectedDicente
 																			?.matricula
 																	];
-																const faseAtual =
-																	parseInt(
+																const edicaoHabilitada =
+																	orientacaoController.isEdicaoBancaHabilitada(
+																		editData.etapa,
 																		tccAtual?.fase,
 																	);
-																const edicaoHabilitada =
-																	(etapaAtual ===
-																		5 &&
-																		faseAtual ===
-																			1) ||
-																	(etapaAtual ===
-																		8 &&
-																		faseAtual ===
-																			2);
 
 																if (
 																	edicaoHabilitada
@@ -2440,56 +1219,27 @@ export default function Orientacao({ isOrientadorView = false }) {
 																}
 															}}
 															disabled={(() => {
-																const etapaAtual =
-																	parseInt(
-																		editData.etapa,
-																	);
 																const tccAtual =
 																	trabalhosPorMatricula[
 																		selectedDicente
 																			?.matricula
 																	];
-																const faseAtual =
-																	parseInt(
-																		tccAtual?.fase,
-																	);
-																return !(
-																	(etapaAtual ===
-																		5 &&
-																		faseAtual ===
-																			1) ||
-																	(etapaAtual ===
-																		8 &&
-																		faseAtual ===
-																			2)
+																return !orientacaoController.isEdicaoBancaHabilitada(
+																	editData.etapa,
+																	tccAtual?.fase,
 																);
 															})()}
-															label={(() => {
-																const etapaAtual =
-																	parseInt(
-																		editData.etapa,
-																	);
-																const tipoDefesa =
-																	etapaAtual ===
-																	8
-																		? "TCC"
-																		: "Projeto";
-																return `2º Membro da Banca de ${tipoDefesa}${editData.dataHoraDefesa ? " *" : ""}`;
-															})()}
+															label={`2º Membro da Banca de ${orientacaoController.obterTipoDefesa(
+																editData.etapa,
+															)}${editData.dataHoraDefesa ? " *" : ""}`}
 															displayEmpty
 														>
 															<MenuItem value=""></MenuItem>
-															{docentesBanca
-																.filter(
-																	(item) =>
-																		item
-																			.docente
-																			?.codigo !==
-																			editData.orientador &&
-																		item
-																			.docente
-																			?.codigo !==
-																			editData.membroBanca1,
+															{orientacaoController
+																.filtrarDocentesDisponiveis(
+																	docentesBanca,
+																	editData.orientador,
+																	editData.membroBanca1,
 																)
 																.map((item) => (
 																	<MenuItem
