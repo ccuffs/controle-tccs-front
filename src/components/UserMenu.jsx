@@ -20,12 +20,8 @@ import { useUserMenu } from "../hooks/useUserMenu.js";
 export default function UserMenu() {
 	const { usuario, logout } = useAuth();
 	const { toggleTheme } = useThemeContext();
-	const { anchorEl, isDarkMode, handleMenu, handleClose } = useUserMenu();
-
-	const handleLogout = () => {
-		handleClose();
-		logout();
-	};
+	const { anchorEl, isDarkMode, handleMenu, handleClose, handleLogout } =
+		useUserMenu({ logout });
 
 	if (!usuario) {
 		return null;
