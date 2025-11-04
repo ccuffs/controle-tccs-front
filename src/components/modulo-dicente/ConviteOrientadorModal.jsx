@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
 	Dialog,
 	DialogTitle,
@@ -16,7 +16,7 @@ import {
 	CircularProgress,
 } from "@mui/material";
 
-import axiosInstance from "../../auth/axios";
+import { useConviteOrientador } from "../../hooks/useConviteOrientador";
 
 export default function ConviteOrientadorModal({
 	open,
@@ -25,100 +25,42 @@ export default function ConviteOrientadorModal({
 	idCurso,
 	onConviteEnviado,
 	conviteExistente = null,
-	fase = 1, // Adicionar parâmetro fase com valor padrão 1
+	fase = 1,
 }) {
-	const [orientadores, setOrientadores] = useState([]);
-	const [orientadorSelecionado, setOrientadorSelecionado] = useState("");
-	const [mensagem, setMensagem] = useState("");
-	const [loading, setLoading] = useState(false);
-	const [loadingOrientadores, setLoadingOrientadores] = useState(false);
-	const [error, setError] = useState("");
+	const {
+		// Estados de dados
+		orientadores,
+		orientadorSelecionado,
+		setOrientadorSelecionado,
+		mensagem,
+		setMensagem,
 
-	useEffect(() => {
-		if (open && idCurso) {
-			carregarOrientadores();
-			if (conviteExistente) {
-				setOrientadorSelecionado(conviteExistente.codigo_docente);
-				setMensagem(conviteExistente.mensagem_envio || "");
-			}
-		}
-	}, [open, conviteExistente, idCurso]);
+		// Estados de UI
+		loading,
+		loadingOrientadores,
+		error,
 
-	const carregarOrientadores = async () => {
-		try {
-			setLoadingOrientadores(true);
-			const response = await axiosInstance.get(
-				`/orientadores/curso/${idCurso}`,
-			);
+		// Dados processados
+		conviteProcessado,
+		modoVisualizacao,
+		tituloModal,
 
-			// Extrair os docentes das orientações
-			const orientacoes =
-				response.data?.orientacoes || response.orientacoes || [];
-			const docentes = orientacoes
-				.map((orientacao) => orientacao.docente)
-				.filter(Boolean);
-
-			setOrientadores(docentes);
-		} catch (error) {
-			console.error("Erro ao carregar orientadores do curso:", error);
-			setError("Erro ao carregar lista de orientadores do curso");
-		} finally {
-			setLoadingOrientadores(false);
-		}
-	};
-
-	const handleEnviarConvite = async () => {
-		if (!orientadorSelecionado) {
-			setError("Por favor, selecione um orientador");
-			return;
-		}
-
-		try {
-			setLoading(true);
-			setError("");
-
-			const dadosConvite = {
-				id_tcc: idTcc,
-				codigo_docente: orientadorSelecionado,
-				mensagem_envio: mensagem || "Convite para orientação de TCC",
-				fase: fase, // Incluir o parâmetro fase
-			};
-
-			await axiosInstance.post("/convites", {
-				formData: dadosConvite,
-			});
-
-			if (onConviteEnviado) {
-				onConviteEnviado();
-			}
-
-			handleClose();
-		} catch (error) {
-			console.error("Erro ao enviar convite:", error);
-			if (error.response?.data?.message) {
-				setError(error.response.data.message);
-			} else {
-				setError("Erro ao enviar convite. Tente novamente.");
-			}
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	const handleClose = () => {
-		setOrientadorSelecionado("");
-		setMensagem("");
-		setError("");
-		onClose();
-	};
+		// Handlers
+		handleEnviarConvite,
+		handleClose,
+	} = useConviteOrientador({
+		open,
+		idCurso,
+		idTcc,
+		conviteExistente,
+		fase,
+		onConviteEnviado,
+		onClose,
+	});
 
 	return (
 		<Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-			<DialogTitle>
-				{conviteExistente
-					? "Convite de Orientador"
-					: "Enviar Convite para Orientador"}
-			</DialogTitle>
+			<DialogTitle>{tituloModal}</DialogTitle>
 			<DialogContent>
 				<Box sx={{ mt: 2 }}>
 					{!idCurso && (
@@ -143,7 +85,7 @@ export default function ConviteOrientadorModal({
 							}
 							disabled={
 								loadingOrientadores ||
-								!!conviteExistente ||
+								modoVisualizacao ||
 								!idCurso
 							}
 						>
@@ -179,24 +121,20 @@ export default function ConviteOrientadorModal({
 						value={mensagem}
 						onChange={(e) => setMensagem(e.target.value)}
 						placeholder="Escreva uma mensagem personalizada para o orientador..."
-						disabled={!!conviteExistente}
+						disabled={modoVisualizacao}
 						sx={{ mb: 2 }}
 					/>
 
-					{conviteExistente && (
+					{conviteProcessado && (
 						<Alert severity="info" sx={{ mb: 2 }}>
 							<Typography variant="body2">
 								<strong>Status:</strong>{" "}
-								{conviteExistente.aceito
-									? "Aceito"
-									: "Pendente"}
+								{conviteProcessado.status}
 							</Typography>
-							{conviteExistente.data_envio && (
+							{conviteProcessado.dataEnvio && (
 								<Typography variant="body2">
 									<strong>Enviado em:</strong>{" "}
-									{new Date(
-										conviteExistente.data_envio,
-									).toLocaleDateString("pt-BR")}
+									{conviteProcessado.dataEnvio}
 								</Typography>
 							)}
 						</Alert>
@@ -207,7 +145,7 @@ export default function ConviteOrientadorModal({
 				<Button onClick={handleClose} disabled={loading}>
 					Cancelar
 				</Button>
-				{!conviteExistente && (
+				{!modoVisualizacao && (
 					<Button
 						onClick={handleEnviarConvite}
 						variant="contained"
