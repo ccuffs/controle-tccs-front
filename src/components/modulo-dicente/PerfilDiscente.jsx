@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
 	Alert,
 	Box,
@@ -12,81 +12,31 @@ import {
 	FormControl,
 } from "@mui/material";
 
-import axiosInstance from "../../auth/axios";
-import { useAuth } from "../../contexts/AuthContext";
+import { usePerfilDiscente } from "../../hooks/usePerfilDiscente";
 
 export default function PerfilDiscente() {
-	const { usuario } = useAuth();
-	const [dicente, setDicente] = useState(null);
-	const [email, setEmail] = useState("");
-	const [loading, setLoading] = useState(true);
-	const [edit, setEdit] = useState(false);
-	const [openMessage, setOpenMessage] = useState(false);
-	const [messageText, setMessageText] = useState("");
-	const [messageSeverity, setMessageSeverity] = useState("success");
+	const {
+		// Estados de dados
+		dicente,
+		email,
+		setEmail,
 
-	useEffect(() => {
-		getData();
-	}, []);
+		// Estados de UI
+		loading,
+		edit,
+		openMessage,
+		messageText,
+		messageSeverity,
 
-	async function getData() {
-		try {
-			setLoading(true);
-			const response = await axiosInstance.get("/dicentes/meu-perfil");
-			setDicente(response);
-			setEmail(response.email || "");
-		} catch (error) {
-			console.log(
-				"Não foi possível retornar os dados do dicente: ",
-				error,
-			);
-			setMessageText(
-				"Erro ao carregar dados. Você pode não estar vinculado a um perfil de discente.",
-			);
-			setMessageSeverity("error");
-			setOpenMessage(true);
-		} finally {
-			setLoading(false);
-		}
-	}
+		// Estados computados
+		isDicenteCarregado,
 
-	function handleEdit() {
-		setEdit(true);
-	}
-
-	function handleCancelClick() {
-		setEdit(false);
-		setEmail(dicente?.email || "");
-	}
-
-	async function handleUpdateEmail() {
-		try {
-			await axiosInstance.put(`/dicentes/${dicente.matricula}`, {
-				formData: {
-					matricula: dicente.matricula,
-					email: email || "",
-				},
-			});
-
-			setMessageText("Email atualizado com sucesso!");
-			setMessageSeverity("success");
-			setEdit(false);
-			await getData();
-		} catch (error) {
-			console.log("Não foi possível atualizar o email");
-			setMessageText("Falha ao atualizar email!");
-			setMessageSeverity("error");
-		} finally {
-			setOpenMessage(true);
-		}
-	}
-
-	function handleCloseMessage(_, reason) {
-		if (reason === "clickaway") {
-			return;
-		}
-		setOpenMessage(false);
-	}
+		// Handlers
+		handleEdit,
+		handleCancelClick,
+		handleUpdateEmail,
+		handleCloseMessage,
+	} = usePerfilDiscente();
 
 	if (loading) {
 		return (
@@ -103,7 +53,7 @@ export default function PerfilDiscente() {
 		);
 	}
 
-	if (!dicente) {
+	if (!isDicenteCarregado) {
 		return (
 			<Box>
 				<Alert severity="warning">
