@@ -656,7 +656,7 @@ export function useOrientacao(isOrientadorView = false) {
 			// Validação
 			const etapaAtual = parseInt(editData.etapa);
 			const faseAtual = parseInt(tcc?.fase);
-			const precisaBanca = orientacaoController.isEdicaoBancaHabilitada(
+			const edicaoBancaHabilitada = orientacaoController.isEdicaoBancaHabilitada(
 				etapaAtual,
 				faseAtual,
 			);
@@ -667,7 +667,7 @@ export function useOrientacao(isOrientadorView = false) {
 					editData.membroBanca1,
 					editData.membroBanca2,
 				) &&
-				precisaBanca
+				edicaoBancaHabilitada
 			) {
 				setMessageText(
 					"Para definir uma data de defesa, é necessário selecionar os 2 membros da banca!",
