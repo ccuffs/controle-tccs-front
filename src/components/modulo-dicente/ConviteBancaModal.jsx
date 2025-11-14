@@ -288,11 +288,7 @@ export default function ConviteBancaModal({
 						orientadoresSelecionados.length === 0
 					}
 				>
-					{loading ? (
-						<CircularProgress size={20} />
-					) : (
-						textoBotao
-					)}
+					{loading ? <CircularProgress size={20} /> : textoBotao}
 				</Button>
 			</DialogActions>
 		</Dialog>

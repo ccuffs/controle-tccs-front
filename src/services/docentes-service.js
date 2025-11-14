@@ -35,4 +35,3 @@ const docentesService = {
 };
 
 export default docentesService;
-

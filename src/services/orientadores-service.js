@@ -3,7 +3,9 @@ import axiosInstance from "../auth/axios.js";
 // GET - Buscar orientadores por curso
 export async function getOrientadoresPorCurso(idCurso) {
 	try {
-		const response = await axiosInstance.get(`/orientadores/curso/${idCurso}`);
+		const response = await axiosInstance.get(
+			`/orientadores/curso/${idCurso}`,
+		);
 		return response.orientacoes || [];
 	} catch (error) {
 		console.error("Erro ao buscar orientadores:", error);
@@ -49,4 +51,3 @@ const orientadoresService = {
 };
 
 export default orientadoresService;
-

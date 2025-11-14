@@ -73,4 +73,3 @@ const conviteBancaService = {
 };
 
 export default conviteBancaService;
-

@@ -63,4 +63,3 @@ export function useTemasDataGrid({ temas, isOrientadorView = false }) {
 		getRowClassName,
 	};
 }
-

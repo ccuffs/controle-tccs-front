@@ -35,4 +35,3 @@ const moduloDiscenteController = {
 };
 
 export default moduloDiscenteController;
-

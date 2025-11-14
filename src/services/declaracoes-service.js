@@ -70,4 +70,3 @@ const declaracoesService = {
 };
 
 export default declaracoesService;
-

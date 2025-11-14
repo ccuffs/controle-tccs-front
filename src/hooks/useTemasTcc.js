@@ -121,9 +121,8 @@ export function useTemasTcc(isOrientadorView = false) {
 
 	async function getAreasTccPorDocente(codigoDocente) {
 		try {
-			const areas = await temasTccService.getAreasTccPorDocente(
-				codigoDocente,
-			);
+			const areas =
+				await temasTccService.getAreasTccPorDocente(codigoDocente);
 			setAreasTcc(areas);
 		} catch (error) {
 			console.log(
@@ -136,9 +135,8 @@ export function useTemasTcc(isOrientadorView = false) {
 
 	async function getTemasPorCurso() {
 		try {
-			const temasData = await temasTccService.getTemasPorCurso(
-				cursoSelecionado,
-			);
+			const temasData =
+				await temasTccService.getTemasPorCurso(cursoSelecionado);
 			setTemas(temasData);
 		} catch (error) {
 			console.log(
@@ -154,11 +152,10 @@ export function useTemasTcc(isOrientadorView = false) {
 			const codigoDocente = usuario?.codigo || usuario?.id;
 			if (!codigoDocente) return;
 
-			const temasData =
-				await temasTccService.getTemasPorCursoOrientador(
-					codigoDocente,
-					cursoSelecionado,
-				);
+			const temasData = await temasTccService.getTemasPorCursoOrientador(
+				codigoDocente,
+				cursoSelecionado,
+			);
 			setTemas(temasData);
 		} catch (error) {
 			console.log(
@@ -174,9 +171,8 @@ export function useTemasTcc(isOrientadorView = false) {
 			const codigoDocente = usuario?.codigo || usuario?.id;
 			if (!codigoDocente) return;
 
-			const areas = await temasTccService.getAreasTccPorDocente(
-				codigoDocente,
-			);
+			const areas =
+				await temasTccService.getAreasTccPorDocente(codigoDocente);
 			setAreasTcc(areas);
 		} catch (error) {
 			console.log(
@@ -215,11 +211,10 @@ export function useTemasTcc(isOrientadorView = false) {
 				temaVagas.vagas,
 			);
 
-			const mensagem =
-				temasTccController.formatarMensagemSucessoVagas(
-					isOrientadorView,
-					temaVagas.docenteNome,
-				);
+			const mensagem = temasTccController.formatarMensagemSucessoVagas(
+				isOrientadorView,
+				temaVagas.docenteNome,
+			);
 			setMessageText(mensagem);
 			setMessageSeverity("success");
 			setOpenMessage(true);
@@ -292,9 +287,7 @@ export function useTemasTcc(isOrientadorView = false) {
 	async function handleCreateArea() {
 		try {
 			if (
-				!temasTccController.validarDescricaoArea(
-					novaAreaData.descricao,
-				)
+				!temasTccController.validarDescricaoArea(novaAreaData.descricao)
 			) {
 				setMessageText("Por favor, preencha a descrição da área!");
 				setMessageSeverity("error");
@@ -446,9 +439,7 @@ export function useTemasTcc(isOrientadorView = false) {
 			}
 		} catch (error) {
 			console.log("Não foi possível alterar o status do tema", error);
-			setMessageText(
-				error.message || "Falha ao alterar status do tema!",
-			);
+			setMessageText(error.message || "Falha ao alterar status do tema!");
 			setMessageSeverity("error");
 		} finally {
 			setOpenMessage(true);
@@ -502,4 +493,3 @@ export function useTemasTcc(isOrientadorView = false) {
 		handleClose,
 	};
 }
-

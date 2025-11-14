@@ -130,7 +130,15 @@ export function useOrientacao(isOrientadorView = false) {
 			setTrabalhosPorMatricula({});
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [cursoSelecionado, ano, semestre, fase, isProfessor, isAdmin, isOrientadorView]);
+	}, [
+		cursoSelecionado,
+		ano,
+		semestre,
+		fase,
+		isProfessor,
+		isAdmin,
+		isOrientadorView,
+	]);
 
 	// Carregar orientadores e docentes de banca quando curso muda
 	useEffect(() => {
@@ -196,9 +204,8 @@ export function useOrientacao(isOrientadorView = false) {
 
 	async function getDocentesBancaCurso(idCurso) {
 		try {
-			const docentes = await orientacaoService.getDocentesBancaCurso(
-				idCurso,
-			);
+			const docentes =
+				await orientacaoService.getDocentesBancaCurso(idCurso);
 			setDocentesBanca(docentes);
 		} catch (error) {
 			console.log(
@@ -239,9 +246,8 @@ export function useOrientacao(isOrientadorView = false) {
 					codigo_docente: codigoDocente,
 					orientador: true,
 				};
-				const orientacoesData = await orientacaoService.getOrientacoes(
-					params,
-				);
+				const orientacoesData =
+					await orientacaoService.getOrientacoes(params);
 
 				const orientacoesFiltradas =
 					orientacaoController.filtrarOrientacoes(orientacoesData, {
@@ -265,7 +271,8 @@ export function useOrientacao(isOrientadorView = false) {
 				if (semestre) params.semestre = semestre;
 				if (fase) params.fase = fase;
 
-				const dicentesData = await orientacaoService.getDicentes(params);
+				const dicentesData =
+					await orientacaoService.getDicentes(params);
 				const dicentesOrdenados =
 					orientacaoController.ordenarDicentesPorNome(dicentesData);
 				setDicentes(dicentesOrdenados);
@@ -442,9 +449,8 @@ export function useOrientacao(isOrientadorView = false) {
 		formData.append("id_curso", modalCurso.id);
 
 		try {
-			const response = await orientacaoService.uploadPdfDicentes(
-				formData,
-			);
+			const response =
+				await orientacaoService.uploadPdfDicentes(formData);
 
 			setUploadResults(response);
 			setMessageText(
@@ -517,9 +523,8 @@ export function useOrientacao(isOrientadorView = false) {
 					setDefesasAtual(defesasFaseAtual);
 
 					// Carregar convites de banca
-					const todosConvitesBanca = await orientacaoService.getConvites(
-						{ id_tcc: tcc.id },
-					);
+					const todosConvitesBanca =
+						await orientacaoService.getConvites({ id_tcc: tcc.id });
 					const convitesBancaFiltrados = todosConvitesBanca.filter(
 						(c) => c.orientacao === false,
 					);
@@ -545,9 +550,10 @@ export function useOrientacao(isOrientadorView = false) {
 					setConvitesBancaFase2(convitesFase2);
 
 					// Extrair membros da banca
-					dadosBanca = orientacaoController.extrairMembrosBanca(
-						defesasFaseAtual,
-					);
+					dadosBanca =
+						orientacaoController.extrairMembrosBanca(
+							defesasFaseAtual,
+						);
 				} catch (error) {
 					console.log("Erro ao carregar defesas ou convites:", error);
 					setDefesasAtual([]);
@@ -592,10 +598,13 @@ export function useOrientacao(isOrientadorView = false) {
 	}
 
 	async function gerenciarBancaDefesa(idTcc) {
-		const membrosNovos = [editData.membroBanca1, editData.membroBanca2].filter(
-			Boolean,
+		const membrosNovos = [
+			editData.membroBanca1,
+			editData.membroBanca2,
+		].filter(Boolean);
+		const membrosExistentes = defesasAtual.map(
+			(defesa) => defesa.membro_banca,
 		);
-		const membrosExistentes = defesasAtual.map((defesa) => defesa.membro_banca);
 
 		const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula];
 		const faseAtual = parseInt(tccAtual?.fase);
@@ -656,10 +665,11 @@ export function useOrientacao(isOrientadorView = false) {
 			// Validação
 			const etapaAtual = parseInt(editData.etapa);
 			const faseAtual = parseInt(tcc?.fase);
-			const edicaoBancaHabilitada = orientacaoController.isEdicaoBancaHabilitada(
-				etapaAtual,
-				faseAtual,
-			);
+			const edicaoBancaHabilitada =
+				orientacaoController.isEdicaoBancaHabilitada(
+					etapaAtual,
+					faseAtual,
+				);
 
 			if (
 				!orientacaoController.validarSalvarComDataDefesa(
@@ -693,11 +703,18 @@ export function useOrientacao(isOrientadorView = false) {
 			await orientacaoService.atualizarTrabalhoConclusao(tcc.id, tccData);
 
 			// Gerenciar orientação e convites
-			const orientadorAtual = getOrientadorAtual(selectedDicente.matricula);
-			const orientacaoAtual = getOrientacaoAtual(selectedDicente.matricula);
+			const orientadorAtual = getOrientadorAtual(
+				selectedDicente.matricula,
+			);
+			const orientacaoAtual = getOrientacaoAtual(
+				selectedDicente.matricula,
+			);
 			const codigoOrientadorAtual = orientadorAtual?.codigo || "";
 
-			if (!isOrientadorView && editData.orientador !== codigoOrientadorAtual) {
+			if (
+				!isOrientadorView &&
+				editData.orientador !== codigoOrientadorAtual
+			) {
 				const convitesOrientacao = await orientacaoService.getConvites({
 					id_tcc: tcc.id,
 				});
@@ -709,17 +726,21 @@ export function useOrientacao(isOrientadorView = false) {
 
 				// Deletar orientação anterior
 				if (orientacaoAtual && orientacaoAtual.id) {
-					await orientacaoService.deletarOrientacao(orientacaoAtual.id);
+					await orientacaoService.deletarOrientacao(
+						orientacaoAtual.id,
+					);
 				}
 
 				// Gerenciar convites
 				if (editData.orientador) {
-					const conviteNovoOrientador = convitesOrientacaoFiltrados.find(
-						(c) => c.codigo_docente === editData.orientador,
-					);
+					const conviteNovoOrientador =
+						convitesOrientacaoFiltrados.find(
+							(c) => c.codigo_docente === editData.orientador,
+						);
 					const conviteOrientadorAtual = codigoOrientadorAtual
 						? convitesOrientacaoFiltrados.find(
-								(c) => c.codigo_docente === codigoOrientadorAtual,
+								(c) =>
+									c.codigo_docente === codigoOrientadorAtual,
 							)
 						: null;
 
@@ -728,7 +749,8 @@ export function useOrientacao(isOrientadorView = false) {
 							!conviteNovoOrientador ||
 							conviteNovoOrientador.aceito === false
 						) {
-							const mensagemPadrao = "Informado pelo professor do CCR";
+							const mensagemPadrao =
+								"Informado pelo professor do CCR";
 							const convitePayload =
 								orientacaoController.prepararConviteOrientacao(
 									tcc.id,
@@ -737,7 +759,9 @@ export function useOrientacao(isOrientadorView = false) {
 									mensagemPadrao,
 									true,
 								);
-							await orientacaoService.criarConvite(convitePayload);
+							await orientacaoService.criarConvite(
+								convitePayload,
+							);
 						}
 					} else {
 						if (editData.orientador !== codigoOrientadorAtual) {
@@ -759,7 +783,9 @@ export function useOrientacao(isOrientadorView = false) {
 									mensagemAlteracao,
 									true,
 								);
-							await orientacaoService.criarConvite(convitePayload);
+							await orientacaoService.criarConvite(
+								convitePayload,
+							);
 						}
 					}
 
@@ -811,7 +837,8 @@ export function useOrientacao(isOrientadorView = false) {
 	const dicentesFiltrados = todosOsFiltrosSelecionados ? dicentes : [];
 
 	const anosUnicos = orientacaoController.gerarAnosUnicos(ofertasTcc);
-	const semestresUnicos = orientacaoController.gerarSemestresUnicos(ofertasTcc);
+	const semestresUnicos =
+		orientacaoController.gerarSemestresUnicos(ofertasTcc);
 	const fasesUnicas = orientacaoController.gerarFasesUnicas(ofertasTcc);
 
 	return {
@@ -893,4 +920,3 @@ export function useOrientacao(isOrientadorView = false) {
 		todosOsFiltrosSelecionados,
 	};
 }
-

@@ -189,9 +189,7 @@ export default function Cursos() {
 						</DialogContentText>
 					</DialogContent>
 					<DialogActions>
-						<Button onClick={handleNoDeleteClick}>
-							Cancelar
-						</Button>
+						<Button onClick={handleNoDeleteClick}>Cancelar</Button>
 						<Button onClick={handleDeleteClick} autoFocus>
 							Confirmar
 						</Button>

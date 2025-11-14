@@ -36,4 +36,3 @@ const themeService = {
 };
 
 export default themeService;
-

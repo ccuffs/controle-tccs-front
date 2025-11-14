@@ -103,11 +103,7 @@ export function verificarDocenteJaConvidado(
 /**
  * Verifica se um docente recusou o convite
  */
-export function verificarDocenteRecusou(
-	codigoDocente,
-	convites,
-	tipoConvite,
-) {
+export function verificarDocenteRecusou(codigoDocente, convites, tipoConvite) {
 	return convites.some(
 		(convite) =>
 			convite.codigo_docente === codigoDocente &&
@@ -254,10 +250,7 @@ export function obterMensagemStatus(
 /**
  * Obtém mensagem informativa quando não pode enviar convites
  */
-export function obterMensagemNaoPodeEnviar(
-	convitesAceitos,
-	convitesPendentes,
-) {
+export function obterMensagemNaoPodeEnviar(convitesAceitos, convitesPendentes) {
 	if (convitesAceitos.length === 2) {
 		return "Sua banca está completa com 2 membros confirmados!";
 	} else if (convitesPendentes.length === 2) {
@@ -288,4 +281,3 @@ const conviteBancaController = {
 };
 
 export default conviteBancaController;
-

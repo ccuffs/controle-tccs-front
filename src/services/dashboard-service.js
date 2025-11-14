@@ -95,7 +95,10 @@ export async function getConvitesOrientacaoStatus(params) {
 		);
 		return response;
 	} catch (error) {
-		console.error("Erro ao buscar status de convites de orientação:", error);
+		console.error(
+			"Erro ao buscar status de convites de orientação:",
+			error,
+		);
 		throw error;
 	}
 }
@@ -171,4 +174,3 @@ const dashboardService = {
 };
 
 export default dashboardService;
-

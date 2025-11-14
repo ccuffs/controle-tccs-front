@@ -86,4 +86,3 @@ const cursosController = {
 };
 
 export default cursosController;
-

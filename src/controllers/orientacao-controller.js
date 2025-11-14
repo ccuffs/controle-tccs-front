@@ -25,7 +25,10 @@ export function ordenarDicentesPorNome(dicentes) {
 /**
  * Filtra orientações por critérios
  */
-export function filtrarOrientacoes(orientacoes, { cursoSelecionado, ano, semestre, fase }) {
+export function filtrarOrientacoes(
+	orientacoes,
+	{ cursoSelecionado, ano, semestre, fase },
+) {
 	return orientacoes.filter((o) => {
 		const tcc = o.TrabalhoConclusao;
 		if (!tcc) return false;
@@ -251,7 +254,8 @@ export function filtrarConvitesBanca(convites, fase) {
  */
 export function filtrarDefesasPorFase(defesas, fase) {
 	return defesas.filter(
-		(defesa) => parseInt(defesa.fase) === parseInt(fase) && !defesa.orientador,
+		(defesa) =>
+			parseInt(defesa.fase) === parseInt(fase) && !defesa.orientador,
 	);
 }
 
@@ -372,7 +376,10 @@ export function identificarAlteracoesBanca(
 	const alteracoes = [];
 
 	for (const membroExistente of membrosExistentes) {
-		if (!membrosNovos.includes(membroExistente) && membrosNovos.length > 0) {
+		if (
+			!membrosNovos.includes(membroExistente) &&
+			membrosNovos.length > 0
+		) {
 			const membroSubstituto = membrosNovos.find(
 				(novoMembro) => !membrosExistentes.includes(novoMembro),
 			);
@@ -398,7 +405,11 @@ export function identificarAlteracoesBanca(
 /**
  * Valida se pode salvar com data de defesa
  */
-export function validarSalvarComDataDefesa(dataHoraDefesa, membroBanca1, membroBanca2) {
+export function validarSalvarComDataDefesa(
+	dataHoraDefesa,
+	membroBanca1,
+	membroBanca2,
+) {
 	if (dataHoraDefesa) {
 		return membroBanca1 && membroBanca2;
 	}
@@ -443,7 +454,9 @@ export function obterEtapaMaxima(fase) {
 export function isEdicaoBancaHabilitada(etapa, fase) {
 	const etapaNum = parseInt(etapa);
 	const faseNum = parseInt(fase);
-	return (etapaNum === 5 && faseNum === 1) || (etapaNum === 8 && faseNum === 2);
+	return (
+		(etapaNum === 5 && faseNum === 1) || (etapaNum === 8 && faseNum === 2)
+	);
 }
 
 /**
@@ -544,7 +557,8 @@ export function obterLabelStatusUpload(status) {
 	const labelMap = {
 		dicente_e_orientacao_inseridos: "Novo dicente + orientação",
 		orientacao_inserida: "Orientação criada",
-		dicente_inserido_orientacao_ja_existe: "Novo dicente (orientação já existe)",
+		dicente_inserido_orientacao_ja_existe:
+			"Novo dicente (orientação já existe)",
 		orientacao_ja_existe: "Orientação já existe",
 		dicente_ja_existe: "Dicente já existe",
 		inserido: "Inserido",
@@ -614,4 +628,3 @@ const orientacaoController = {
 };
 
 export default orientacaoController;
-

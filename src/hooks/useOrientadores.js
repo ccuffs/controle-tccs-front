@@ -104,9 +104,8 @@ export function useOrientadores() {
 	}, []);
 
 	const handleCreateDocente = useCallback(async () => {
-		const validation = orientadoresController.validateDocenteData(
-			novoDocenteData,
-		);
+		const validation =
+			orientadoresController.validateDocenteData(novoDocenteData);
 
 		if (!validation.isValid) {
 			setMessageText(validation.message);
@@ -135,7 +134,8 @@ export function useOrientadores() {
 			} else if (error.response?.status === 409) {
 				errorMessage = "Este docente já existe no sistema!";
 			} else if (error.response?.status === 400) {
-				errorMessage = "Dados inválidos. Verifique os campos preenchidos!";
+				errorMessage =
+					"Dados inválidos. Verifique os campos preenchidos!";
 			}
 
 			setMessageText(errorMessage);
@@ -181,7 +181,8 @@ export function useOrientadores() {
 			} else if (error.response?.status === 409) {
 				errorMessage = "Esta orientação já existe!";
 			} else if (error.response?.status === 400) {
-				errorMessage = "Dados inválidos. Verifique os campos preenchidos!";
+				errorMessage =
+					"Dados inválidos. Verifique os campos preenchidos!";
 			}
 
 			setMessageText(errorMessage);
@@ -270,4 +271,3 @@ export function useOrientadores() {
 		handleClose,
 	};
 }
-

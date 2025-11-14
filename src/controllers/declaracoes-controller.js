@@ -135,4 +135,3 @@ const declaracoesController = {
 };
 
 export default declaracoesController;
-

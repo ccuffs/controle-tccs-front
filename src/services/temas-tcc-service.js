@@ -69,9 +69,7 @@ export async function getAreasTccPorDocente(codigoDocente) {
 // GET - Buscar temas por curso
 export async function getTemasPorCurso(idCurso) {
 	try {
-		const response = await axiosInstance.get(
-			`/temas-tcc/curso/${idCurso}`,
-		);
+		const response = await axiosInstance.get(`/temas-tcc/curso/${idCurso}`);
 		return response || [];
 	} catch (error) {
 		console.error("Erro ao buscar temas TCC:", error);
@@ -201,4 +199,3 @@ const temasTccService = {
 };
 
 export default temasTccService;
-

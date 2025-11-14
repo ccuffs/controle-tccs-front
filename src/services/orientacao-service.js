@@ -286,10 +286,7 @@ export async function gerenciarBancaDefesa(payload) {
 // POST - Agendar defesa
 export async function agendarDefesa(payload) {
 	try {
-		const response = await axiosInstance.post(
-			"/defesas/agendar",
-			payload,
-		);
+		const response = await axiosInstance.post("/defesas/agendar", payload);
 		return response.data;
 	} catch (error) {
 		console.error("Erro ao agendar defesa:", error);
@@ -348,4 +345,3 @@ const orientacaoService = {
 };
 
 export default orientacaoService;
-

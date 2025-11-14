@@ -74,4 +74,3 @@ const perfilDicenteController = {
 };
 
 export default perfilDicenteController;
-

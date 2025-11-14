@@ -269,11 +269,10 @@ export default function Orientacao({ isOrientadorView = false }) {
 							const faseAtual =
 								tcc?.fase != null ? parseInt(tcc.fase) : null;
 							const defesasFase = Array.isArray(defesas)
-								? defesas.filter(
-										(d) =>
-											fase
-												? parseInt(d.fase) === faseAtual
-												: true,
+								? defesas.filter((d) =>
+										fase
+											? parseInt(d.fase) === faseAtual
+											: true,
 									)
 								: [];
 							const media =

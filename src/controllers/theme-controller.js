@@ -49,4 +49,3 @@ const themeController = {
 };
 
 export default themeController;
-

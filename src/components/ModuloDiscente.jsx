@@ -7,13 +7,8 @@ import { useModuloDiscente } from "../hooks/useModuloDiscente.js";
 import { AccessibleTabPanel, getA11yProps } from "./customs/AccessibleTabs.jsx";
 
 export default function ModuloDiscente() {
-	const {
-		tabValue,
-		etapaAtual,
-		setEtapaAtual,
-		loading,
-		handleTabChange,
-	} = useModuloDiscente();
+	const { tabValue, etapaAtual, setEtapaAtual, loading, handleTabChange } =
+		useModuloDiscente();
 
 	const renderizarConteudo = () => {
 		if (loading) {

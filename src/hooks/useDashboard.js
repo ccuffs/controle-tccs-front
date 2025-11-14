@@ -30,7 +30,10 @@ export function useDashboard({ forceOrientador = false }) {
 		[gruposUsuario, forceOrientador],
 	);
 
-	const isOrientadorView = useMemo(() => !!forceOrientador, [forceOrientador]);
+	const isOrientadorView = useMemo(
+		() => !!forceOrientador,
+		[forceOrientador],
+	);
 
 	// Estados de filtros
 	const [anosSemestres, setAnosSemestres] = useState([]);
@@ -118,13 +121,15 @@ export function useDashboard({ forceOrientador = false }) {
 				} else if (isProfessor) {
 					const cursos = usuario?.cursos || [];
 					setCursosUsuario(cursos);
-					if (cursos.length === 1) setFiltroCurso(String(cursos[0].id));
+					if (cursos.length === 1)
+						setFiltroCurso(String(cursos[0].id));
 				} else if (isOrientador) {
 					try {
 						const codigoDocente = usuario?.codigo || usuario?.id;
-						const resp = await dashboardService.getOrientacoesPorDocente(
-							codigoDocente,
-						);
+						const resp =
+							await dashboardService.getOrientacoesPorDocente(
+								codigoDocente,
+							);
 						const orientacoes = resp?.orientacoes || [];
 						const listaCursos =
 							dashboardController.extractCursosFromOrientacoes(
@@ -168,15 +173,19 @@ export function useDashboard({ forceOrientador = false }) {
 
 				// Adicionar filtros específicos por perfil
 				if (isAdmin) {
-					if (filtroCurso) params.set("id_curso", String(filtroCurso));
+					if (filtroCurso)
+						params.set("id_curso", String(filtroCurso));
 				} else if (isProfessor) {
-					if (filtroCurso) params.set("id_curso", String(filtroCurso));
+					if (filtroCurso)
+						params.set("id_curso", String(filtroCurso));
 					else if (cursosUsuario?.[0]?.id)
 						params.set("id_curso", String(cursosUsuario[0].id));
 				} else if (isOrientador) {
 					const codigoDocente = usuario?.codigo || usuario?.id;
-					if (codigoDocente) params.set("codigo_docente", String(codigoDocente));
-					if (filtroCurso) params.set("id_curso", String(filtroCurso));
+					if (codigoDocente)
+						params.set("codigo_docente", String(codigoDocente));
+					if (filtroCurso)
+						params.set("id_curso", String(filtroCurso));
 					else if (cursosUsuario?.[0]?.id)
 						params.set("id_curso", String(cursosUsuario[0].id));
 				}
@@ -243,10 +252,13 @@ export function useDashboard({ forceOrientador = false }) {
 
 				// Buscar dados por docente apenas para Admin/Professor
 				if (isAdmin || isProfessor) {
-					const [orientandos, defesasDocente] = await Promise.allSettled([
-						dashboardService.getOrientandosPorDocente(params),
-						dashboardService.getDefesasAceitasPorDocente(params),
-					]);
+					const [orientandos, defesasDocente] =
+						await Promise.allSettled([
+							dashboardService.getOrientandosPorDocente(params),
+							dashboardService.getDefesasAceitasPorDocente(
+								params,
+							),
+						]);
 
 					if (!ativo) return;
 
@@ -332,4 +344,3 @@ export function useDashboard({ forceOrientador = false }) {
 		ticksConvites,
 	};
 }
-

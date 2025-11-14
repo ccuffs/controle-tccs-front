@@ -43,9 +43,8 @@ export function useConvitesRecebidosOrientador() {
 	async function getCursosOrientador() {
 		try {
 			const codigoDocente = usuario.codigo || usuario.id;
-			const cursosOrientador = await convitesService.getCursosOrientador(
-				codigoDocente,
-			);
+			const cursosOrientador =
+				await convitesService.getCursosOrientador(codigoDocente);
 			const cursosExtraidos =
 				convitesRecebidosController.extrairCursos(cursosOrientador);
 			setCursos(cursosExtraidos);
@@ -132,9 +131,7 @@ export function useConvitesRecebidosOrientador() {
 			setMessageSeverity("success");
 		} catch (error) {
 			console.log("Não foi possível responder ao convite: ", error);
-			setMessageText(
-				error.message || "Falha ao responder ao convite!",
-			);
+			setMessageText(error.message || "Falha ao responder ao convite!");
 			setMessageSeverity("error");
 		} finally {
 			setOpenDialog(false);
@@ -151,9 +148,7 @@ export function useConvitesRecebidosOrientador() {
 
 	// Processar convites para o grid
 	const convitesParaGrid = useMemo(() => {
-		return convitesRecebidosController.processarConvitesParaGrid(
-			convites,
-		);
+		return convitesRecebidosController.processarConvitesParaGrid(convites);
 	}, [convites]);
 
 	return {
@@ -184,4 +179,3 @@ export function useConvitesRecebidosOrientador() {
 		handleCancelarResposta,
 	};
 }
-

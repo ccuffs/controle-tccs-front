@@ -26,9 +26,7 @@ export function useConviteOrientador({
 
 	// Processar convite existente
 	const conviteProcessado =
-		conviteOrientadorController.processarConviteExistente(
-			conviteExistente,
-		);
+		conviteOrientadorController.processarConviteExistente(conviteExistente);
 	const modoVisualizacao =
 		conviteOrientadorController.isModoVisualizacao(conviteExistente);
 	const tituloModal =
@@ -50,9 +48,7 @@ export function useConviteOrientador({
 		try {
 			setLoadingOrientadores(true);
 			const docentes =
-				await conviteOrientadorService.getOrientadoresPorCurso(
-					idCurso,
-				);
+				await conviteOrientadorService.getOrientadoresPorCurso(idCurso);
 			setOrientadores(docentes);
 		} catch (error) {
 			console.error("Erro ao carregar orientadores do curso:", error);
@@ -138,4 +134,3 @@ export function useConviteOrientador({
 		handleClose,
 	};
 }
-

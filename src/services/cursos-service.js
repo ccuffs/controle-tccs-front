@@ -61,4 +61,3 @@ const cursosService = {
 };
 
 export default cursosService;
-

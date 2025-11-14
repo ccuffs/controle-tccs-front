@@ -23,4 +23,3 @@ const trabalhoConclusaoService = {
 };
 
 export default trabalhoConclusaoService;
-

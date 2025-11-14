@@ -109,9 +109,10 @@ export function useEmitirDeclaracoes() {
 	async function handleBaixarDeclaracao(declaracao) {
 		try {
 			// Determinar tipo de participação
-			const tipoParticipacao = declaracoesController.obterTipoParticipacao(
-				declaracao.foi_orientador,
-			);
+			const tipoParticipacao =
+				declaracoesController.obterTipoParticipacao(
+					declaracao.foi_orientador,
+				);
 
 			// Abrir declaração em nova aba
 			const novaAba = window.open("", "_blank");
@@ -210,4 +211,3 @@ export function useEmitirDeclaracoes() {
 		handleCloseSnackbar,
 	};
 }
-

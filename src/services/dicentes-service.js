@@ -3,7 +3,9 @@ import axiosInstance from "../auth/axios.js";
 // GET - Buscar dicente por ID de usuário
 export async function getDicenteByUsuario(usuarioId) {
 	try {
-		const response = await axiosInstance.get(`/dicentes/usuario/${usuarioId}`);
+		const response = await axiosInstance.get(
+			`/dicentes/usuario/${usuarioId}`,
+		);
 		return response;
 	} catch (error) {
 		console.error("Erro ao buscar dicente por usuário:", error);

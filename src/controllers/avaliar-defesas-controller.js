@@ -11,7 +11,12 @@ export function getAnoSemestreAtual() {
 /**
  * Filtra orientações por curso, ano e semestre
  */
-export function filtrarOrientacoes(orientacoes, cursoSelecionado, ano, semestre) {
+export function filtrarOrientacoes(
+	orientacoes,
+	cursoSelecionado,
+	ano,
+	semestre,
+) {
 	return orientacoes
 		.filter(
 			(o) =>
@@ -101,11 +106,7 @@ export function verificarAvaliacoesCompletas(notas, totalDefesas) {
 /**
  * Verifica se está aprovado automaticamente (fase 1 com média >= 6)
  */
-export function verificarAprovadoAutomatico(
-	avaliacoesCompletas,
-	media,
-	fase,
-) {
+export function verificarAprovadoAutomatico(avaliacoesCompletas, media, fase) {
 	return avaliacoesCompletas && media >= 6 && parseInt(fase) === 1;
 }
 
@@ -113,9 +114,7 @@ export function verificarAprovadoAutomatico(
  * Formata data de defesa
  */
 export function formatarDataDefesa(dataDefesa) {
-	return dataDefesa
-		? new Date(dataDefesa).toLocaleString("pt-BR")
-		: "N/A";
+	return dataDefesa ? new Date(dataDefesa).toLocaleString("pt-BR") : "N/A";
 }
 
 /**
@@ -132,8 +131,7 @@ export function processarMembrosBanca(defesasTcc, avaliacoesEdicao) {
 				nomeMembroBanca: d.membroBanca?.nome || d.membro_banca,
 				valorAvaliacao: avaliacoesEdicao[chave] ?? "",
 				ehOrientador: d.orientador || false,
-				salvo:
-					d.avaliacao !== null && d.avaliacao !== undefined,
+				salvo: d.avaliacao !== null && d.avaliacao !== undefined,
 			};
 		})
 		.sort((a, b) => {
@@ -274,9 +272,7 @@ export function ordenarCards(cards) {
  * Extrai ID do TCC da chave única
  */
 export function extrairIdTcc(chaveUnica) {
-	return chaveUnica.includes("_")
-		? chaveUnica.split("_")[0]
-		: chaveUnica;
+	return chaveUnica.includes("_") ? chaveUnica.split("_")[0] : chaveUnica;
 }
 
 /**
@@ -289,7 +285,12 @@ export function extrairFase(chaveUnica) {
 /**
  * Cria snapshot de avaliações para backup
  */
-export function criarSnapshotAvaliacoes(avaliacoesEdicao, prefix, fase, faseCard) {
+export function criarSnapshotAvaliacoes(
+	avaliacoesEdicao,
+	prefix,
+	fase,
+	faseCard,
+) {
 	const snapshot = {};
 	Object.entries(avaliacoesEdicao).forEach(([k, v]) => {
 		if (k.startsWith(prefix)) {
@@ -325,7 +326,13 @@ export function temNotasRegistradas(avaliacoesEdicao, prefix, fase, faseCard) {
 /**
  * Restaura avaliações do backup
  */
-export function restaurarAvaliacoes(avaliacoesEdicao, snapshot, prefix, fase, faseCard) {
+export function restaurarAvaliacoes(
+	avaliacoesEdicao,
+	snapshot,
+	prefix,
+	fase,
+	faseCard,
+) {
 	const novo = { ...avaliacoesEdicao };
 	Object.keys(novo).forEach((k) => {
 		if (k.startsWith(prefix)) {
@@ -392,4 +399,3 @@ const avaliarDefesasController = {
 };
 
 export default avaliarDefesasController;
-

@@ -12,8 +12,6 @@ import PerfilOrientador from "./modulo-orientador/PerfilOrientador";
 import { useModuloOrientador } from "../hooks/useModuloOrientador.js";
 import { AccessibleTabPanel, getA11yProps } from "./customs/AccessibleTabs.jsx";
 
-
-
 export default function ModuloOrientador() {
 	const { tabValue, gerenciarDisponibilidadeRef, handleTabChange } =
 		useModuloOrientador();
@@ -31,47 +29,100 @@ export default function ModuloOrientador() {
 					aria-label="orientador tabs"
 				>
 					<Tab label="Dashboard" {...getA11yProps("orientador", 0)} />
-					<Tab label="Trabalhos Orientados" {...getA11yProps("orientador", 1)} />
-					<Tab label="Gerenciar Temas TCC" {...getA11yProps("orientador", 2)} />
-					<Tab label="Convites Recebidos" {...getA11yProps("orientador", 3)} />
-					<Tab label="Disponibilidade Bancas" {...getA11yProps("orientador", 4)} />
-					<Tab label="Avaliar Defesas" {...getA11yProps("orientador", 5)} />
-					<Tab label="Emitir Declarações" {...getA11yProps("orientador", 6)} />
-					<Tab label="Meu Perfil" {...getA11yProps("orientador", 7)} />
+					<Tab
+						label="Trabalhos Orientados"
+						{...getA11yProps("orientador", 1)}
+					/>
+					<Tab
+						label="Gerenciar Temas TCC"
+						{...getA11yProps("orientador", 2)}
+					/>
+					<Tab
+						label="Convites Recebidos"
+						{...getA11yProps("orientador", 3)}
+					/>
+					<Tab
+						label="Disponibilidade Bancas"
+						{...getA11yProps("orientador", 4)}
+					/>
+					<Tab
+						label="Avaliar Defesas"
+						{...getA11yProps("orientador", 5)}
+					/>
+					<Tab
+						label="Emitir Declarações"
+						{...getA11yProps("orientador", 6)}
+					/>
+					<Tab
+						label="Meu Perfil"
+						{...getA11yProps("orientador", 7)}
+					/>
 				</Tabs>
 			</Box>
 
-			<AccessibleTabPanel idPrefix="orientador" value={tabValue} index={0}>
+			<AccessibleTabPanel
+				idPrefix="orientador"
+				value={tabValue}
+				index={0}
+			>
 				<Dashboard forceOrientador={true} />
 			</AccessibleTabPanel>
 
-			<AccessibleTabPanel idPrefix="orientador" value={tabValue} index={1}>
+			<AccessibleTabPanel
+				idPrefix="orientador"
+				value={tabValue}
+				index={1}
+			>
 				<Orientacao isOrientadorView={true} />
 			</AccessibleTabPanel>
 
-			<AccessibleTabPanel idPrefix="orientador" value={tabValue} index={2}>
+			<AccessibleTabPanel
+				idPrefix="orientador"
+				value={tabValue}
+				index={2}
+			>
 				<TemasTcc isOrientadorView={true} />
 			</AccessibleTabPanel>
 
-			<AccessibleTabPanel idPrefix="orientador" value={tabValue} index={3}>
+			<AccessibleTabPanel
+				idPrefix="orientador"
+				value={tabValue}
+				index={3}
+			>
 				<ConvitesRecebidosOrientador />
 			</AccessibleTabPanel>
 
-			<AccessibleTabPanel idPrefix="orientador" value={tabValue} index={4}>
+			<AccessibleTabPanel
+				idPrefix="orientador"
+				value={tabValue}
+				index={4}
+			>
 				<GerenciarDisponibilidadeBanca
 					ref={gerenciarDisponibilidadeRef}
 				/>
 			</AccessibleTabPanel>
 
-			<AccessibleTabPanel idPrefix="orientador" value={tabValue} index={5}>
+			<AccessibleTabPanel
+				idPrefix="orientador"
+				value={tabValue}
+				index={5}
+			>
 				<AvaliarDefesasOrientador />
 			</AccessibleTabPanel>
 
-			<AccessibleTabPanel idPrefix="orientador" value={tabValue} index={6}>
+			<AccessibleTabPanel
+				idPrefix="orientador"
+				value={tabValue}
+				index={6}
+			>
 				<EmitirDeclaracoes />
 			</AccessibleTabPanel>
 
-			<AccessibleTabPanel idPrefix="orientador" value={tabValue} index={7}>
+			<AccessibleTabPanel
+				idPrefix="orientador"
+				value={tabValue}
+				index={7}
+			>
 				<PerfilOrientador />
 			</AccessibleTabPanel>
 		</Box>

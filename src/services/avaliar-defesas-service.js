@@ -99,4 +99,3 @@ const avaliarDefesasService = {
 };
 
 export default avaliarDefesasService;
-

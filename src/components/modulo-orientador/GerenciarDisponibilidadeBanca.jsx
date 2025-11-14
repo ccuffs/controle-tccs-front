@@ -50,7 +50,6 @@ const GerenciarDisponibilidadeBanca = forwardRef((props, ref) => {
 		handleSincronizarESair,
 	} = useGerenciarDisponibilidadeBanca(ref);
 
-
 	// Gerar colunas dinamicamente baseadas nas datas da grade
 	const generateColumns = () => {
 		if (!grade || !grade.datas) return [];
@@ -80,11 +79,11 @@ const GerenciarDisponibilidadeBanca = forwardRef((props, ref) => {
 			)
 				? "header-completa"
 				: disponibilidadeBancaController.isDataParcial(
-						data,
-						grade,
-						disponibilidades,
-						bloqueados,
-					)
+							data,
+							grade,
+							disponibilidades,
+							bloqueados,
+					  )
 					? "header-parcial"
 					: "header-padrao",
 			headerAlign: "center",

@@ -85,7 +85,9 @@ export function extractCursosFromOrientacoes(orientacoes) {
  * Prepara os anos únicos a partir da lista de anos-semestres
  */
 export function extractAnosUnicos(anosSemestres) {
-	return Array.from(new Set(anosSemestres.map((p) => p.ano))).sort((a, b) => a - b);
+	return Array.from(new Set(anosSemestres.map((p) => p.ano))).sort(
+		(a, b) => a - b,
+	);
 }
 
 /**
@@ -123,11 +125,7 @@ export function generateTicksConvites(dadosConvites) {
 	let cursor = new Date(inicio.getFullYear(), inicio.getMonth(), 1);
 
 	while (cursor <= fim) {
-		const primeiro = new Date(
-			cursor.getFullYear(),
-			cursor.getMonth(),
-			1,
-		);
+		const primeiro = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
 		const meio = new Date(cursor.getFullYear(), cursor.getMonth(), 15);
 		if (primeiro >= inicio && primeiro <= fim)
 			ticks.push(formatISO(primeiro));
@@ -178,4 +176,3 @@ const dashboardController = {
 };
 
 export default dashboardController;
-

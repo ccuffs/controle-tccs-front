@@ -163,4 +163,3 @@ const temasTccController = {
 };
 
 export default temasTccController;
-

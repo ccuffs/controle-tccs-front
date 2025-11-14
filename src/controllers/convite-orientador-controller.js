@@ -88,4 +88,3 @@ const conviteOrientadorController = {
 };
 
 export default conviteOrientadorController;
-

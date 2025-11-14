@@ -15,7 +15,8 @@ export function filtrarPorCurso(convites, cursoSelecionado) {
 	if (!cursoSelecionado) return convites;
 	return convites.filter(
 		(convite) =>
-			convite?.TrabalhoConclusao?.Curso?.id === parseInt(cursoSelecionado),
+			convite?.TrabalhoConclusao?.Curso?.id ===
+			parseInt(cursoSelecionado),
 	);
 }
 
@@ -51,25 +52,31 @@ export function filtrarPorFase(convites, fase) {
 /**
  * Aplica todos os filtros aos convites
  */
-export function aplicarFiltros(convites, { cursoSelecionado, ano, semestre, fase }) {
+export function aplicarFiltros(
+	convites,
+	{ cursoSelecionado, ano, semestre, fase },
+) {
 	let convitesFiltrados = convites;
-	
+
 	if (cursoSelecionado) {
-		convitesFiltrados = filtrarPorCurso(convitesFiltrados, cursoSelecionado);
+		convitesFiltrados = filtrarPorCurso(
+			convitesFiltrados,
+			cursoSelecionado,
+		);
 	}
-	
+
 	if (ano) {
 		convitesFiltrados = filtrarPorAno(convitesFiltrados, ano);
 	}
-	
+
 	if (semestre) {
 		convitesFiltrados = filtrarPorSemestre(convitesFiltrados, semestre);
 	}
-	
+
 	if (fase !== "") {
 		convitesFiltrados = filtrarPorFase(convitesFiltrados, fase);
 	}
-	
+
 	return convitesFiltrados;
 }
 
@@ -173,4 +180,3 @@ const convitesRecebidosController = {
 };
 
 export default convitesRecebidosController;
-

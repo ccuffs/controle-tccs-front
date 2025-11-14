@@ -37,7 +37,8 @@ export function useLogin() {
 
 			try {
 				const resultado = await login(formData.userId, formData.senha);
-				const processedResult = loginController.processLoginResult(resultado);
+				const processedResult =
+					loginController.processLoginResult(resultado);
 
 				if (processedResult.success) {
 					navigate("/");
@@ -60,4 +61,3 @@ export function useLogin() {
 		handleSubmit,
 	};
 }
-

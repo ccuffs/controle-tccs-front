@@ -256,8 +256,6 @@ export function useMuiTheme(mode, customColors) {
 					},
 				},
 			}),
-		[mode, customColors]
+		[mode, customColors],
 	);
 }
-
-

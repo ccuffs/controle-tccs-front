@@ -46,4 +46,3 @@ const perfilDicenteService = {
 };
 
 export default perfilDicenteService;
-

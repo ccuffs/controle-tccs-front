@@ -43,7 +43,6 @@ export default function Dashboard({ forceOrientador = false }) {
 		ticksConvites,
 	} = useDashboard({ forceOrientador });
 
-
 	return (
 		<Box>
 			<Typography variant="h5" sx={{ mb: 2 }}>

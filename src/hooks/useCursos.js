@@ -94,7 +94,8 @@ export function useCursos() {
 			} else if (error.response?.status === 409) {
 				errorMessage = "Este curso já existe no sistema!";
 			} else if (error.response?.status === 400) {
-				errorMessage = "Dados inválidos. Verifique os campos preenchidos!";
+				errorMessage =
+					"Dados inválidos. Verifique os campos preenchidos!";
 			}
 
 			setMessageText(errorMessage);
@@ -166,4 +167,3 @@ export function useCursos() {
 		handleNoDeleteClick,
 	};
 }
-

@@ -17,11 +17,13 @@ export function useModuloDiscente() {
 			setLoading(true);
 
 			// Buscar o dicente pelo id_usuario
-			const responseDiscente =
-				await dicentesService.getDicenteByUsuario(usuario.id);
-			const matricula = moduloDiscenteController.processDicenteResponse(
-				responseDiscente,
+			const responseDiscente = await dicentesService.getDicenteByUsuario(
+				usuario.id,
 			);
+			const matricula =
+				moduloDiscenteController.processDicenteResponse(
+					responseDiscente,
+				);
 
 			let etapa = 0;
 
@@ -32,7 +34,10 @@ export function useModuloDiscente() {
 						await trabalhoConclusaoService.getTrabalhoConclusaoByDiscente(
 							matricula,
 						);
-					etapa = moduloDiscenteController.processTccResponse(responseTcc);
+					etapa =
+						moduloDiscenteController.processTccResponse(
+							responseTcc,
+						);
 				} catch (tccError) {
 					// Se não existe TCC ou erro ao buscar, etapa permanece 0
 					console.log("Trabalho de conclusão não encontrado");
@@ -66,4 +71,3 @@ export function useModuloDiscente() {
 		handleTabChange,
 	};
 }
-

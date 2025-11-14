@@ -203,36 +203,39 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 							setOpenImportModal(true);
 							return;
 						}
-				} else {
-					// TCC da oferta atual - carregar normalmente
-					// Garantir que o id_curso esteja presente, mesmo que a API não o retorne
-					const tccCompleto = {
-						...tcc,
-						id_curso: tcc.id_curso || oferta.id_curso,
-						ano: tcc.ano || oferta.ano,
-						semestre: tcc.semestre || oferta.semestre,
-						fase: tcc.fase || oferta.fase,
-					};
+					} else {
+						// TCC da oferta atual - carregar normalmente
+						// Garantir que o id_curso esteja presente, mesmo que a API não o retorne
+						const tccCompleto = {
+							...tcc,
+							id_curso: tcc.id_curso || oferta.id_curso,
+							ano: tcc.ano || oferta.ano,
+							semestre: tcc.semestre || oferta.semestre,
+							fase: tcc.fase || oferta.fase,
+						};
 
-					setTrabalhoConclusao(tccCompleto);
-					setBloquearAtualizacaoEtapa(isEtapaFinalBloqueada(tccCompleto));
-					setFormData({
-						tema: tccCompleto.tema || "",
-						titulo: tccCompleto.titulo || "",
-						resumo: tccCompleto.resumo || "",
-						seminario_andamento: tccCompleto.seminario_andamento || "",
-					});
+						setTrabalhoConclusao(tccCompleto);
+						setBloquearAtualizacaoEtapa(
+							isEtapaFinalBloqueada(tccCompleto),
+						);
+						setFormData({
+							tema: tccCompleto.tema || "",
+							titulo: tccCompleto.titulo || "",
+							resumo: tccCompleto.resumo || "",
+							seminario_andamento:
+								tccCompleto.seminario_andamento || "",
+						});
 
-					// Usar a etapa do banco de dados
-					const etapaBanco = tccCompleto.etapa || 0;
-					setActiveStep(etapaBanco);
-					if (onEtapaChange) {
-						onEtapaChange(etapaBanco);
+						// Usar a etapa do banco de dados
+						const etapaBanco = tccCompleto.etapa || 0;
+						setActiveStep(etapaBanco);
+						if (onEtapaChange) {
+							onEtapaChange(etapaBanco);
+						}
+
+						// Carregar convites existentes se houver
+						await carregarConvites(tccCompleto.id);
 					}
-
-					// Carregar convites existentes se houver
-					await carregarConvites(tccCompleto.id);
-				}
 				} else {
 					// Criar novo trabalho de conclusão se não existir
 					await criarNovoTrabalhoConclusao(discente.matricula);
@@ -802,32 +805,35 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 						aprovado_projeto: true, // Se está migrando para fase 2, o projeto foi aprovado
 					};
 
-				const response = await axiosInstance.put(
-					`/trabalho-conclusao/${tccAnterior.id}`,
-					dadosAtualizados,
-				);
+					const response = await axiosInstance.put(
+						`/trabalho-conclusao/${tccAnterior.id}`,
+						dadosAtualizados,
+					);
 
-				const tccAtualizado = response.trabalho || response.data || response;
-				// Garantir que o id_curso esteja presente, mesmo que a API não o retorne
-				const tccAtualizadoCompleto = {
-					...tccAtualizado,
-					id_curso: tccAtualizado.id_curso || ofertaAtual.id_curso,
-					ano: tccAtualizado.ano || ofertaAtual.ano,
-					semestre: tccAtualizado.semestre || ofertaAtual.semestre,
-					fase: tccAtualizado.fase || 2,
-				};
+					const tccAtualizado =
+						response.trabalho || response.data || response;
+					// Garantir que o id_curso esteja presente, mesmo que a API não o retorne
+					const tccAtualizadoCompleto = {
+						...tccAtualizado,
+						id_curso:
+							tccAtualizado.id_curso || ofertaAtual.id_curso,
+						ano: tccAtualizado.ano || ofertaAtual.ano,
+						semestre:
+							tccAtualizado.semestre || ofertaAtual.semestre,
+						fase: tccAtualizado.fase || 2,
+					};
 
-				setTrabalhoConclusao(tccAtualizadoCompleto);
-				setBloquearAtualizacaoEtapa(
-					isEtapaFinalBloqueada(tccAtualizadoCompleto),
-				);
-				setFormData({
-					tema: tccAtualizadoCompleto.tema || "",
-					titulo: tccAtualizadoCompleto.titulo || "",
-					resumo: tccAtualizadoCompleto.resumo || "",
-					seminario_andamento:
-						tccAtualizadoCompleto.seminario_andamento || "",
-				});
+					setTrabalhoConclusao(tccAtualizadoCompleto);
+					setBloquearAtualizacaoEtapa(
+						isEtapaFinalBloqueada(tccAtualizadoCompleto),
+					);
+					setFormData({
+						tema: tccAtualizadoCompleto.tema || "",
+						titulo: tccAtualizadoCompleto.titulo || "",
+						resumo: tccAtualizadoCompleto.resumo || "",
+						seminario_andamento:
+							tccAtualizadoCompleto.seminario_andamento || "",
+					});
 
 					// Manter a etapa atual do TCC ou definir etapa apropriada para fase 2
 					// Se o projeto foi aprovado na fase 1, continuar da etapa 6 (seminário de andamento)
@@ -924,41 +930,41 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 					);
 
 					// Verificar se a resposta tem a estrutura esperada
-			const tccImportado = response.data || response;
+					const tccImportado = response.data || response;
 
-			console.log("TCC importado extraído:", tccImportado);
-			console.log("Tipo do TCC importado:", typeof tccImportado);
-			console.log(
-				"Estrutura do TCC importado:",
-				tccImportado ? Object.keys(tccImportado) : "null",
-			);
+					console.log("TCC importado extraído:", tccImportado);
+					console.log("Tipo do TCC importado:", typeof tccImportado);
+					console.log(
+						"Estrutura do TCC importado:",
+						tccImportado ? Object.keys(tccImportado) : "null",
+					);
 
-			if (!tccImportado || !tccImportado.id) {
-				console.error("Resposta inválida da API:", response);
-				throw new Error(
-					"Resposta da API não contém dados válidos do TCC importado",
-				);
-			}
+					if (!tccImportado || !tccImportado.id) {
+						console.error("Resposta inválida da API:", response);
+						throw new Error(
+							"Resposta da API não contém dados válidos do TCC importado",
+						);
+					}
 
-			// Garantir que o id_curso esteja presente, mesmo que a API não o retorne
-			const tccCompletoImportado = {
-				...tccImportado,
-				id_curso: tccImportado.id_curso || ofertaAtual.id_curso,
-				ano: tccImportado.ano || ofertaAtual.ano,
-				semestre: tccImportado.semestre || ofertaAtual.semestre,
-				fase: tccImportado.fase || ofertaAtual.fase,
-			};
+					// Garantir que o id_curso esteja presente, mesmo que a API não o retorne
+					const tccCompletoImportado = {
+						...tccImportado,
+						id_curso: tccImportado.id_curso || ofertaAtual.id_curso,
+						ano: tccImportado.ano || ofertaAtual.ano,
+						semestre: tccImportado.semestre || ofertaAtual.semestre,
+						fase: tccImportado.fase || ofertaAtual.fase,
+					};
 
-			setTrabalhoConclusao(tccCompletoImportado);
-			setBloquearAtualizacaoEtapa(
-				isEtapaFinalBloqueada(tccCompletoImportado),
-			);
-			setFormData({
-				tema: novoTcc.tema,
-				titulo: novoTcc.titulo,
-				resumo: novoTcc.resumo,
-				seminario_andamento: novoTcc.seminario_andamento || "",
-			});
+					setTrabalhoConclusao(tccCompletoImportado);
+					setBloquearAtualizacaoEtapa(
+						isEtapaFinalBloqueada(tccCompletoImportado),
+					);
+					setFormData({
+						tema: novoTcc.tema,
+						titulo: novoTcc.titulo,
+						resumo: novoTcc.resumo,
+						seminario_andamento: novoTcc.seminario_andamento || "",
+					});
 					setActiveStep(0);
 					if (onEtapaChange) {
 						onEtapaChange(0);

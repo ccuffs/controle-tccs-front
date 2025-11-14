@@ -20,8 +20,9 @@ export function useGerenciarDisponibilidadeBanca(ref) {
 	const [fase, setFase] = useState(1);
 	const [grade, setGrade] = useState(null);
 	const [disponibilidades, setDisponibilidades] = useState({});
-	const [disponibilidadesOriginais, setDisponibilidadesOriginais] =
-		useState({});
+	const [disponibilidadesOriginais, setDisponibilidadesOriginais] = useState(
+		{},
+	);
 	const [bloqueados, setBloqueados] = useState(new Map());
 	const [rows, setRows] = useState([]);
 	const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -117,10 +118,7 @@ export function useGerenciarDisponibilidadeBanca(ref) {
 
 		const handleNavbarClick = (event) => {
 			const listItemButton = event.target.closest('[role="button"]');
-			if (
-				listItemButton &&
-				listItemButton.closest(".MuiDrawer-paper")
-			) {
+			if (listItemButton && listItemButton.closest(".MuiDrawer-paper")) {
 				const alteracoes = calcularNumeroAlteracoes();
 				if (alteracoes > 0) {
 					event.preventDefault();
@@ -291,7 +289,9 @@ export function useGerenciarDisponibilidadeBanca(ref) {
 			}
 		} catch (error) {
 			console.error("Erro ao buscar grade de disponibilidade:", error);
-			setError(error.message || "Erro ao carregar grade de disponibilidade");
+			setError(
+				error.message || "Erro ao carregar grade de disponibilidade",
+			);
 			setGrade(null);
 			setBloqueados(new Map());
 		} finally {
@@ -439,4 +439,3 @@ export function useGerenciarDisponibilidadeBanca(ref) {
 		handleSincronizarESair,
 	};
 }
-

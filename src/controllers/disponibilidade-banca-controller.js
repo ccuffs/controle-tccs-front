@@ -151,7 +151,9 @@ export function gerarRowsDataGrid(grade, disponibilidades, bloqueados) {
 				acc[`data_${data}`] = {
 					data: data,
 					hora: hora,
-					disponivel: isBlocked ? false : disponibilidades[key] || false,
+					disponivel: isBlocked
+						? false
+						: disponibilidades[key] || false,
 				};
 				return acc;
 			}, {}),
@@ -213,14 +215,15 @@ export function isDataCompleta(data, grade, disponibilidades, bloqueados) {
 	if (!grade || !grade.horarios) return false;
 
 	const todosHorarios = grade.horarios.map((hora) => `${data}-${hora}`);
-	const elegiveis = todosHorarios.filter((k) => !isSlotBloqueado(bloqueados, k));
+	const elegiveis = todosHorarios.filter(
+		(k) => !isSlotBloqueado(bloqueados, k),
+	);
 	const horariosSelecionados = elegiveis.filter(
 		(key) => disponibilidades[key],
 	);
 
 	return (
-		horariosSelecionados.length === elegiveis.length &&
-		elegiveis.length > 0
+		horariosSelecionados.length === elegiveis.length && elegiveis.length > 0
 	);
 }
 
@@ -231,7 +234,9 @@ export function isDataParcial(data, grade, disponibilidades, bloqueados) {
 	if (!grade || !grade.horarios) return false;
 
 	const todosHorarios = grade.horarios.map((hora) => `${data}-${hora}`);
-	const elegiveis = todosHorarios.filter((k) => !isSlotBloqueado(bloqueados, k));
+	const elegiveis = todosHorarios.filter(
+		(k) => !isSlotBloqueado(bloqueados, k),
+	);
 	const horariosSelecionados = elegiveis.filter(
 		(key) => disponibilidades[key],
 	);
@@ -331,4 +336,3 @@ const disponibilidadeBancaController = {
 };
 
 export default disponibilidadeBancaController;
-

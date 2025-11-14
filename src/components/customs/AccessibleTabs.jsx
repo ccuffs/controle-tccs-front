@@ -1,7 +1,13 @@
 import React from "react";
 import { Box } from "@mui/material";
 
-export function AccessibleTabPanel({ children, value, index, idPrefix, ...other }) {
+export function AccessibleTabPanel({
+	children,
+	value,
+	index,
+	idPrefix,
+	...other
+}) {
 	return (
 		<div
 			role="tabpanel"
@@ -21,5 +27,3 @@ export function getA11yProps(idPrefix, index) {
 		"aria-controls": `${idPrefix}-tabpanel-${index}`,
 	};
 }
-
-

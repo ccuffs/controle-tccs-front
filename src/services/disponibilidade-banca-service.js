@@ -130,4 +130,3 @@ const disponibilidadeBancaService = {
 };
 
 export default disponibilidadeBancaService;
-

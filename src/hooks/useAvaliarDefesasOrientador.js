@@ -59,9 +59,8 @@ export function useAvaliarDefesasOrientador() {
 	async function getCursosOrientador() {
 		try {
 			const codigoDocente = usuario.codigo || usuario.id;
-			const cursosOrientador = await avaliarDefesasService.getCursosOrientador(
-				codigoDocente,
-			);
+			const cursosOrientador =
+				await avaliarDefesasService.getCursosOrientador(codigoDocente);
 			const cursosExtraidos = cursosOrientador.map(
 				(orientacao) => orientacao.curso,
 			);
@@ -89,17 +88,17 @@ export function useAvaliarDefesasOrientador() {
 				codigo_docente: codigoDocente,
 				orientador: true,
 			};
-			const orientacoesResp = await avaliarDefesasService.getOrientacoes(
-				paramsOrientacoes,
-			);
+			const orientacoesResp =
+				await avaliarDefesasService.getOrientacoes(paramsOrientacoes);
 
 			// Processar orientações
-			const orientacoesFiltradas = avaliarDefesasController.filtrarOrientacoes(
-				orientacoesResp,
-				cursoSelecionado,
-				ano,
-				semestre,
-			);
+			const orientacoesFiltradas =
+				avaliarDefesasController.filtrarOrientacoes(
+					orientacoesResp,
+					cursoSelecionado,
+					ano,
+					semestre,
+				);
 			setOrientacoes(orientacoesFiltradas);
 
 			// Buscar defesas para o período
@@ -210,13 +209,12 @@ export function useAvaliarDefesasOrientador() {
 		const prefix = `${idTcc}|`;
 
 		// Verifica se há notas registradas para este TCC
-		const temNotas =
-			avaliarDefesasController.temNotasRegistradas(
-				avaliacoesEdicao,
-				prefix,
-				fase,
-				faseCard,
-			);
+		const temNotas = avaliarDefesasController.temNotasRegistradas(
+			avaliacoesEdicao,
+			prefix,
+			fase,
+			faseCard,
+		);
 
 		if (temNotas && Object.keys(snapshot).length > 0) {
 			// Se há notas registradas e backup, restaura os valores
@@ -300,8 +298,10 @@ export function useAvaliarDefesasOrientador() {
 		try {
 			const promises = [];
 			let total = 0;
-			const idTccAlvo = avaliarDefesasController.extrairIdTcc(chaveUnicaAlvo);
-			const faseAlvo = avaliarDefesasController.extrairFase(chaveUnicaAlvo);
+			const idTccAlvo =
+				avaliarDefesasController.extrairIdTcc(chaveUnicaAlvo);
+			const faseAlvo =
+				avaliarDefesasController.extrairFase(chaveUnicaAlvo);
 
 			Object.entries(avaliacoesEdicao).forEach(([chave, valor]) => {
 				const [idTcc, membro, faseKey] = chave.split("|");
@@ -314,10 +314,14 @@ export function useAvaliarDefesasOrientador() {
 				if (numero !== null && !Number.isNaN(numero) && numero >= 0) {
 					total += 1;
 					promises.push(
-						avaliarDefesasService.salvarAvaliacaoDefesa(idTcc, membro, {
-							avaliacao: numero,
-							fase: faseKey,
-						}),
+						avaliarDefesasService.salvarAvaliacaoDefesa(
+							idTcc,
+							membro,
+							{
+								avaliacao: numero,
+								fase: faseKey,
+							},
+						),
 					);
 				}
 			});
@@ -470,4 +474,3 @@ export function useAvaliarDefesasOrientador() {
 		aprovarTcc,
 	};
 }
-

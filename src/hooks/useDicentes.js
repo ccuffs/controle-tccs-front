@@ -71,10 +71,13 @@ export function useDicentes() {
 		setOpenDicenteModal(true);
 	}, []);
 
-	const handleCursoChange = useCallback((cursoId) => {
-		const curso = dicentesController.findCursoById(cursos, cursoId);
-		setSelectedCurso(curso);
-	}, [cursos]);
+	const handleCursoChange = useCallback(
+		(cursoId) => {
+			const curso = dicentesController.findCursoById(cursos, cursoId);
+			setSelectedCurso(curso);
+		},
+		[cursos],
+	);
 
 	const handleOpenDicenteModal = useCallback(() => {
 		setIsEditing(false);
@@ -88,58 +91,67 @@ export function useDicentes() {
 		setDicenteToEdit(null);
 	}, []);
 
-	const handleCreateDicente = useCallback(async (formData) => {
-		const validation = dicentesController.validateFormData(formData, isEditing);
-
-		if (!validation.isValid) {
-			setMessageText(validation.message);
-			setMessageSeverity("error");
-			setOpenMessage(true);
-			return;
-		}
-
-		try {
-			if (isEditing && dicenteToEdit) {
-				// Atualizar dicente existente
-				const dataToSend = dicentesController.prepareDataForUpdate(formData);
-				await dicentesService.updateDicente(
-					dicenteToEdit.matricula,
-					dataToSend,
-				);
-				setMessageText("Dicente atualizado com sucesso!");
-			} else {
-				// Criar novo dicente
-				const dataToSend = dicentesController.prepareDataForCreate(formData);
-				await dicentesService.createDicente(dataToSend);
-				setMessageText("Dicente criado com sucesso!");
-			}
-
-			setMessageSeverity("success");
-			handleCloseDicenteModal();
-			await getDicentes();
-		} catch (error) {
-			console.error(
-				`Não foi possível ${isEditing ? "atualizar" : "criar"} o dicente:`,
-				error,
+	const handleCreateDicente = useCallback(
+		async (formData) => {
+			const validation = dicentesController.validateFormData(
+				formData,
+				isEditing,
 			);
 
-			// Tratar erros específicos
-			let errorMessage = `Falha ao ${isEditing ? "atualizar" : "criar"} dicente!`;
-
-			if (error.response?.data?.message) {
-				errorMessage = error.response.data.message;
-			} else if (error.response?.status === 409) {
-				errorMessage = "Este dicente já existe no sistema!";
-			} else if (error.response?.status === 400) {
-				errorMessage = "Dados inválidos. Verifique os campos preenchidos!";
+			if (!validation.isValid) {
+				setMessageText(validation.message);
+				setMessageSeverity("error");
+				setOpenMessage(true);
+				return;
 			}
 
-			setMessageText(errorMessage);
-			setMessageSeverity("error");
-		}
+			try {
+				if (isEditing && dicenteToEdit) {
+					// Atualizar dicente existente
+					const dataToSend =
+						dicentesController.prepareDataForUpdate(formData);
+					await dicentesService.updateDicente(
+						dicenteToEdit.matricula,
+						dataToSend,
+					);
+					setMessageText("Dicente atualizado com sucesso!");
+				} else {
+					// Criar novo dicente
+					const dataToSend =
+						dicentesController.prepareDataForCreate(formData);
+					await dicentesService.createDicente(dataToSend);
+					setMessageText("Dicente criado com sucesso!");
+				}
 
-		setOpenMessage(true);
-	}, [isEditing, dicenteToEdit, getDicentes, handleCloseDicenteModal]);
+				setMessageSeverity("success");
+				handleCloseDicenteModal();
+				await getDicentes();
+			} catch (error) {
+				console.error(
+					`Não foi possível ${isEditing ? "atualizar" : "criar"} o dicente:`,
+					error,
+				);
+
+				// Tratar erros específicos
+				let errorMessage = `Falha ao ${isEditing ? "atualizar" : "criar"} dicente!`;
+
+				if (error.response?.data?.message) {
+					errorMessage = error.response.data.message;
+				} else if (error.response?.status === 409) {
+					errorMessage = "Este dicente já existe no sistema!";
+				} else if (error.response?.status === 400) {
+					errorMessage =
+						"Dados inválidos. Verifique os campos preenchidos!";
+				}
+
+				setMessageText(errorMessage);
+				setMessageSeverity("error");
+			}
+
+			setOpenMessage(true);
+		},
+		[isEditing, dicenteToEdit, getDicentes, handleCloseDicenteModal],
+	);
 
 	const handleDeleteClick = useCallback(async () => {
 		if (!dicenteDelete) return;
@@ -201,4 +213,3 @@ export function useDicentes() {
 		handleClose,
 	};
 }
-

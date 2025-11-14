@@ -1,7 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import dicentesController from "../controllers/dicentes-controller.js";
 
-export function useDicenteModal({ open, isEditing, dicenteToEdit, onSubmit, onClose }) {
+export function useDicenteModal({
+	open,
+	isEditing,
+	dicenteToEdit,
+	onSubmit,
+	onClose,
+}) {
 	const [formData, setFormData] = useState({
 		matricula: "",
 		nome: "",
@@ -56,4 +62,3 @@ export function useDicenteModal({ open, isEditing, dicenteToEdit, onSubmit, onCl
 		handleClose,
 	};
 }
-

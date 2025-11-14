@@ -83,4 +83,3 @@ const dicentesController = {
 };
 
 export default dicentesController;
-

@@ -143,7 +143,9 @@ export default function Dicentes() {
 							</Box>
 						) : (
 							<Typography variant="body2" color="text.secondary">
-								{dicentesController.formatDicentesCount(dicentes.length)}
+								{dicentesController.formatDicentesCount(
+									dicentes.length,
+								)}
 							</Typography>
 						)}
 					</Box>

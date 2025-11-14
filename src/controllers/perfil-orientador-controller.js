@@ -22,10 +22,13 @@ export function prepararDadosAtualizacao(codigo, siape, sala) {
 /**
  * Valida se há mudanças nos dados
  */
-export function temMudancas(siapeAtual, siapeOriginal, salaAtual, salaOriginal) {
-	return (
-		siapeAtual !== siapeOriginal || salaAtual !== salaOriginal
-	);
+export function temMudancas(
+	siapeAtual,
+	siapeOriginal,
+	salaAtual,
+	salaOriginal,
+) {
+	return siapeAtual !== siapeOriginal || salaAtual !== salaOriginal;
 }
 
 /**
@@ -60,4 +63,3 @@ const perfilOrientadorController = {
 };
 
 export default perfilOrientadorController;
-
