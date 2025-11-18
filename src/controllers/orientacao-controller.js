@@ -539,6 +539,9 @@ export function formatarTamanhoArquivo(bytes) {
 export function obterCorStatusUpload(status) {
 	const statusMap = {
 		dicente_e_orientacao_inseridos: "success",
+		dicente_e_orientacao_inseridos_com_usuario: "success",
+		dicente_e_tcc_inseridos_com_usuario: "success",
+		dicente_inserido_com_usuario: "success",
 		orientacao_inserida: "success",
 		dicente_inserido_orientacao_ja_existe: "info",
 		orientacao_ja_existe: "warning",
@@ -556,6 +559,10 @@ export function obterCorStatusUpload(status) {
 export function obterLabelStatusUpload(status) {
 	const labelMap = {
 		dicente_e_orientacao_inseridos: "Novo dicente + orientação",
+		dicente_e_orientacao_inseridos_com_usuario:
+			"Novo dicente + usuário + orientação",
+		dicente_e_tcc_inseridos_com_usuario: "Novo dicente + usuário + TCC",
+		dicente_inserido_com_usuario: "Novo dicente + usuário criado",
 		orientacao_inserida: "Orientação criada",
 		dicente_inserido_orientacao_ja_existe:
 			"Novo dicente (orientação já existe)",
