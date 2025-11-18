@@ -57,6 +57,7 @@ export default function Orientacao({ isOrientadorView = false }) {
 		areasTcc,
 		docentesBanca,
 		docentesDisponiveis,
+		usuario,
 		// Estados de filtros
 		cursoSelecionado,
 		setCursoSelecionado,
@@ -370,10 +371,10 @@ export default function Orientacao({ isOrientadorView = false }) {
 						</Box>
 					) : todosOsFiltrosSelecionados ? (
 						<Typography variant="body2" color="text.secondary">
-							{`${dicentesFiltrados.length} dicente${
-								dicentesFiltrados.length !== 1 ? "s" : ""
+							{`${dicentes.length} dicente${
+								dicentes.length !== 1 ? "s" : ""
 							} encontrado${
-								dicentesFiltrados.length !== 1 ? "s" : ""
+								dicentes.length !== 1 ? "s" : ""
 							}`}
 						</Typography>
 					) : (
@@ -1582,7 +1583,7 @@ export default function Orientacao({ isOrientadorView = false }) {
 				>
 					<Box style={{ height: "500px" }}>
 						<DataGrid
-							rows={dicentesFiltrados}
+							rows={dicentes}
 							columns={columns}
 							pageSize={10}
 							checkboxSelection={false}

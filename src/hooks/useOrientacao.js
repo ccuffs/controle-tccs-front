@@ -856,6 +856,7 @@ export function useOrientacao(isOrientadorView = false) {
 		areasTcc,
 		docentesBanca,
 		docentesDisponiveis,
+		usuario,
 		// Estados de filtros
 		cursoSelecionado,
 		setCursoSelecionado,
