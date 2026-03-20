@@ -98,7 +98,7 @@ function Navbar() {
 
 					<ListItem disablePadding>
 						<ListItemButton onClick={handleClickDicentes}>
-							<ListItemText primary="Dicentes" />
+							<ListItemText primary="Discentes" />
 						</ListItemButton>
 					</ListItem>
 					<ListItem disablePadding>

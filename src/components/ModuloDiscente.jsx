@@ -37,7 +37,7 @@ export default function ModuloDiscente() {
 				<Tabs
 					value={tabValue}
 					onChange={handleTabChange}
-					aria-label="dicente tabs"
+					aria-label="discente tabs"
 				>
 					<Tab label="Meu TCC" {...getA11yProps("dicente", 0)} />
 					<Tab label="Meu Perfil" {...getA11yProps("dicente", 1)} />

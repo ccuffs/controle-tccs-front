@@ -35,7 +35,7 @@ export default function DicenteModal({
 			fullWidth
 		>
 			<DialogTitle id="dicente-modal-title">
-				{isEditing ? "Editar Dicente" : "Criar Novo Dicente"}
+				{isEditing ? "Editar Discente" : "Criar Novo Discente"}
 			</DialogTitle>
 			<DialogContent>
 				<Stack spacing={2} sx={{ mt: 1 }}>
@@ -80,7 +80,7 @@ export default function DicenteModal({
 					variant="contained"
 					color="primary"
 				>
-					{isEditing ? "Atualizar" : "Criar"} Dicente
+					{isEditing ? "Atualizar" : "Criar"} Discente
 				</Button>
 			</DialogActions>
 		</Dialog>

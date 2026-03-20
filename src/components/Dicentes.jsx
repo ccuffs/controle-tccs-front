@@ -100,7 +100,7 @@ export default function Dicentes() {
 			}}
 		>
 			<Typography variant="h5" component="h2">
-				Gerenciamento de Dicentes
+				Gerenciamento de Discentes
 			</Typography>
 			<FiltrosPesquisa
 				cursoSelecionado={selectedCurso ? selectedCurso.id : ""}
@@ -159,7 +159,7 @@ export default function Dicentes() {
 							startIcon={<PersonAddIcon />}
 							onClick={handleOpenDicenteModal}
 						>
-							Adicionar Dicente
+							Adicionar Discente
 						</Button>
 					</Box>
 				</PermissionContext>
@@ -197,7 +197,7 @@ export default function Dicentes() {
 					</DialogTitle>
 					<DialogContent>
 						<DialogContentText id="alert-dialog-description">
-							Deseja realmente remover este dicente?
+							Deseja realmente remover este discente?
 						</DialogContentText>
 					</DialogContent>
 					<DialogActions>

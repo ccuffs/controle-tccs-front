@@ -125,7 +125,7 @@ export default function Orientacao({ isOrientadorView = false }) {
 	// Configuração das colunas do DataGrid
 	const columns = [
 		{ field: "matricula", headerName: "Matrícula", width: 150 },
-		{ field: "nome", headerName: "Nome do Dicente", width: 350 },
+		{ field: "nome", headerName: "Nome do Discente", width: 350 },
 		{ field: "email", headerName: "Email", width: 300 },
 		{
 			field: "orientador",
@@ -371,17 +371,17 @@ export default function Orientacao({ isOrientadorView = false }) {
 						</Box>
 					) : todosOsFiltrosSelecionados ? (
 						<Typography variant="body2" color="text.secondary">
-							{`${dicentes.length} dicente${
-								dicentes.length !== 1 ? "s" : ""
-							} encontrado${
-								dicentes.length !== 1 ? "s" : ""
-							}`}
+						{`${dicentes.length} discente${
+							dicentes.length !== 1 ? "s" : ""
+						} encontrado${
+							dicentes.length !== 1 ? "s" : ""
+						}`}
 						</Typography>
 					) : (
 						<Typography variant="body2" color="text.secondary">
 							{isOrientadorView
 								? "Selecione curso, ano e semestre para visualizar seus orientandos"
-								: "Selecione todos os filtros para visualizar dicentes"}
+								: "Selecione todos os filtros para visualizar discentes"}
 						</Typography>
 					)}
 				</Box>
@@ -431,10 +431,10 @@ export default function Orientacao({ isOrientadorView = false }) {
 									color="text.secondary"
 								>
 									Selecione um arquivo PDF de lista de
-									presença para importar dicentes
-									automaticamente. O arquivo deve conter dados
-									no formato: NOME seguido da MATRÍCULA. Os
-									dicentes serão vinculados ao curso,
+								presença para importar discentes
+								automaticamente. O arquivo deve conter dados
+								no formato: NOME seguido da MATRÍCULA. Os
+								discentes serão vinculados ao curso,
 									ano/semestre e fase selecionados abaixo.
 								</Typography>
 
@@ -673,7 +673,7 @@ export default function Orientacao({ isOrientadorView = false }) {
 									sx={{ p: 2, bgcolor: "background.default" }}
 								>
 									<Typography variant="h6" gutterBottom>
-										Informações do Dicente
+										Informações do Discente
 									</Typography>
 									<Grid container spacing={2}>
 										<Grid item xs={12} md={4}>
