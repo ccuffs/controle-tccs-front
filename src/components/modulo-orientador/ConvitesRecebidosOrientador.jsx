@@ -126,18 +126,30 @@ export default function ConvitesRecebidosOrientador() {
 						padding: "4px 0",
 					}}
 				>
-					<Chip
-						label={params.value}
-						size="small"
-						color={
-							params.value === "Orientação"
-								? "secondary"
-								: params.value === "Projeto"
-									? "info"
-									: "primary"
-						}
-						variant="outlined"
-					/>
+					{params.row.orientacao === false ? (
+						<Chip
+							label="Banca"
+							size="small"
+							sx={{
+								backgroundColor: "warning.main",
+								color: "warning.contrastText",
+								fontWeight: "bold",
+							}}
+						/>
+					) : (
+						<Chip
+							label={params.value}
+							size="small"
+							color={
+								params.value === "Orientação"
+									? "secondary"
+									: params.value === "Projeto"
+										? "info"
+										: "primary"
+							}
+							variant="outlined"
+						/>
+					)}
 				</div>
 			),
 		},

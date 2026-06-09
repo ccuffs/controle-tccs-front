@@ -81,9 +81,11 @@ export function aplicarFiltros(
 }
 
 /**
- * Mapeia fase para texto descritivo
+ * Mapeia fase para texto descritivo.
+ * Convites com orientacao === false são convites para participação em banca.
  */
-export function obterDescricaoFase(fase) {
+export function obterDescricaoFase(fase, orientacao) {
+	if (orientacao === false) return "Banca";
 	switch (fase) {
 		case 0:
 			return "Orientação";
@@ -119,7 +121,7 @@ export function prepararConvitesParaGrid(convites) {
 		dataEnvio: formatarData(convite?.data_envio) || "N/A",
 		dataFeedback: formatarData(convite?.data_feedback),
 		foiRespondido: !!convite?.data_feedback,
-		faseDescricao: obterDescricaoFase(convite?.fase),
+		faseDescricao: obterDescricaoFase(convite?.fase, convite?.orientacao),
 	}));
 }
 
