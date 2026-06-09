@@ -1,4 +1,4 @@
-import React, { forwardRef } from "react";
+import React, { forwardRef, useState, useEffect } from "react";
 import {
 	Box,
 	Typography,
@@ -11,7 +11,11 @@ import {
 	DialogTitle,
 	DialogContent,
 	DialogActions,
+	IconButton,
+	Tooltip,
 } from "@mui/material";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 
 import CustomDataGrid from "../customs/CustomDataGrid";
 import FiltrosPesquisa from "../utils/FiltrosPesquisa";
@@ -50,6 +54,24 @@ const GerenciarDisponibilidadeBanca = forwardRef((props, ref) => {
 		handleSincronizarESair,
 	} = useGerenciarDisponibilidadeBanca(ref);
 
+	const DATAS_POR_PAGINA = 12;
+	const [paginaDatas, setPaginaDatas] = useState(0);
+
+	useEffect(() => {
+		setPaginaDatas(0);
+	}, [grade]);
+
+	const totalPaginas = grade?.datas
+		? Math.ceil(grade.datas.length / DATAS_POR_PAGINA)
+		: 0;
+
+	const datasVisiveis = grade?.datas
+		? grade.datas.slice(
+				paginaDatas * DATAS_POR_PAGINA,
+				(paginaDatas + 1) * DATAS_POR_PAGINA,
+			)
+		: [];
+
 	// Gerar colunas dinamicamente baseadas nas datas da grade
 	const generateColumns = () => {
 		if (!grade || !grade.datas) return [];
@@ -58,7 +80,7 @@ const GerenciarDisponibilidadeBanca = forwardRef((props, ref) => {
 			{
 				field: "horario",
 				headerName: "Horário",
-				width: 120,
+				width: 87,
 				sortable: false,
 				headerAlign: "center",
 				align: "center",
@@ -66,10 +88,10 @@ const GerenciarDisponibilidadeBanca = forwardRef((props, ref) => {
 			},
 		];
 
-		const dataColumns = grade.datas.map((data) => ({
+		const dataColumns = datasVisiveis.map((data) => ({
 			field: `data_${data}`,
 			headerName: disponibilidadeBancaController.formatarData(data),
-			width: 165,
+			width: 107,
 			sortable: false,
 			headerClassName: disponibilidadeBancaController.isDataCompleta(
 				data,
@@ -237,14 +259,61 @@ const GerenciarDisponibilidadeBanca = forwardRef((props, ref) => {
 				</Button>
 			</Stack>
 
-			{grade && rows.length > 0 && (
-				<CustomDataGrid
+		{grade && rows.length > 0 && (
+			<Box>
+				{totalPaginas > 1 && (
+					<Stack
+						direction="row"
+						alignItems="center"
+						justifyContent="flex-end"
+						spacing={1}
+						sx={{ mb: 1 }}
+					>
+						<Tooltip title="Datas anteriores">
+							<span>
+								<IconButton
+									size="small"
+									onClick={() =>
+										setPaginaDatas((p) => p - 1)
+									}
+									disabled={paginaDatas === 0}
+								>
+									<ChevronLeftIcon />
+								</IconButton>
+							</span>
+						</Tooltip>
+						<Typography variant="body2" color="text.secondary">
+							Datas {paginaDatas * DATAS_POR_PAGINA + 1}–
+							{Math.min(
+								(paginaDatas + 1) * DATAS_POR_PAGINA,
+								grade.datas.length,
+							)}{" "}
+							de {grade.datas.length}
+						</Typography>
+						<Tooltip title="Próximas datas">
+							<span>
+								<IconButton
+									size="small"
+									onClick={() =>
+										setPaginaDatas((p) => p + 1)
+									}
+									disabled={
+										paginaDatas >= totalPaginas - 1
+									}
+								>
+									<ChevronRightIcon />
+								</IconButton>
+							</span>
+						</Tooltip>
+					</Stack>
+				)}
+			<CustomDataGrid
 					rows={rows}
 					columns={generateColumns()}
-					pageSize={10}
 					checkboxSelection={false}
 					rowSpanning={false}
 					disableSelectionOnClick
+					hideFooter
 					getRowId={(row) => row.id}
 					rowHeight={56}
 					sx={{
@@ -300,12 +369,12 @@ const GerenciarDisponibilidadeBanca = forwardRef((props, ref) => {
 						"& .header-horario": {
 							backgroundColor: "grey.100",
 							fontWeight: "bold",
-							borderRight: "1px solid #e0e0e0",
+							borderRight: "2px solid #e0e0e0",
 						},
 						"& .MuiDataGrid-cell[data-field='horario']": {
 							backgroundColor: "grey.100",
 							fontWeight: "bold",
-							borderRight: "1px solid #e0e0e0",
+							borderRight: "2px solid #e0e0e0",
 							display: "flex",
 							alignItems: "center",
 							justifyContent: "center",
@@ -328,7 +397,54 @@ const GerenciarDisponibilidadeBanca = forwardRef((props, ref) => {
 						},
 					}}
 				/>
-			)}
+				{totalPaginas > 1 && (
+					<Stack
+						direction="row"
+						alignItems="center"
+						justifyContent="flex-end"
+						spacing={1}
+						sx={{ mt: 1 }}
+					>
+						<Tooltip title="Datas anteriores">
+							<span>
+								<IconButton
+									size="small"
+									onClick={() =>
+										setPaginaDatas((p) => p - 1)
+									}
+									disabled={paginaDatas === 0}
+								>
+									<ChevronLeftIcon />
+								</IconButton>
+							</span>
+						</Tooltip>
+						<Typography variant="body2" color="text.secondary">
+							Datas {paginaDatas * DATAS_POR_PAGINA + 1}–
+							{Math.min(
+								(paginaDatas + 1) * DATAS_POR_PAGINA,
+								grade.datas.length,
+							)}{" "}
+							de {grade.datas.length}
+						</Typography>
+						<Tooltip title="Próximas datas">
+							<span>
+								<IconButton
+									size="small"
+									onClick={() =>
+										setPaginaDatas((p) => p + 1)
+									}
+									disabled={
+										paginaDatas >= totalPaginas - 1
+									}
+								>
+									<ChevronRightIcon />
+								</IconButton>
+							</span>
+						</Tooltip>
+					</Stack>
+				)}
+			</Box>
+		)}
 
 			{cursoSelecionado && !grade && !loading && (
 				<Alert severity="info" sx={{ mt: 2 }}>
