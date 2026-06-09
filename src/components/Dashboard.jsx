@@ -11,6 +11,8 @@ import GraficoConvitesBanca from "./dashboard/GraficoConvitesBanca";
 import GraficoConvitesPeriodo from "./dashboard/GraficoConvitesPeriodo";
 import GraficoOrientandosPorDocente from "./dashboard/GraficoOrientandosPorDocente";
 import GraficoDefesasPorDocente from "./dashboard/GraficoDefesasPorDocente";
+import ListaEstudantesSemConviteBanca from "./dashboard/ListaEstudantesSemConviteBanca";
+import ListaDocentesSemDisponibilidadeBanca from "./dashboard/ListaDocentesSemDisponibilidadeBanca";
 
 export default function Dashboard({ forceOrientador = false }) {
 	const {
@@ -37,6 +39,8 @@ export default function Dashboard({ forceOrientador = false }) {
 		convitesBancaStatus,
 		dadosDefesasDocentes,
 		defesasAgendadas,
+		estudantesSemConviteBanca,
+		docentesSemDisponibilidadeBanca,
 		alturaDocentes,
 		alturaDefesas,
 		faseLabel,
@@ -178,10 +182,30 @@ export default function Dashboard({ forceOrientador = false }) {
 				</Grid>
 			)}
 
-			{/* Gráfico 4: Linha - Convites enviados no período (por tipo) e Donuts de convites */}
-			{(isAdmin ||
-				isProfessor ||
-				(isOrientador && !isOrientadorView)) && (
+		{/* Cards: Estudantes sem convite de banca + Docentes sem disponibilidade */}
+		{(isAdmin ||
+			isProfessor ||
+			isOrientador) && (
+			<Grid container spacing={2} sx={{ mt: 3 }}>
+				<Grid item xs={12} md={6}>
+					<ListaEstudantesSemConviteBanca
+						estudantes={estudantesSemConviteBanca}
+						faseLabel={faseLabel}
+					/>
+				</Grid>
+				<Grid item xs={12} md={6}>
+					<ListaDocentesSemDisponibilidadeBanca
+						docentes={docentesSemDisponibilidadeBanca}
+						faseLabel={faseLabel}
+					/>
+				</Grid>
+			</Grid>
+		)}
+
+		{/* Gráfico 4: Linha - Convites enviados no período (por tipo) e Donuts de convites */}
+		{(isAdmin ||
+			isProfessor ||
+			(isOrientador && !isOrientadorView)) && (
 				<Grid container spacing={2} sx={{ mt: 3 }}>
 					<Grid item xs={12} md={8}>
 						<GraficoConvitesPeriodo

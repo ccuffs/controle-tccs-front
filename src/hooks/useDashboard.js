@@ -68,6 +68,8 @@ export function useDashboard({ forceOrientador = false }) {
 	});
 	const [dadosDefesasDocentes, setDadosDefesasDocentes] = useState([]);
 	const [defesasAgendadas, setDefesasAgendadas] = useState([]);
+	const [estudantesSemConviteBanca, setEstudantesSemConviteBanca] = useState([]);
+	const [docentesSemDisponibilidadeBanca, setDocentesSemDisponibilidadeBanca] = useState([]);
 
 	// Calcular alturas dinâmicas
 	const alturaDocentes = useMemo(() => {
@@ -190,22 +192,26 @@ export function useDashboard({ forceOrientador = false }) {
 						params.set("id_curso", String(cursosUsuario[0].id));
 				}
 
-				// Buscar todos os dados em paralelo
-				const [
-					orientadores,
-					etapas,
-					defesas,
-					convites,
-					convitesOrientacao,
-					convitesBanca,
-				] = await Promise.allSettled([
-					dashboardService.getOrientadoresDefinidos(params),
-					dashboardService.getTccPorEtapa(params),
-					dashboardService.getDefesasAgendadas(params),
-					dashboardService.getConvitesPorPeriodo(params),
-					dashboardService.getConvitesOrientacaoStatus(params),
-					dashboardService.getConvitesBancaStatus(params),
-				]);
+			// Buscar todos os dados em paralelo
+			const [
+				orientadores,
+				etapas,
+				defesas,
+				convites,
+				convitesOrientacao,
+				convitesBanca,
+				semConviteBanca,
+				semDisponibilidadeBanca,
+			] = await Promise.allSettled([
+				dashboardService.getOrientadoresDefinidos(params),
+				dashboardService.getTccPorEtapa(params),
+				dashboardService.getDefesasAgendadas(params),
+				dashboardService.getConvitesPorPeriodo(params),
+				dashboardService.getConvitesOrientacaoStatus(params),
+				dashboardService.getConvitesBancaStatus(params),
+				dashboardService.getEstudantesSemConviteBanca(params),
+				dashboardService.getDocentesSemDisponibilidadeBanca(params),
+			]);
 
 				if (!ativo) return;
 
@@ -242,15 +248,31 @@ export function useDashboard({ forceOrientador = false }) {
 					);
 				}
 
-				if (convitesBanca.status === "fulfilled") {
-					setConvitesBancaStatus(
-						dashboardController.prepareConvitesBancaStatus(
-							convitesBanca.value,
-						),
-					);
-				}
+			if (convitesBanca.status === "fulfilled") {
+				setConvitesBancaStatus(
+					dashboardController.prepareConvitesBancaStatus(
+						convitesBanca.value,
+					),
+				);
+			}
 
-				// Buscar dados por docente apenas para Admin/Professor
+			if (semConviteBanca.status === "fulfilled") {
+				setEstudantesSemConviteBanca(
+					dashboardController.prepareEstudantesSemConviteBanca(
+						semConviteBanca.value,
+					),
+				);
+			}
+
+			if (semDisponibilidadeBanca.status === "fulfilled") {
+				setDocentesSemDisponibilidadeBanca(
+					dashboardController.prepareDocentesSemDisponibilidadeBanca(
+						semDisponibilidadeBanca.value,
+					),
+				);
+			}
+
+			// Buscar dados por docente apenas para Admin/Professor
 				if (isAdmin || isProfessor) {
 					const [orientandos, defesasDocente] =
 						await Promise.allSettled([
@@ -335,6 +357,8 @@ export function useDashboard({ forceOrientador = false }) {
 		convitesBancaStatus,
 		dadosDefesasDocentes,
 		defesasAgendadas,
+		estudantesSemConviteBanca,
+		docentesSemDisponibilidadeBanca,
 
 		// Calculados
 		alturaDocentes,

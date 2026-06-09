@@ -158,6 +158,20 @@ export function buildQueryParams(filtros) {
 	return params;
 }
 
+/**
+ * Prepara os dados de estudantes sem convite de banca
+ */
+export function prepareEstudantesSemConviteBanca(response) {
+	return response?.itens || [];
+}
+
+/**
+ * Prepara os dados de docentes sem disponibilidade de banca
+ */
+export function prepareDocentesSemDisponibilidadeBanca(response) {
+	return response?.itens || [];
+}
+
 // Exportação padrão
 const dashboardController = {
 	prepareOrientadoresDefinidosData,
@@ -173,6 +187,8 @@ const dashboardController = {
 	generateTicksConvites,
 	calculateHeight,
 	buildQueryParams,
+	prepareEstudantesSemConviteBanca,
+	prepareDocentesSemDisponibilidadeBanca,
 };
 
 export default dashboardController;

@@ -158,6 +158,37 @@ export async function getOrientacoesPorDocente(codigoDocente) {
 	}
 }
 
+// GET - Buscar estudantes sem convite de banca
+export async function getEstudantesSemConviteBanca(params) {
+	try {
+		const queryString = new URLSearchParams(params).toString();
+		const response = await axiosInstance.get(
+			`/dashboard/estudantes-sem-convite-banca?${queryString}`,
+		);
+		return response;
+	} catch (error) {
+		console.error("Erro ao buscar estudantes sem convite de banca:", error);
+		throw error;
+	}
+}
+
+// GET - Buscar docentes sem disponibilidade de banca
+export async function getDocentesSemDisponibilidadeBanca(params) {
+	try {
+		const queryString = new URLSearchParams(params).toString();
+		const response = await axiosInstance.get(
+			`/dashboard/docentes-sem-disponibilidade-banca?${queryString}`,
+		);
+		return response;
+	} catch (error) {
+		console.error(
+			"Erro ao buscar docentes sem disponibilidade de banca:",
+			error,
+		);
+		throw error;
+	}
+}
+
 // Exportação padrão
 const dashboardService = {
 	getAnoSemestreAtual,
@@ -171,6 +202,8 @@ const dashboardService = {
 	getOrientandosPorDocente,
 	getDefesasAceitasPorDocente,
 	getOrientacoesPorDocente,
+	getEstudantesSemConviteBanca,
+	getDocentesSemDisponibilidadeBanca,
 };
 
 export default dashboardService;
