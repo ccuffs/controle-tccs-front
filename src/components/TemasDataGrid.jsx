@@ -142,7 +142,7 @@ export default function TemasDataGrid({
 				<PermissionContext
 					grupos={[
 						Permissoes.GRUPOS.ADMIN,
-						Permissoes.GRUPOS.PROFESSOR,
+						Permissoes.GRUPOS.PROFESSOR_CCR,
 						Permissoes.GRUPOS.ORIENTADOR,
 					]}
 					showError={false}
@@ -185,11 +185,11 @@ export default function TemasDataGrid({
 		ativo: !isDiscenteView,
 		actions:
 			!isDiscenteView &&
-			hasPermission([
-				Permissoes.GRUPOS.ADMIN,
-				Permissoes.GRUPOS.PROFESSOR,
-				Permissoes.GRUPOS.ORIENTADOR,
-			]),
+		hasPermission([
+			Permissoes.GRUPOS.ADMIN,
+			Permissoes.GRUPOS.PROFESSOR_CCR,
+			Permissoes.GRUPOS.ORIENTADOR,
+		]),
 	};
 
 	return (

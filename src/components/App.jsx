@@ -35,13 +35,16 @@ function ConditionalRoute() {
 		(grupo) => grupo.id === Permissoes.GRUPOS.ADMIN,
 	);
 	const isProfessor = gruposUsuario.some(
-		(grupo) => grupo.id === Permissoes.GRUPOS.PROFESSOR,
+		(grupo) => grupo.id === Permissoes.GRUPOS.PROFESSOR_CCR,
 	);
 	const isOrientador = gruposUsuario.some(
 		(grupo) => grupo.id === Permissoes.GRUPOS.ORIENTADOR,
 	);
 	const isEstudante = gruposUsuario.some(
 		(grupo) => grupo.id === Permissoes.GRUPOS.ESTUDANTE,
+	);
+	const isBanca = gruposUsuario.some(
+		(grupo) => grupo.id === Permissoes.GRUPOS.BANCA,
 	);
 
 	// Lógica de roteamento baseada nas regras especificadas
@@ -50,6 +53,8 @@ function ConditionalRoute() {
 	} else if (isProfessor) {
 		return <Dashboard />;
 	} else if (isOrientador) {
+		return <ModuloOrientador />;
+	} else if (isBanca) {
 		return <ModuloOrientador />;
 	} else if (isEstudante) {
 		return <ModuloDiscente />;

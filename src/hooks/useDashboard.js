@@ -19,7 +19,7 @@ export function useDashboard({ forceOrientador = false }) {
 	const isProfessor = useMemo(
 		() =>
 			!forceOrientador &&
-			gruposUsuario?.some((g) => g.id === Permissoes.GRUPOS.PROFESSOR),
+			gruposUsuario?.some((g) => g.id === Permissoes.GRUPOS.PROFESSOR_CCR),
 		[gruposUsuario, forceOrientador],
 	);
 

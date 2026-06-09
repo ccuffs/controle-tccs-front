@@ -28,7 +28,7 @@ export const createActionColumns = (hasPermission, actions) => {
 	}
 
 	// Coluna de ações para PROFESSOR
-	if (hasPermission([Permissoes.GRUPOS.PROFESSOR])) {
+	if (hasPermission([Permissoes.GRUPOS.PROFESSOR_CCR])) {
 		columns.push({
 			field: "actionsProfessor",
 			headerName: "Ações Professor",

@@ -11,7 +11,7 @@ export function useOrientacao(isOrientadorView = false) {
 	// Verificações de permissão
 	const isProfessor = permissoesService.verificarPermissaoPorGrupos(
 		gruposUsuario,
-		[Permissoes.GRUPOS.PROFESSOR],
+		[Permissoes.GRUPOS.PROFESSOR_CCR],
 	);
 
 	const isAdmin = permissoesService.verificarPermissaoPorGrupos(

@@ -2,9 +2,11 @@ const Permissoes = {};
 
 Permissoes.GRUPOS = {
 	ADMIN: 1,
-	PROFESSOR: 2,
+	PROFESSOR_CCR: 2,
 	ORIENTADOR: 3,
 	ESTUDANTE: 4,
+	BANCA: 5,
+	PROFESSOR: 7,
 };
 
 Permissoes.CURSO = {
@@ -93,6 +95,38 @@ Permissoes.DISPONIBILIDADE_BANCA = {
 	CRIAR: 48,
 	EDITAR: 49,
 	DELETAR: 50,
+};
+
+Permissoes.HORARIOS = {
+	VISUALIZAR: 51,
+	VISUALIZAR_TODOS: 52,
+	CRIAR: 53,
+	EDITAR: 54,
+	DELETAR: 55,
+};
+
+Permissoes.DOCENTES = {
+	VISUALIZAR: 56,
+	VISUALIZAR_TODOS: 57,
+	CRIAR: 58,
+	EDITAR: 59,
+	DELETAR: 60,
+};
+
+Permissoes.OFERTAS_CURSO = {
+	VISUALIZAR: 61,
+	VISUALIZAR_TODAS: 62,
+	CRIAR: 63,
+	EDITAR: 64,
+	DELETAR: 65,
+};
+
+Permissoes.CCR = {
+	VISUALIZAR: 66,
+	VISUALIZAR_TODOS: 67,
+	CRIAR: 68,
+	EDITAR: 69,
+	DELETAR: 70,
 };
 
 export { Permissoes };

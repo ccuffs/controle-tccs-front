@@ -34,6 +34,13 @@ function Navbar() {
 		(grupo) => grupo.id === Permissoes.GRUPOS.ESTUDANTE,
 	);
 
+	const isOrientador = gruposUsuario.some(
+		(grupo) => grupo.id === Permissoes.GRUPOS.ORIENTADOR,
+	);
+	const isBancaOnly =
+		gruposUsuario.some((grupo) => grupo.id === Permissoes.GRUPOS.BANCA) &&
+		!isOrientador;
+
 	const {
 		mobileOpen,
 		isMobile,
@@ -63,7 +70,7 @@ function Navbar() {
 				<PermissionContext
 					grupos={[
 						Permissoes.GRUPOS.ADMIN,
-						Permissoes.GRUPOS.PROFESSOR,
+						Permissoes.GRUPOS.PROFESSOR_CCR,
 					]}
 					showError={false}
 				>
@@ -86,7 +93,7 @@ function Navbar() {
 				<PermissionContext
 					grupos={[
 						Permissoes.GRUPOS.ADMIN,
-						Permissoes.GRUPOS.PROFESSOR,
+						Permissoes.GRUPOS.PROFESSOR_CCR,
 					]}
 					showError={false}
 				>
@@ -112,16 +119,23 @@ function Navbar() {
 						</ListItemButton>
 					</ListItem>
 				</PermissionContext>
-				<PermissionContext
-					grupos={[Permissoes.GRUPOS.ORIENTADOR]}
-					showError={false}
-				>
-					<ListItem disablePadding>
-						<ListItemButton onClick={handleClickModuloOrientador}>
-							<ListItemText primary="Módulo do Orientador" />
-						</ListItemButton>
-					</ListItem>
-				</PermissionContext>
+			<PermissionContext
+				grupos={[Permissoes.GRUPOS.ORIENTADOR]}
+				showError={false}
+			>
+				<ListItem disablePadding>
+					<ListItemButton onClick={handleClickModuloOrientador}>
+						<ListItemText primary="Módulo do Orientador" />
+					</ListItemButton>
+				</ListItem>
+			</PermissionContext>
+			{isBancaOnly && (
+				<ListItem disablePadding>
+					<ListItemButton onClick={handleClickModuloOrientador}>
+						<ListItemText primary="Módulo de Avaliação" />
+					</ListItemButton>
+				</ListItem>
+			)}
 				<PermissionContext
 					grupos={[Permissoes.GRUPOS.ESTUDANTE]}
 					showError={false}

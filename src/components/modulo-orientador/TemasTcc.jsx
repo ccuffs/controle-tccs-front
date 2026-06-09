@@ -99,10 +99,10 @@ export default function TemasTcc({ isOrientadorView = false }) {
 						grupos={
 							isOrientadorView
 								? [Permissoes.GRUPOS.ORIENTADOR]
-								: [
-										Permissoes.GRUPOS.ADMIN,
-										Permissoes.GRUPOS.PROFESSOR,
-									]
+							: [
+									Permissoes.GRUPOS.ADMIN,
+									Permissoes.GRUPOS.PROFESSOR_CCR,
+								]
 						}
 						showError={false}
 					>

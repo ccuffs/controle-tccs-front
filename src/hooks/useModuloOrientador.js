@@ -1,8 +1,16 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 
-export function useModuloOrientador() {
+const BANCA_DISABLED_TABS = new Set([0, 1, 2, 7]);
+
+export function useModuloOrientador({ isBanca = false } = {}) {
 	const [tabValue, setTabValue] = useState(0);
 	const gerenciarDisponibilidadeRef = useRef(null);
+
+	useEffect(() => {
+		if (isBanca && BANCA_DISABLED_TABS.has(tabValue)) {
+			setTabValue(3);
+		}
+	}, [isBanca]);
 
 	const handleTabChange = useCallback(
 		(event, newValue) => {

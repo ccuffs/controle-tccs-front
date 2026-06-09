@@ -11,15 +11,23 @@ import EmitirDeclaracoes from "./modulo-orientador/EmitirDeclaracoes";
 import PerfilOrientador from "./modulo-orientador/PerfilOrientador";
 import { useModuloOrientador } from "../hooks/useModuloOrientador.js";
 import { AccessibleTabPanel, getA11yProps } from "./customs/AccessibleTabs.jsx";
+import { useAuth } from "../contexts/AuthContext";
+import { Permissoes } from "../enums/permissoes";
 
 export default function ModuloOrientador() {
+	const { gruposUsuario } = useAuth();
+
+	const isBanca =
+		gruposUsuario?.some((g) => g.id === Permissoes.GRUPOS.BANCA) &&
+		!gruposUsuario?.some((g) => g.id === Permissoes.GRUPOS.ORIENTADOR);
+
 	const { tabValue, gerenciarDisponibilidadeRef, handleTabChange } =
-		useModuloOrientador();
+		useModuloOrientador({ isBanca });
 
 	return (
 		<Box sx={{ width: 1400 }}>
 			<Typography variant="h4" component="h1" gutterBottom>
-				Módulo do Orientador
+				{isBanca ? "Módulo da Banca" : "Módulo do Orientador"}
 			</Typography>
 
 			<Box sx={{ borderBottom: 1, borderColor: "divider" }}>
@@ -28,13 +36,19 @@ export default function ModuloOrientador() {
 					onChange={handleTabChange}
 					aria-label="orientador tabs"
 				>
-					<Tab label="Dashboard" {...getA11yProps("orientador", 0)} />
+					<Tab
+						label="Dashboard"
+						disabled={isBanca}
+						{...getA11yProps("orientador", 0)}
+					/>
 					<Tab
 						label="Trabalhos Orientados"
+						disabled={isBanca}
 						{...getA11yProps("orientador", 1)}
 					/>
 					<Tab
 						label="Gerenciar Temas TCC"
+						disabled={isBanca}
 						{...getA11yProps("orientador", 2)}
 					/>
 					<Tab
@@ -55,6 +69,7 @@ export default function ModuloOrientador() {
 					/>
 					<Tab
 						label="Meu Perfil"
+						disabled={isBanca}
 						{...getA11yProps("orientador", 7)}
 					/>
 				</Tabs>
