@@ -17,6 +17,16 @@ export function formatarData(data) {
 }
 
 /**
+ * Retorna o nome abreviado do dia da semana para uma data YYYY-MM-DD
+ */
+export function formatarDiaSemana(data) {
+	const dias = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+	const [ano, mes, dia] = data.split("-").map(Number);
+	const dt = new Date(ano, mes - 1, dia);
+	return dias[dt.getDay()];
+}
+
+/**
  * Formata hora removendo os segundos
  */
 export function formatarHora(hora) {
@@ -317,6 +327,7 @@ export function prepararDisponibilidadesParaEnvio(
 const disponibilidadeBancaController = {
 	getAnoSemestreAtual,
 	formatarData,
+	formatarDiaSemana,
 	formatarHora,
 	extrairCursos,
 	toDateKey,

@@ -54,7 +54,7 @@ const GerenciarDisponibilidadeBanca = forwardRef((props, ref) => {
 		handleSincronizarESair,
 	} = useGerenciarDisponibilidadeBanca(ref);
 
-	const DATAS_POR_PAGINA = 12;
+	const DATAS_POR_PAGINA = 14;
 	const [paginaDatas, setPaginaDatas] = useState(0);
 
 	useEffect(() => {
@@ -80,7 +80,7 @@ const GerenciarDisponibilidadeBanca = forwardRef((props, ref) => {
 			{
 				field: "horario",
 				headerName: "Horário",
-				width: 87,
+				width: 77,
 				sortable: false,
 				headerAlign: "center",
 				align: "center",
@@ -88,12 +88,19 @@ const GerenciarDisponibilidadeBanca = forwardRef((props, ref) => {
 			},
 		];
 
-		const dataColumns = datasVisiveis.map((data) => ({
+		const dataColumns = datasVisiveis.map((data) => {
+			const [ano, mes, dia] = data.split("-").map(Number);
+			const diaSemana = new Date(ano, mes - 1, dia).getDay();
+			const isFimDeSemana = diaSemana === 0 || diaSemana === 6;
+
+			return {
 			field: `data_${data}`,
 			headerName: disponibilidadeBancaController.formatarData(data),
-			width: 107,
+			...(isFimDeSemana ? { flex: 1 } : { width: 95 }),
 			sortable: false,
-			headerClassName: disponibilidadeBancaController.isDataCompleta(
+			headerClassName: isFimDeSemana
+				? "header-fds"
+				: disponibilidadeBancaController.isDataCompleta(
 				data,
 				grade,
 				disponibilidades,
@@ -109,26 +116,39 @@ const GerenciarDisponibilidadeBanca = forwardRef((props, ref) => {
 					? "header-parcial"
 					: "header-padrao",
 			headerAlign: "center",
-			renderHeader: (params) => (
-				<span
-					style={{
-						width: "100%",
-						height: "100%",
-						display: "flex",
-						alignItems: "center",
-						justifyContent: "center",
-						cursor: "pointer",
-						userSelect: "none",
-					}}
-					onClick={(e) => {
-						e.stopPropagation();
-						handleHeaderClick(data);
-					}}
-				>
+		renderHeader: (params) => (
+			<span
+				style={{
+					width: "100%",
+					height: "100%",
+					display: "flex",
+					flexDirection: "column",
+					alignItems: "center",
+					justifyContent: "center",
+					cursor: isFimDeSemana ? "default" : "pointer",
+					userSelect: "none",
+					lineHeight: 1.3,
+				}}
+				onClick={
+					isFimDeSemana
+						? undefined
+						: (e) => {
+								e.stopPropagation();
+								handleHeaderClick(data);
+							}
+				}
+			>
+				<span style={{ fontSize: isFimDeSemana ? "0.55rem" : "0.66rem", opacity: 0.85 }}>
+					{disponibilidadeBancaController.formatarDiaSemana(data)}
+				</span>
+				<span style={{ fontWeight: "bold", fontSize: isFimDeSemana ? "0.66rem" : "0.77rem" }}>
 					{disponibilidadeBancaController.formatarData(data)}
 				</span>
-			),
+			</span>
+		),
 			renderCell: (params) => {
+				if (isFimDeSemana) return null;
+
 				const cellData = params.value;
 				if (!cellData) return null;
 				const key = `${cellData.data}-${cellData.hora}`;
@@ -179,7 +199,8 @@ const GerenciarDisponibilidadeBanca = forwardRef((props, ref) => {
 					</Box>
 				);
 			},
-		}));
+		};
+		});
 
 		return [...baseColumns, ...dataColumns];
 	};
@@ -307,18 +328,25 @@ const GerenciarDisponibilidadeBanca = forwardRef((props, ref) => {
 						</Tooltip>
 					</Stack>
 				)}
-			<CustomDataGrid
-					rows={rows}
-					columns={generateColumns()}
-					checkboxSelection={false}
-					rowSpanning={false}
-					disableSelectionOnClick
-					hideFooter
-					getRowId={(row) => row.id}
-					rowHeight={56}
+		<CustomDataGrid
+				rows={rows}
+				columns={generateColumns()}
+				checkboxSelection={false}
+				rowSpanning={false}
+				disableSelectionOnClick
+				hideFooter
+				getRowId={(row) => row.id}
+				columnHeaderHeight={56}
+				rowHeight={56}
 					sx={{
-						"& .header-padrao": {
-							backgroundColor: "info.light",
+					"& .header-fds": {
+						backgroundColor: "grey.300",
+						color: "text.disabled",
+						fontWeight: "bold",
+						cursor: "default",
+					},
+					"& .header-padrao": {
+						backgroundColor: "info.light",
 							color: "primary.contrastText",
 							fontWeight: "bold",
 							cursor: "pointer",
