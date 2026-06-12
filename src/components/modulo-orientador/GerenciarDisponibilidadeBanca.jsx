@@ -159,6 +159,19 @@ const GerenciarDisponibilidadeBanca = forwardRef((props, ref) => {
 					);
 
 				if (isBlocked) {
+					const bloqueioInfo =
+						disponibilidadeBancaController.tipoBloqueio(
+							bloqueados,
+							key,
+						);
+					const nomeDiscente =
+						bloqueioInfo?.nomeDiscente || null;
+					const label = nomeDiscente
+						? `Banca ${nomeDiscente}`
+						: bloqueioInfo?.tipo === "indisp"
+							? "Horário Indisponível"
+							: "Banca de TCC";
+
 					return (
 						<Box
 							sx={{
@@ -171,12 +184,7 @@ const GerenciarDisponibilidadeBanca = forwardRef((props, ref) => {
 								variant="caption"
 								color="text.secondary"
 							>
-								{disponibilidadeBancaController.tipoBloqueio(
-									bloqueados,
-									key,
-								) === "indisp"
-									? "Horário Indisponível"
-									: "Banca de TCC"}
+								{label}
 							</Typography>
 						</Box>
 					);

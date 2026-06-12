@@ -88,11 +88,14 @@ export function processarDefesasParaBloqueios(defesas, codigoDocente) {
 			const keySeguinte = `${data}-${addMinutesToTime(hora, 30)}`;
 			const keyAnterior = `${data}-${addMinutesToTime(hora, -30)}`;
 
+			const nomeDiscente =
+				def.TrabalhoConclusao?.Dicente?.nome || null;
+
 			// Defesa e imediatamente seguinte
-			novosBloqueados.set(keyAtual, "banca");
-			novosBloqueados.set(keySeguinte, "banca");
+			novosBloqueados.set(keyAtual, { tipo: "banca", nomeDiscente });
+			novosBloqueados.set(keySeguinte, { tipo: "banca", nomeDiscente });
 			// Imediatamente anterior
-			novosBloqueados.set(keyAnterior, "indisp");
+			novosBloqueados.set(keyAnterior, { tipo: "indisp", nomeDiscente });
 		}
 	});
 
