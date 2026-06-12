@@ -321,7 +321,9 @@ export function useDashboard({ forceOrientador = false }) {
 		filtroFase,
 		isAdmin,
 		isProfessor,
+		isOrientador,
 		cursosUsuario,
+		usuario,
 	]);
 
 	return {

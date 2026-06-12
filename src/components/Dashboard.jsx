@@ -187,18 +187,20 @@ export default function Dashboard({ forceOrientador = false }) {
 			isProfessor ||
 			isOrientador) && (
 			<Grid container spacing={2} sx={{ mt: 3 }}>
-				<Grid item xs={12} md={6}>
+				<Grid item xs={12} md={isOrientadorView ? 12 : 6}>
 					<ListaEstudantesSemConviteBanca
 						estudantes={estudantesSemConviteBanca}
 						faseLabel={faseLabel}
 					/>
 				</Grid>
-				<Grid item xs={12} md={6}>
-					<ListaDocentesSemDisponibilidadeBanca
-						docentes={docentesSemDisponibilidadeBanca}
-						faseLabel={faseLabel}
-					/>
-				</Grid>
+				{!isOrientadorView && (
+					<Grid item xs={12} md={6}>
+						<ListaDocentesSemDisponibilidadeBanca
+							docentes={docentesSemDisponibilidadeBanca}
+							faseLabel={faseLabel}
+						/>
+					</Grid>
+				)}
 			</Grid>
 		)}
 
