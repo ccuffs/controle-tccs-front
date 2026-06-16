@@ -4,6 +4,7 @@ import permissoesService from "../services/permissoesService";
 import { Permissoes } from "../enums/permissoes";
 import orientacaoService from "../services/orientacao-service";
 import orientacaoController from "../controllers/orientacao-controller";
+import { getMembrosExternosTcc } from "../services/membros-externos-service";
 
 export function useOrientacao(isOrientadorView = false) {
 	const { permissoesUsuario, gruposUsuario, usuario } = useAuth();
@@ -81,6 +82,7 @@ export function useOrientacao(isOrientadorView = false) {
 	const [convitesBancaFase2, setConvitesBancaFase2] = useState([]);
 	const [selectedHorarioBanca, setSelectedHorarioBanca] = useState(null);
 	const [docentesBanca, setDocentesBanca] = useState([]);
+	const [docentesExternosAtual, setDocentesExternosAtual] = useState([]);
 
 	// Carregar dados iniciais
 	useEffect(() => {
@@ -496,6 +498,7 @@ export function useOrientacao(isOrientadorView = false) {
 		setConvitesBancaFase2([]);
 		setSelectedHorarioBanca(null);
 		setMostrarSeletorHorario(false);
+		setDocentesExternosAtual([]);
 	}
 
 	async function loadTccData(matricula) {
@@ -511,10 +514,25 @@ export function useOrientacao(isOrientadorView = false) {
 
 			if (tcc?.id) {
 				try {
-					// Carregar defesas
-					const defesas = await orientacaoService.getDefesasPorTcc(
-						tcc.id,
-					);
+					// Carregar defesas e membros externos em paralelo
+					const [defesas, externos] = await Promise.all([
+						orientacaoService.getDefesasPorTcc(tcc.id),
+						getMembrosExternosTcc(tcc.id).catch(() => []),
+					]);
+
+					// Converter externos para o formato de docentesBanca
+					const externosFormatados = externos.map((m) => ({
+						docente: {
+							codigo: m.codigo,
+							nome: m.nome,
+							email: m.email,
+							siape: m.siape,
+							externo: true,
+							instituicao: m.instituicao,
+						},
+					}));
+					setDocentesExternosAtual(externosFormatados);
+
 					const defesasFaseAtual =
 						orientacaoController.filtrarDefesasPorFase(
 							defesas,
@@ -855,6 +873,7 @@ export function useOrientacao(isOrientadorView = false) {
 		convitesPorTcc,
 		areasTcc,
 		docentesBanca,
+		docentesExternosAtual,
 		docentesDisponiveis,
 		usuario,
 		// Estados de filtros

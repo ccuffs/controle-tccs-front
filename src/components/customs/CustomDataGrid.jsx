@@ -33,7 +33,7 @@ export default function CustomDataGrid({
 	};
 
 	return (
-		<Box style={{ display: "flex", flexDirection: "column" }}>
+		<Box style={{ display: "flex", flexDirection: "column", height: "100%", width: "100%" }}>
 			<DataGrid
 				rows={rows}
 				columns={columns}
@@ -46,7 +46,7 @@ export default function CustomDataGrid({
 				getRowHeight={getRowHeight}
 				rowHeight={rowHeight}
 				columnVisibilityModel={columnVisibilityModel}
-				sx={defaultSx}
+				sx={{ ...defaultSx, flex: 1 }}
 				{...otherProps}
 			/>
 		</Box>

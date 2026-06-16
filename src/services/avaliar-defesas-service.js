@@ -89,6 +89,25 @@ export async function atualizarTrabalhoConclusao(idTcc, data) {
 	}
 }
 
+// GET - Gerar ata de defesa em HTML
+export async function gerarAtaDefesaHtml(idTcc, fase, local = "") {
+	try {
+		const params = local ? { local } : {};
+		const response = await axiosInstance.get(
+			`/defesas/ata/${idTcc}/${fase}`,
+			{ params, responseType: "text" },
+		);
+		return response;
+	} catch (error) {
+		console.error("Erro ao gerar ata de defesa:", error);
+		throw new Error(
+			error.response?.data?.message ||
+				error.message ||
+				"Erro ao gerar ata de defesa",
+		);
+	}
+}
+
 // Exportação padrão
 const avaliarDefesasService = {
 	getCursosOrientador,
@@ -96,6 +115,7 @@ const avaliarDefesasService = {
 	getDefesas,
 	salvarAvaliacaoDefesa,
 	atualizarTrabalhoConclusao,
+	gerarAtaDefesaHtml,
 };
 
 export default avaliarDefesasService;

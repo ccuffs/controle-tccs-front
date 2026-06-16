@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useTheme } from "@mui/material/styles";
 import {
 	Box,
@@ -17,6 +17,10 @@ import {
 	CardContent,
 	CardActions,
 	Divider,
+	Dialog,
+	DialogTitle,
+	DialogContent,
+	DialogActions,
 } from "@mui/material";
 
 import FiltrosPesquisa from "../utils/FiltrosPesquisa";
@@ -24,6 +28,27 @@ import { useAvaliarDefesasOrientador } from "../../hooks/useAvaliarDefesasOrient
 
 export default function AvaliarDefesasOrientador() {
 	const theme = useTheme();
+
+	const [dialogAtaAberto, setDialogAtaAberto] = useState(false);
+	const [localDefesa, setLocalDefesa] = useState("");
+	const [cardAtaPendente, setCardAtaPendente] = useState(null);
+
+	function abrirDialogAta(idTcc, fase) {
+		setCardAtaPendente({ idTcc, fase });
+		setLocalDefesa("");
+		setDialogAtaAberto(true);
+	}
+
+	function fecharDialogAta() {
+		setDialogAtaAberto(false);
+		setCardAtaPendente(null);
+	}
+
+	async function confirmarGerarAta() {
+		if (!cardAtaPendente) return;
+		fecharDialogAta();
+		await handleGerarAta(cardAtaPendente.idTcc, cardAtaPendente.fase, localDefesa);
+	}
 
 	const {
 		// Estados de filtros
@@ -60,6 +85,7 @@ export default function AvaliarDefesasOrientador() {
 		cancelarEdicao,
 		salvarAvaliacoesDoTcc,
 		aprovarTcc,
+		handleGerarAta,
 	} = useAvaliarDefesasOrientador();
 
 	return (
@@ -337,16 +363,39 @@ export default function AvaliarDefesasOrientador() {
 															key={m.chave}
 															spacing={0.5}
 														>
-															<Typography
-																variant="body2"
-																sx={{
-																	fontWeight: 500,
-																}}
+															<Stack
+																direction="row"
+																spacing={0.5}
+																alignItems="center"
+																flexWrap="wrap"
 															>
-																{
-																	m.nomeMembroBanca
-																}
-															</Typography>
+																<Typography
+																	variant="body2"
+																	sx={{
+																		fontWeight: 500,
+																	}}
+																>
+																	{
+																		m.nomeMembroBanca
+																	}
+																</Typography>
+																{m.ehExterno && (
+																	<Tooltip
+																		title={
+																			m.instituicao
+																				? `Externo — ${m.instituicao}`
+																				: "Membro externo"
+																		}
+																	>
+																		<Chip
+																			label="Externo"
+																			size="small"
+																			color="warning"
+																			variant="outlined"
+																		/>
+																	</Tooltip>
+																)}
+															</Stack>
 															<Box
 																sx={{
 																	width: 100,
@@ -390,42 +439,40 @@ export default function AvaliarDefesasOrientador() {
 													))}
 												</Box>
 
-												{/* Campo de comentários apenas para fase 2 (TCC) */}
-												{card.fase === 2 && (
-													<>
-														<Divider
-															sx={{ my: 2 }}
-														/>
-														<Typography variant="subtitle1">
-															Comentários do TCC
-														</Typography>
-														<TextField
-															fullWidth
-															multiline
-															rows={3}
-															placeholder="Digite os comentários sobre o TCC..."
-															value={
-																comentariosTcc[
-																	card.idTcc
-																] || ""
-															}
-															onChange={(e) =>
-																handleComentarioChange(
-																	card.idTcc,
-																	e.target
-																		.value,
-																)
-															}
-															disabled={
-																!editandoTcc[
-																	card
-																		.chaveUnica
-																]
-															}
-															sx={{ mt: 1 }}
-														/>
-													</>
-												)}
+											{/* Campo de Parecer para todas as fases */}
+											<>
+												<Divider
+													sx={{ my: 2 }}
+												/>
+												<Typography variant="subtitle1">
+													Parecer da Banca
+												</Typography>
+												<TextField
+													fullWidth
+													multiline
+													rows={3}
+													placeholder="Digite o parecer da banca sobre o trabalho..."
+													value={
+														comentariosTcc[
+															card.idTcc
+														] || ""
+													}
+													onChange={(e) =>
+														handleComentarioChange(
+															card.idTcc,
+															e.target
+																.value,
+														)
+													}
+													disabled={
+														!editandoTcc[
+															card
+																.chaveUnica
+														]
+													}
+													sx={{ mt: 1 }}
+												/>
+											</>
 											</Stack>
 										</CardContent>
 										<CardActions
@@ -483,6 +530,18 @@ export default function AvaliarDefesasOrientador() {
 																}
 															>
 																Editar
+															</Button>
+															<Button
+																variant="outlined"
+																color="secondary"
+																onClick={() =>
+																	abrirDialogAta(
+																		card.idTcc,
+																		card.fase,
+																	)
+																}
+															>
+																Gerar Ata
 															</Button>
 															{/* Botão Aprovar TCC apenas para fase 2 */}
 															{card.fase === 2 &&
@@ -571,19 +630,56 @@ export default function AvaliarDefesasOrientador() {
 					</>
 				)}
 
-				<Snackbar
-					open={openMessage}
-					autoHideDuration={6000}
+			<Snackbar
+				open={openMessage}
+				autoHideDuration={6000}
+				onClose={handleCloseMessage}
+			>
+				<Alert
+					severity={messageSeverity}
 					onClose={handleCloseMessage}
 				>
-					<Alert
-						severity={messageSeverity}
-						onClose={handleCloseMessage}
+					{messageText}
+				</Alert>
+			</Snackbar>
+
+			<Dialog
+				open={dialogAtaAberto}
+				onClose={fecharDialogAta}
+				fullWidth
+				maxWidth="sm"
+			>
+				<DialogTitle>Gerar Ata de Defesa</DialogTitle>
+				<DialogContent>
+					<Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+						Informe o local onde a defesa foi realizada para incluir na ata.
+					</Typography>
+					<TextField
+						autoFocus
+						fullWidth
+						label="Local da Defesa"
+						placeholder="Ex: Sala 101 – Bloco A – Campus Chapecó"
+						value={localDefesa}
+						onChange={(e) => setLocalDefesa(e.target.value)}
+						onKeyDown={(e) => {
+							if (e.key === "Enter") confirmarGerarAta();
+						}}
+					/>
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={fecharDialogAta} color="inherit">
+						Cancelar
+					</Button>
+					<Button
+						onClick={confirmarGerarAta}
+						variant="contained"
+						color="secondary"
 					>
-						{messageText}
-					</Alert>
-				</Snackbar>
-			</Stack>
-		</Box>
-	);
+						Gerar Ata
+					</Button>
+				</DialogActions>
+			</Dialog>
+		</Stack>
+	</Box>
+);
 }

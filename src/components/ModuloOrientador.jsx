@@ -8,6 +8,7 @@ import ConvitesRecebidosOrientador from "./modulo-orientador/ConvitesRecebidosOr
 import GerenciarDisponibilidadeBanca from "./modulo-orientador/GerenciarDisponibilidadeBanca";
 import AvaliarDefesasOrientador from "./modulo-orientador/AvaliarDefesasOrientador";
 import EmitirDeclaracoes from "./modulo-orientador/EmitirDeclaracoes";
+import MembrosExternos from "./modulo-orientador/MembrosExternos";
 import PerfilOrientador from "./modulo-orientador/PerfilOrientador";
 import { useModuloOrientador } from "../hooks/useModuloOrientador.js";
 import { AccessibleTabPanel, getA11yProps } from "./customs/AccessibleTabs.jsx";
@@ -68,9 +69,14 @@ export default function ModuloOrientador() {
 						{...getA11yProps("orientador", 6)}
 					/>
 					<Tab
-						label="Meu Perfil"
+						label="Membros Externos"
 						disabled={isBanca}
 						{...getA11yProps("orientador", 7)}
+					/>
+					<Tab
+						label="Meu Perfil"
+						disabled={isBanca}
+						{...getA11yProps("orientador", 8)}
 					/>
 				</Tabs>
 			</Box>
@@ -133,13 +139,21 @@ export default function ModuloOrientador() {
 				<EmitirDeclaracoes />
 			</AccessibleTabPanel>
 
-			<AccessibleTabPanel
-				idPrefix="orientador"
-				value={tabValue}
-				index={7}
-			>
-				<PerfilOrientador />
-			</AccessibleTabPanel>
+		<AccessibleTabPanel
+			idPrefix="orientador"
+			value={tabValue}
+			index={7}
+		>
+			<MembrosExternos />
+		</AccessibleTabPanel>
+
+		<AccessibleTabPanel
+			idPrefix="orientador"
+			value={tabValue}
+			index={8}
+		>
+			<PerfilOrientador />
+		</AccessibleTabPanel>
 		</Box>
 	);
 }

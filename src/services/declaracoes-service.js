@@ -62,11 +62,54 @@ export async function gerarDeclaracaoHtml(idTcc, tipoParticipacao) {
 	}
 }
 
+// GET - Listar declarações de membros externos
+export async function getDeclaracoesExternas(params = {}) {
+	try {
+		const queryString = new URLSearchParams();
+		if (params.curso) queryString.append("curso", params.curso);
+		if (params.ano) queryString.append("ano", params.ano);
+		if (params.semestre) queryString.append("semestre", params.semestre);
+		if (params.fase) queryString.append("fase", params.fase);
+
+		const response = await axiosInstance.get(
+			`/declaracoes/externas?${queryString.toString()}`,
+		);
+		return response.declaracoes || [];
+	} catch (error) {
+		console.error("Erro ao buscar declarações externas:", error);
+		throw new Error(
+			error.response?.data?.message ||
+				error.message ||
+				"Erro ao buscar declarações externas",
+		);
+	}
+}
+
+// GET - Gerar declaração para membro externo em HTML
+export async function gerarDeclaracaoExternoHtml(idTcc, codigoDocente) {
+	try {
+		const response = await axiosInstance.get(
+			`/declaracoes/gerar-externo/${idTcc}/${codigoDocente}`,
+			{ responseType: "text" },
+		);
+		return response;
+	} catch (error) {
+		console.error("Erro ao gerar declaração para externo:", error);
+		throw new Error(
+			error.response?.data?.message ||
+				error.message ||
+				"Erro ao gerar declaração",
+		);
+	}
+}
+
 // Exportação padrão
 const declaracoesService = {
 	getCursos,
 	getDeclaracoes,
 	gerarDeclaracaoHtml,
+	getDeclaracoesExternas,
+	gerarDeclaracaoExternoHtml,
 };
 
 export default declaracoesService;

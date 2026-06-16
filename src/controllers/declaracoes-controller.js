@@ -44,39 +44,21 @@ export function gerarNomeArquivoPdf(nomeDicente, tipoParticipacao) {
 }
 
 /**
- * Gera CSS específico para impressão A4
+ * Retorna um trecho de CSS a ser injetado no <head> do documento HTML da declaração.
+ * Não define @media print para não interferir com o html2canvas (que captura em modo tela).
+ * O template já carrega suas próprias fontes e espaçamentos via classe .c22.
  */
 export function gerarCssImpressao() {
 	return `
 		<style>
+			* {
+				-webkit-print-color-adjust: exact;
+				color-adjust: exact;
+			}
 			@media print {
 				@page {
 					size: A4;
-					margin: 0.5in;
-				}
-
-				/* Remove headers e footers do navegador */
-				@page {
-					@top-left { content: ""; }
-					@top-center { content: ""; }
-					@top-right { content: ""; }
-					@bottom-left { content: ""; }
-					@bottom-center { content: ""; }
-					@bottom-right { content: ""; }
-				}
-
-				/* Garante que o conteúdo ocupe toda a página */
-				body {
 					margin: 0;
-					padding: 0;
-					font-size: 12pt;
-					line-height: 1.4;
-				}
-
-				/* Otimiza para A4 */
-				* {
-					-webkit-print-color-adjust: exact;
-					color-adjust: exact;
 				}
 			}
 		</style>
@@ -84,17 +66,32 @@ export function gerarCssImpressao() {
 }
 
 /**
+ * Injeta o CSS de impressão corretamente dentro do <head> do HTML da declaração.
+ * Evita colocar o <style> antes do <html>, o que seria markup inválido.
+ */
+export function injetarCssNoHead(htmlDeclaracao, cssImpressao) {
+	if (htmlDeclaracao.includes("</head>")) {
+		return htmlDeclaracao.replace("</head>", `${cssImpressao}</head>`);
+	}
+	return cssImpressao + htmlDeclaracao;
+}
+
+/**
  * Configurações para geração de PDF com html2pdf
+ * Margem zero porque o template HTML já define seu próprio espaçamento interno (.c22).
+ * windowWidth fixo em 794px (A4 a 96 DPI) para garantir que o texto quebre
+ * nas mesmas posições que aparecem na tela da nova aba.
  */
 export function obterConfiguracoesPdf(nomeArquivo) {
 	return {
-		margin: 0.5,
+		margin: 0,
 		filename: nomeArquivo,
 		image: { type: "jpeg", quality: 0.98 },
 		html2canvas: {
 			scale: 2,
 			useCORS: true,
 			letterRendering: true,
+			windowWidth: 794,
 		},
 		jsPDF: {
 			unit: "in",
@@ -129,6 +126,7 @@ const declaracoesController = {
 	obterTextoParticipacao,
 	gerarNomeArquivoPdf,
 	gerarCssImpressao,
+	injetarCssNoHead,
 	obterConfiguracoesPdf,
 	obterCursoUnicoUsuario,
 	validarCursoSelecionado,

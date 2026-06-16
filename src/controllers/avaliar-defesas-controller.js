@@ -61,14 +61,12 @@ export function inicializarAvaliacoesEdicao(defesas) {
 }
 
 /**
- * Inicializa comentários de TCC para fase 2
+ * Inicializa parecer (comentarios_tcc) para todas as fases
  */
 export function inicializarComentariosTcc(orientacoes) {
 	const novoComentarios = {};
 	orientacoes.forEach((tcc) => {
-		if (tcc.fase === 2) {
-			novoComentarios[tcc.id] = tcc.comentarios_tcc || "";
-		}
+		novoComentarios[tcc.id] = tcc.comentarios_tcc || "";
 	});
 	return novoComentarios;
 }
@@ -131,6 +129,8 @@ export function processarMembrosBanca(defesasTcc, avaliacoesEdicao) {
 				nomeMembroBanca: d.membroBanca?.nome || d.membro_banca,
 				valorAvaliacao: avaliacoesEdicao[chave] ?? "",
 				ehOrientador: d.orientador || false,
+				ehExterno: d.membroBanca?.externo || false,
+				instituicao: d.membroBanca?.instituicao || null,
 				salvo: d.avaliacao !== null && d.avaliacao !== undefined,
 			};
 		})

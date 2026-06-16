@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import avaliarDefesasService from "../services/avaliar-defesas-service";
+import avaliarDefesasService, { gerarAtaDefesaHtml } from "../services/avaliar-defesas-service";
 import avaliarDefesasController from "../controllers/avaliar-defesas-controller";
 
 export function useAvaliarDefesasOrientador() {
@@ -183,20 +183,22 @@ export function useAvaliarDefesasOrientador() {
 		);
 		setBackupAvaliacoes((prev) => ({ ...prev, [chaveUnica]: snapshot }));
 
-		// Backup do comentário de TCC se for fase 2
+		// Backup do parecer para qualquer fase
 		const tcc = mapaTcc.get(parseInt(idTcc));
-		if (tcc && tcc.fase === 2) {
+		if (tcc) {
 			setBackupComentarios((prev) => ({
 				...prev,
 				[chaveUnica]: comentariosTcc[idTcc] || "",
 			}));
 
-			// Backup do estado de aprovação TCC
-			const aprovadoAtual = tccAprovadoLocal[idTcc] ?? tcc.aprovado_tcc;
-			setEdicaoAprovadoTcc((prev) => ({
-				...prev,
-				[idTcc]: aprovadoAtual,
-			}));
+			// Backup do estado de aprovação TCC apenas para fase 2
+			if (tcc.fase === 2) {
+				const aprovadoAtual = tccAprovadoLocal[idTcc] ?? tcc.aprovado_tcc;
+				setEdicaoAprovadoTcc((prev) => ({
+					...prev,
+					[idTcc]: aprovadoAtual,
+				}));
+			}
 		}
 
 		setEditandoTcc((prev) => ({ ...prev, [chaveUnica]: true }));
@@ -326,28 +328,26 @@ export function useAvaliarDefesasOrientador() {
 				}
 			});
 
-			// Salvar comentário e aprovação de TCC se for fase 2
-			const tcc = mapaTcc.get(parseInt(idTccAlvo));
-			if (tcc && tcc.fase === 2) {
-				const comentario = comentariosTcc[idTccAlvo] || "";
+		// Salvar parecer para qualquer fase; aprovado_tcc apenas para fase 2
+		const tcc = mapaTcc.get(parseInt(idTccAlvo));
+		if (tcc) {
+			const comentario = comentariosTcc[idTccAlvo] || "";
+			const dadosAtualizacao = { comentarios_tcc: comentario };
+
+			if (tcc.fase === 2) {
 				const aprovadoTcc = edicaoAprovadoTcc[idTccAlvo];
-
-				const dadosAtualizacao = {
-					comentarios_tcc: comentario,
-				};
-
-				// Incluir aprovação TCC se foi alterada
 				if (aprovadoTcc !== undefined) {
 					dadosAtualizacao.aprovado_tcc = aprovadoTcc;
 				}
-
-				promises.push(
-					avaliarDefesasService.atualizarTrabalhoConclusao(
-						idTccAlvo,
-						dadosAtualizacao,
-					),
-				);
 			}
+
+			promises.push(
+				avaliarDefesasService.atualizarTrabalhoConclusao(
+					idTccAlvo,
+					dadosAtualizacao,
+				),
+			);
+		}
 
 			if (promises.length > 0) {
 				await Promise.all(promises);
@@ -397,6 +397,30 @@ export function useAvaliarDefesasOrientador() {
 		} catch (error) {
 			console.error("Erro ao salvar avaliações:", error);
 			setMessageText("Erro ao salvar avaliações.");
+			setMessageSeverity("error");
+			setOpenMessage(true);
+		}
+	}
+
+	// Função para gerar e abrir a ata de defesa
+	async function handleGerarAta(idTcc, faseTcc, local = "") {
+		try {
+			const novaAba = window.open("", "_blank");
+
+			if (!novaAba) {
+				setMessageText("Por favor, permita pop-ups para visualizar a ata.");
+				setMessageSeverity("warning");
+				setOpenMessage(true);
+				return;
+			}
+
+			const htmlAta = await gerarAtaDefesaHtml(idTcc, faseTcc, local);
+
+			novaAba.document.write(htmlAta);
+			novaAba.document.close();
+		} catch (error) {
+			console.error("Erro ao gerar ata:", error);
+			setMessageText(error.message || "Erro ao gerar ata de defesa.");
 			setMessageSeverity("error");
 			setOpenMessage(true);
 		}
@@ -472,5 +496,6 @@ export function useAvaliarDefesasOrientador() {
 		cancelarEdicao,
 		salvarAvaliacoesDoTcc,
 		aprovarTcc,
+		handleGerarAta,
 	};
 }

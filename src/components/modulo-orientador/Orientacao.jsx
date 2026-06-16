@@ -56,6 +56,7 @@ export default function Orientacao({ isOrientadorView = false }) {
 		convitesPorTcc,
 		areasTcc,
 		docentesBanca,
+		docentesExternosAtual,
 		docentesDisponiveis,
 		usuario,
 		// Estados de filtros
@@ -1151,7 +1152,7 @@ export default function Orientacao({ isOrientadorView = false }) {
 															<MenuItem value=""></MenuItem>
 															{orientacaoController
 																.filtrarDocentesDisponiveis(
-																	docentesBanca,
+																	[...docentesBanca, ...docentesExternosAtual],
 																	editData.orientador,
 																	editData.membroBanca2,
 																)
@@ -1168,11 +1169,16 @@ export default function Orientacao({ isOrientadorView = false }) {
 																				?.codigo
 																		}
 																	>
-																		{
-																			item
-																				.docente
-																				?.nome
-																		}
+																		{item.docente?.nome}
+																		{item.docente?.externo && (
+																			<Chip
+																				label="Externo"
+																				size="small"
+																				color="warning"
+																				variant="outlined"
+																				sx={{ ml: 1, pointerEvents: "none" }}
+																			/>
+																		)}
 																	</MenuItem>
 																))}
 														</Select>
@@ -1237,7 +1243,7 @@ export default function Orientacao({ isOrientadorView = false }) {
 															<MenuItem value=""></MenuItem>
 															{orientacaoController
 																.filtrarDocentesDisponiveis(
-																	docentesBanca,
+																	[...docentesBanca, ...docentesExternosAtual],
 																	editData.orientador,
 																	editData.membroBanca1,
 																)
@@ -1254,11 +1260,16 @@ export default function Orientacao({ isOrientadorView = false }) {
 																				?.codigo
 																		}
 																	>
-																		{
-																			item
-																				.docente
-																				?.nome
-																		}
+																		{item.docente?.nome}
+																		{item.docente?.externo && (
+																			<Chip
+																				label="Externo"
+																				size="small"
+																				color="warning"
+																				variant="outlined"
+																				sx={{ ml: 1, pointerEvents: "none" }}
+																			/>
+																		)}
 																	</MenuItem>
 																))}
 														</Select>
