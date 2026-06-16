@@ -1,13 +1,16 @@
 import { useState, useEffect } from "react";
-import html2pdf from "html2pdf.js";
 import { useAuth } from "../contexts/AuthContext";
-import declaracoesService from "../services/declaracoes-service";
+import declaracoesService, {
+	getDeclaracoesExternas,
+	gerarDeclaracaoExternoHtml,
+} from "../services/declaracoes-service";
 import declaracoesController from "../controllers/declaracoes-controller";
 
 export function useEmitirDeclaracoes() {
 	const { usuario } = useAuth();
 
 	const [declaracoes, setDeclaracoes] = useState([]);
+	const [declaracoesExternas, setDeclaracoesExternas] = useState([]);
 	const [loading, setLoading] = useState(false);
 	const [cursos, setCursos] = useState([]);
 	const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -89,14 +92,28 @@ export function useEmitirDeclaracoes() {
 				fase,
 			};
 
-			const data = await declaracoesService.getDeclaracoes(params);
+			const [data, externas] = await Promise.all([
+				declaracoesService.getDeclaracoes(params),
+				getDeclaracoesExternas(params).catch(() => []),
+			]);
 
-			setDeclaracoes(data.declaracoes);
+			const declaracoesOrdenadas = [...data.declaracoes]
+				.filter((d) => !d.externo)
+				.sort((a, b) =>
+					(a.nome_dicente || "").localeCompare(b.nome_dicente || "", "pt-BR", { sensitivity: "base" })
+				);
+			const externasOrdenadas = [...externas].sort((a, b) =>
+				(a.nome_docente || "").localeCompare(b.nome_docente || "", "pt-BR", { sensitivity: "base" })
+			);
+
+			setDeclaracoes(declaracoesOrdenadas);
+			setDeclaracoesExternas(externasOrdenadas);
 			setAnosDisponiveis(data.anosDisponiveis);
 			setSemestresDisponiveis(data.semestresDisponiveis);
 		} catch (error) {
 			console.error("Erro ao carregar declarações:", error);
 			setDeclaracoes([]);
+			setDeclaracoesExternas([]);
 			setAnosDisponiveis([]);
 			setSemestresDisponiveis([]);
 			setSnackbarMessage(error.message || "Erro ao carregar declarações");
@@ -106,15 +123,41 @@ export function useEmitirDeclaracoes() {
 		}
 	}
 
+	async function handleBaixarDeclaracaoExterno(declaracao) {
+		try {
+			const novaAba = window.open("", "_blank");
+
+			if (!novaAba) {
+				setSnackbarMessage("Por favor, permita pop-ups para visualizar a declaração");
+				setSnackbarOpen(true);
+				return;
+			}
+
+			const htmlDeclaracao = await gerarDeclaracaoExternoHtml(
+				declaracao.id_tcc,
+				declaracao.codigo_docente,
+			);
+
+			const cssImpressao = declaracoesController.gerarCssImpressao();
+			const htmlFinal = declaracoesController.injetarCssNoHead(htmlDeclaracao, cssImpressao);
+			novaAba.document.write(htmlFinal);
+			novaAba.document.close();
+
+			setSnackbarMessage("Declaração aberta em nova aba.");
+			setSnackbarOpen(true);
+		} catch (error) {
+			console.error("Erro ao gerar declaração para externo:", error);
+			setSnackbarMessage(error.message || "Erro ao gerar declaração");
+			setSnackbarOpen(true);
+		}
+	}
+
 	async function handleBaixarDeclaracao(declaracao) {
 		try {
-			// Determinar tipo de participação
-			const tipoParticipacao =
-				declaracoesController.obterTipoParticipacao(
-					declaracao.foi_orientador,
-				);
+			const tipoParticipacao = declaracoesController.obterTipoParticipacao(
+				declaracao.foi_orientador,
+			);
 
-			// Abrir declaração em nova aba
 			const novaAba = window.open("", "_blank");
 
 			if (!novaAba) {
@@ -125,56 +168,17 @@ export function useEmitirDeclaracoes() {
 				return;
 			}
 
-			// Buscar HTML da declaração
 			const htmlDeclaracao = await declaracoesService.gerarDeclaracaoHtml(
 				declaracao.id_tcc,
 				tipoParticipacao,
 			);
 
-			// Gerar CSS de impressão
 			const cssImpressao = declaracoesController.gerarCssImpressao();
-
-			// Escrever o HTML na nova aba com CSS de impressão
-			novaAba.document.write(cssImpressao + htmlDeclaracao);
+			const htmlFinal = declaracoesController.injetarCssNoHead(htmlDeclaracao, cssImpressao);
+			novaAba.document.write(htmlFinal);
 			novaAba.document.close();
 
-			// Configurar conversão para PDF
-			novaAba.onload = () => {
-				// Função para converter para PDF automaticamente
-				const converterParaPDFAutomatico = async () => {
-					try {
-						// Nome do arquivo
-						const nomeArquivo =
-							declaracoesController.gerarNomeArquivoPdf(
-								declaracao.nome_dicente,
-								tipoParticipacao,
-							);
-
-						// Configurações do PDF
-						const opt =
-							declaracoesController.obterConfiguracoesPdf(
-								nomeArquivo,
-							);
-
-						// Gerar e baixar o PDF
-						await html2pdf()
-							.set(opt)
-							.from(novaAba.document.body)
-							.save();
-					} catch (error) {
-						console.error("Erro ao converter para PDF:", error);
-					}
-				};
-
-				// Executar conversão para PDF automaticamente quando a página carregar
-				setTimeout(() => {
-					converterParaPDFAutomatico();
-				}, 1000);
-			};
-
-			setSnackbarMessage(
-				"Declaração aberta! PDF será baixado automaticamente.",
-			);
+			setSnackbarMessage("Declaração aberta em nova aba.");
 			setSnackbarOpen(true);
 		} catch (error) {
 			console.error("Erro ao gerar declaração:", error);
@@ -190,6 +194,7 @@ export function useEmitirDeclaracoes() {
 	return {
 		// Estados de dados
 		declaracoes,
+		declaracoesExternas,
 		cursos,
 		// Estados de filtros
 		cursoSelecionado,
@@ -208,6 +213,7 @@ export function useEmitirDeclaracoes() {
 		snackbarMessage,
 		// Handlers
 		handleBaixarDeclaracao,
+		handleBaixarDeclaracaoExterno,
 		handleCloseSnackbar,
 	};
 }
