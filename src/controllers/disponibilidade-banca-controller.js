@@ -46,12 +46,13 @@ export function extrairCursos(orientacoes) {
 export function toDateKey(iso) {
 	const toTwo = (n) => String(n).padStart(2, "0");
 	const dt = new Date(iso);
-	const y = dt.getFullYear();
-	const m = toTwo(dt.getMonth() + 1);
-	const d = toTwo(dt.getDate());
-	const hh = toTwo(dt.getHours());
-	const mm = toTwo(dt.getMinutes());
-	const ss = toTwo(dt.getSeconds());
+	// Usar métodos UTC para coincidir com o armazenamento em UTC no backend
+	const y = dt.getUTCFullYear();
+	const m = toTwo(dt.getUTCMonth() + 1);
+	const d = toTwo(dt.getUTCDate());
+	const hh = toTwo(dt.getUTCHours());
+	const mm = toTwo(dt.getUTCMinutes());
+	const ss = toTwo(dt.getUTCSeconds());
 	return {
 		data: `${y}-${m}-${d}`,
 		hora: `${hh}:${mm}:${ss}`,
@@ -91,11 +92,11 @@ export function processarDefesasParaBloqueios(defesas, codigoDocente) {
 			const nomeDiscente =
 				def.TrabalhoConclusao?.Dicente?.nome || null;
 
-			// Defesa e imediatamente seguinte
+			// Horário exato e seguinte (+30min): exibem o nome (slot de 1 hora)
 			novosBloqueados.set(keyAtual, { tipo: "banca", nomeDiscente });
 			novosBloqueados.set(keySeguinte, { tipo: "banca", nomeDiscente });
-			// Imediatamente anterior
-			novosBloqueados.set(keyAnterior, { tipo: "indisp", nomeDiscente });
+			// Horário anterior (-30min): apenas bloqueado, sem nome
+			novosBloqueados.set(keyAnterior, { tipo: "indisp", nomeDiscente: null });
 		}
 	});
 

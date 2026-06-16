@@ -173,20 +173,32 @@ const GerenciarDisponibilidadeBanca = forwardRef((props, ref) => {
 							: "Banca de TCC";
 
 					return (
-						<Box
-							sx={{
-								display: "flex",
-								justifyContent: "center",
-								opacity: 0.6,
-							}}
-						>
-							<Typography
-								variant="caption"
-								color="text.secondary"
+						<Tooltip title={label} placement="top" arrow>
+							<Box
+								sx={{
+									display: "flex",
+									justifyContent: "center",
+									alignItems: "center",
+									width: "100%",
+									height: "100%",
+									opacity: 0.6,
+									px: 0.5,
+								}}
 							>
-								{label}
-							</Typography>
-						</Box>
+								<Typography
+									variant="caption"
+									color="text.secondary"
+									sx={{
+										textAlign: "center",
+										whiteSpace: "normal",
+										wordBreak: "break-word",
+										lineHeight: 1.2,
+									}}
+								>
+									{label}
+								</Typography>
+							</Box>
+						</Tooltip>
 					);
 				}
 
