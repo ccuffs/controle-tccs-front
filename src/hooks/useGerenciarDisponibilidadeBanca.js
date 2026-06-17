@@ -2,9 +2,14 @@ import { useState, useEffect, useImperativeHandle } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import disponibilidadeBancaService from "../services/disponibilidade-banca-service";
 import disponibilidadeBancaController from "../controllers/disponibilidade-banca-controller";
+import { Permissoes } from "../enums/permissoes";
 
 export function useGerenciarDisponibilidadeBanca(ref) {
-	const { usuario } = useAuth();
+	const { usuario, gruposUsuario } = useAuth();
+
+	const isBanca =
+		gruposUsuario?.some((g) => g.id === Permissoes.GRUPOS.BANCA) &&
+		!gruposUsuario?.some((g) => g.id === Permissoes.GRUPOS.ORIENTADOR);
 
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
@@ -158,16 +163,15 @@ export function useGerenciarDisponibilidadeBanca(ref) {
 	async function getCursosOrientador() {
 		try {
 			const codigoDocente = usuario.codigo || usuario.id;
-			const cursosOrientador =
-				await disponibilidadeBancaService.getCursosOrientador(
-					codigoDocente,
-				);
+			const cursosDocente = isBanca
+				? await disponibilidadeBancaService.getCursosBanca(codigoDocente)
+				: await disponibilidadeBancaService.getCursosOrientador(codigoDocente);
 			const cursosExtraidos =
-				disponibilidadeBancaController.extrairCursos(cursosOrientador);
+				disponibilidadeBancaController.extrairCursos(cursosDocente);
 			setCursos(cursosExtraidos);
 
-			if (cursosOrientador.length === 1) {
-				setCursoSelecionado(cursosOrientador[0].curso.id);
+			if (cursosDocente.length === 1) {
+				setCursoSelecionado(cursosDocente[0].curso.id);
 			}
 		} catch (error) {
 			setCursos([]);

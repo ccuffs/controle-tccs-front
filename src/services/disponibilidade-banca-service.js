@@ -17,6 +17,23 @@ export async function getCursosOrientador(codigoDocente) {
 	}
 }
 
+// GET - Buscar cursos do membro de banca
+export async function getCursosBanca(codigoDocente) {
+	try {
+		const response = await axiosInstance.get(
+			`/banca-curso/docente/${codigoDocente}`,
+		);
+		return response.cursos || [];
+	} catch (error) {
+		console.error("Erro ao buscar cursos da banca:", error);
+		throw new Error(
+			error.response?.data?.message ||
+				error.message ||
+				"Erro ao buscar cursos da banca",
+		);
+	}
+}
+
 // GET - Buscar ofertas TCC
 export async function getOfertasTcc(params) {
 	try {
@@ -122,6 +139,7 @@ export async function sincronizarDisponibilidades(disponibilidades) {
 // Exportação padrão
 const disponibilidadeBancaService = {
 	getCursosOrientador,
+	getCursosBanca,
 	getOfertasTcc,
 	getGradeDisponibilidade,
 	getDefesas,
