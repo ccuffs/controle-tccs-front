@@ -40,6 +40,7 @@ import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { ptBR } from "date-fns/locale";
 
 import { useMembrosExternos } from "../../hooks/useMembrosExternos";
+import { formatarDataDefesaUTC } from "../../controllers/disponibilidade-banca-controller";
 
 const FASES = { 0: "Orientação", 1: "Projeto", 2: "TCC" };
 
@@ -231,7 +232,10 @@ export default function MembrosExternos() {
 														{m.data_defesa && (
 															<Typography variant="body2" color="text.secondary">
 																<strong>Defesa:</strong>{" "}
-																{new Date(m.data_defesa).toLocaleString("pt-BR")}
+																{(() => {
+																	const { dataStr, horaStr } = formatarDataDefesaUTC(m.data_defesa);
+																	return `${dataStr} ${horaStr}`;
+																})()}
 															</Typography>
 														)}
 													</Stack>

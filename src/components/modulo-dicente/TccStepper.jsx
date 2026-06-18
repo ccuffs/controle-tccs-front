@@ -23,6 +23,7 @@ import {
 
 import axiosInstance from "../../auth/axios";
 import { AuthContext } from "../../contexts/AuthContext";
+import { formatarDataDefesaUTC } from "../../controllers/disponibilidade-banca-controller";
 
 import VisualizarTemasTCC from "./VisualizarTemasTCC";
 import ConviteOrientadorModal from "./ConviteOrientadorModal";
@@ -323,13 +324,10 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 		const defesaAgendada = defesas.find((d) => d.data_defesa) || defesas[0];
 		if (!defesaAgendada || !defesaAgendada.data_defesa) return null;
 
-		const dataHoraFormatada = new Date(defesaAgendada.data_defesa);
+		const { dataStr, horaStr } = formatarDataDefesaUTC(defesaAgendada.data_defesa);
 		return {
-			dataStr: dataHoraFormatada.toLocaleDateString("pt-BR"),
-			horaStr: dataHoraFormatada.toLocaleTimeString("pt-BR", {
-				hour: "2-digit",
-				minute: "2-digit",
-			}),
+			dataStr,
+			horaStr,
 			defesa: defesaAgendada,
 		};
 	};

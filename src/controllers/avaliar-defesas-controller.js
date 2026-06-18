@@ -1,3 +1,5 @@
+import { formatarDataDefesaUTC } from "./disponibilidade-banca-controller";
+
 /**
  * Obtém o ano e semestre atual
  */
@@ -112,7 +114,9 @@ export function verificarAprovadoAutomatico(avaliacoesCompletas, media, fase) {
  * Formata data de defesa
  */
 export function formatarDataDefesa(dataDefesa) {
-	return dataDefesa ? new Date(dataDefesa).toLocaleString("pt-BR") : "N/A";
+	if (!dataDefesa) return "N/A";
+	const { dataStr, horaStr } = formatarDataDefesaUTC(dataDefesa);
+	return `${dataStr} ${horaStr}`;
 }
 
 /**
