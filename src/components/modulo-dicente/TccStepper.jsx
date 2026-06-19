@@ -105,9 +105,9 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 		}
 	}, [activeStep, trabalhoConclusao]);
 
-	// Ao carregar diretamente na etapa final (índice igual ao total de etapas válidas) na fase 2, recarregar as defesas
+	// Ao carregar diretamente na etapa final (índice igual ao total de etapas válidas), recarregar as defesas
 	useEffect(() => {
-		if (trabalhoConclusao && trabalhoConclusao.fase === 2) {
+		if (trabalhoConclusao) {
 			const etapasValidas = getEtapasValidas();
 			if (activeStep === etapasValidas.length) {
 				carregarDefesas(trabalhoConclusao.id);
@@ -2854,9 +2854,66 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }) {
 									</>
 								) : (
 									<>
-										<Typography sx={{ mt: 2, mb: 1 }}>
+										<Typography variant="h6" sx={{ mt: 1, mb: 2 }}>
 											Todas as etapas foram concluídas!
 										</Typography>
+										<Alert severity="success" sx={{ mb: 2 }}>
+											<Typography variant="body2">
+												Parabéns! Você concluiu todas as etapas do TCC I. Aguarde a realização da banca de avaliação do projeto.
+											</Typography>
+										</Alert>
+
+										{/* Agenda e composição da banca do projeto (fase 1) */}
+										{(() => {
+											const dadosDefesa = obterDadosDefesaAgendada(1);
+											return dadosDefesa ? (
+												<Paper sx={{ p: 3, mb: 2 }}>
+													<Typography variant="subtitle1" gutterBottom fontWeight="medium">
+														Agenda da Banca do Projeto
+													</Typography>
+													<Alert severity="info" sx={{ mb: 2 }}>
+														<Typography variant="body2">
+															<strong>Data:</strong> {dadosDefesa.dataStr}
+														</Typography>
+														<Typography variant="body2">
+															<strong>Horário:</strong> {dadosDefesa.horaStr}
+														</Typography>
+													</Alert>
+
+													{defesasFase1 && defesasFase1.length > 0 && (
+														<>
+															<Typography variant="subtitle1" gutterBottom fontWeight="medium">
+																Composição da Banca
+															</Typography>
+															{defesasFase1.map((d, idx) => (
+																<Alert
+																	key={idx}
+																	severity="info"
+																	sx={{ mb: 1 }}
+																>
+																	<Typography variant="body2">
+																		<strong>Membro:</strong>{" "}
+																		{d.membroBanca?.nome || d.membro_banca}
+																	</Typography>
+																	{d.avaliacao != null && (
+																		<Typography variant="body2">
+																			<strong>Nota:</strong>{" "}
+																			{Number(d.avaliacao).toFixed(1)}
+																		</Typography>
+																	)}
+																</Alert>
+															))}
+														</>
+													)}
+												</Paper>
+											) : (
+												<Alert severity="info" sx={{ mb: 2 }}>
+													<Typography variant="body2">
+														Nenhum horário de banca agendado encontrado.
+													</Typography>
+												</Alert>
+											);
+										})()}
 									</>
 								)}
 								<Button onClick={() => setActiveStep(0)}>
