@@ -1,0 +1,234 @@
+import { useContext } from "react";
+import {
+	AppBar,
+	Toolbar,
+	IconButton,
+	Typography,
+	Button,
+	Drawer,
+	List,
+	ListItem,
+	ListItemButton,
+	ListItemText,
+	Box,
+	Divider,
+	useTheme,
+} from "@mui/material";
+import MenuIcon from "@mui/icons-material/Menu";
+
+import { useAuth } from "../contexts/AuthContext";
+import PermissionContext from "../contexts/PermissionContext";
+import { Permissoes } from "../enums/permissoes";
+import { useNavbar } from "../hooks/useNavbar";
+
+import { DrawerContext } from "./App";
+import UserMenu from "./UserMenu";
+
+function Navbar() {
+	const theme = useTheme();
+	const { desktopOpen, setDesktopOpen } = useContext(DrawerContext);
+	const { isAuthenticated, gruposUsuario } = useAuth();
+
+	// Verifica se o usuário é um estudante
+	const isEstudante = gruposUsuario.some(
+		(grupo) => grupo.id === Permissoes.GRUPOS.ESTUDANTE,
+	);
+
+	const isOrientador = gruposUsuario.some(
+		(grupo) => grupo.id === Permissoes.GRUPOS.ORIENTADOR,
+	);
+	const isBancaOnly =
+		gruposUsuario.some((grupo) => grupo.id === Permissoes.GRUPOS.BANCA) &&
+		!isOrientador;
+
+	const {
+		mobileOpen,
+		isMobile,
+		drawerWidth,
+		handleDrawerToggle,
+		handleDesktopDrawerToggle,
+		handleClickHome,
+		handleClickCursos,
+		handleClickOrientadores,
+		handleClickDicentes,
+		handleClickOrientacoes,
+		handleClickTemasTcc,
+		handleClickModuloOrientador,
+		handleClickModuloDiscente,
+		handleClickLogin,
+	} = useNavbar({ desktopOpen, setDesktopOpen });
+
+	const drawerContent = (
+		<Box sx={{ overflow: "auto" }}>
+			<Toolbar>
+				<Typography variant="h6" noWrap component="div">
+					Menu
+				</Typography>
+			</Toolbar>
+			<Divider />
+			<List>
+				<PermissionContext
+					grupos={[Permissoes.GRUPOS.ADMIN, Permissoes.GRUPOS.PROFESSOR_CCR]}
+					showError={false}
+				>
+					<ListItem disablePadding>
+						<ListItemButton onClick={handleClickHome}>
+							<ListItemText primary="Dashboard" />
+						</ListItemButton>
+					</ListItem>
+				</PermissionContext>
+				<PermissionContext grupos={[Permissoes.GRUPOS.ADMIN]} showError={false}>
+					<ListItem disablePadding>
+						<ListItemButton onClick={handleClickCursos}>
+							<ListItemText primary="Cursos" />
+						</ListItemButton>
+					</ListItem>
+				</PermissionContext>
+				<PermissionContext
+					grupos={[Permissoes.GRUPOS.ADMIN, Permissoes.GRUPOS.PROFESSOR_CCR]}
+					showError={false}
+				>
+					<ListItem disablePadding>
+						<ListItemButton onClick={handleClickOrientadores}>
+							<ListItemText primary="Orientadores" />
+						</ListItemButton>
+					</ListItem>
+
+					<ListItem disablePadding>
+						<ListItemButton onClick={handleClickDicentes}>
+							<ListItemText primary="Discentes" />
+						</ListItemButton>
+					</ListItem>
+					<ListItem disablePadding>
+						<ListItemButton onClick={handleClickOrientacoes}>
+							<ListItemText primary="Orientações" />
+						</ListItemButton>
+					</ListItem>
+					<ListItem disablePadding>
+						<ListItemButton onClick={handleClickTemasTcc}>
+							<ListItemText primary="Temas TCC" />
+						</ListItemButton>
+					</ListItem>
+				</PermissionContext>
+				<PermissionContext
+					grupos={[Permissoes.GRUPOS.ORIENTADOR]}
+					showError={false}
+				>
+					<ListItem disablePadding>
+						<ListItemButton onClick={handleClickModuloOrientador}>
+							<ListItemText primary="Módulo do Orientador" />
+						</ListItemButton>
+					</ListItem>
+				</PermissionContext>
+				{isBancaOnly && (
+					<ListItem disablePadding>
+						<ListItemButton onClick={handleClickModuloOrientador}>
+							<ListItemText primary="Módulo de Avaliação" />
+						</ListItemButton>
+					</ListItem>
+				)}
+				<PermissionContext
+					grupos={[Permissoes.GRUPOS.ESTUDANTE]}
+					showError={false}
+				>
+					<ListItem disablePadding>
+						<ListItemButton onClick={handleClickModuloDiscente}>
+							<ListItemText primary="Módulo do Discente" />
+						</ListItemButton>
+					</ListItem>
+				</PermissionContext>
+			</List>
+		</Box>
+	);
+
+	return (
+		<Box sx={{ display: "flex" }}>
+			<AppBar
+				position="fixed"
+				sx={{
+					width: "100%",
+					ml: 0,
+					zIndex: (theme) => theme.zIndex.drawer + 1,
+					transition: theme.transitions.create(["width", "margin"], {
+						easing: theme.transitions.easing.sharp,
+						duration: theme.transitions.duration.leavingScreen,
+					}),
+				}}
+			>
+				<Toolbar>
+					{isAuthenticated && !isEstudante && (
+						<IconButton
+							color="inherit"
+							aria-label="open drawer"
+							edge="start"
+							onClick={
+								isMobile ? handleDrawerToggle : handleDesktopDrawerToggle
+							}
+							sx={{ mr: 2 }}
+						>
+							<MenuIcon />
+						</IconButton>
+					)}
+					<Typography
+						variant="h6"
+						component="div"
+						sx={{ flexGrow: 1, cursor: "pointer" }}
+						onClick={handleClickHome}
+						data-testid="system-title"
+					>
+						Sistema de Gestão de TCCs
+					</Typography>
+					{isAuthenticated ? (
+						<UserMenu />
+					) : (
+						<Button color="inherit" onClick={handleClickLogin}>
+							Login
+						</Button>
+					)}
+				</Toolbar>
+			</AppBar>
+
+			{/* Mobile drawer */}
+			{isAuthenticated && !isEstudante && (
+				<Drawer
+					variant="temporary"
+					open={mobileOpen}
+					onClose={handleDrawerToggle}
+					ModalProps={{
+						keepMounted: true, // Better open performance on mobile.
+					}}
+					sx={{
+						display: { xs: "block", md: "none" },
+						"& .MuiDrawer-paper": {
+							boxSizing: "border-box",
+							width: drawerWidth,
+						},
+					}}
+				>
+					{drawerContent}
+				</Drawer>
+			)}
+
+			{/* Desktop drawer as overlay (temporary) */}
+			{isAuthenticated && !isEstudante && (
+				<Drawer
+					variant="temporary"
+					open={desktopOpen}
+					onClose={handleDesktopDrawerToggle}
+					ModalProps={{ keepMounted: true }}
+					sx={{
+						display: { xs: "none", md: "block" },
+						"& .MuiDrawer-paper": {
+							width: drawerWidth,
+							boxSizing: "border-box",
+						},
+					}}
+				>
+					{drawerContent}
+				</Drawer>
+			)}
+		</Box>
+	);
+}
+
+export default Navbar;
