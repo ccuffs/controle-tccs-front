@@ -32,8 +32,8 @@ export function obterTipoParticipacao(foiOrientador: boolean): string {
 export function obterDescricaoFase(fase: number): string {
 	const fases: Record<number, string> = {
 		0: "Orientação",
-		1: "Projeto",
-		2: "TCC",
+		1: "TCC I",
+		2: "TCC II",
 	};
 	return fases[fase] || `Fase ${fase}`;
 }
@@ -50,6 +50,58 @@ export function formatarPeriodo(ano: number, semestre: number): string {
  */
 export function obterTextoParticipacao(foiOrientador: boolean): string {
 	return foiOrientador ? "Orientador" : "Banca";
+}
+
+const PARTICULAS_PT = new Set([
+	"a", "as", "o", "os", "e",
+	"de", "da", "do", "das", "dos",
+	"em", "na", "no", "nas", "nos",
+	"para", "com", "por", "sob", "sobre",
+	"entre", "sem", "ao", "aos", "à", "às",
+	"pela", "pelo", "pelas", "pelos",
+]);
+
+function capitalizarPalavra(palavra: string): string {
+	return palavra
+		.split("-")
+		.map((parte) => {
+			if (!parte) return parte;
+			const idxApostrofe = parte.search(/['’]/);
+			if (idxApostrofe >= 0 && idxApostrofe < parte.length - 1) {
+				const prefixo = parte.slice(0, idxApostrofe + 1).toLowerCase();
+				const resto = parte.slice(idxApostrofe + 1);
+				return (
+					prefixo +
+					resto.charAt(0).toLocaleUpperCase("pt-BR") +
+					resto.slice(1).toLocaleLowerCase("pt-BR")
+				);
+			}
+			return (
+				parte.charAt(0).toLocaleUpperCase("pt-BR") +
+				parte.slice(1).toLocaleLowerCase("pt-BR")
+			);
+		})
+		.join("-");
+}
+
+/**
+ * Capitaliza nomes próprios seguindo regras do português.
+ * Ex.: "JOÃO DA SILVA" → "João da Silva"
+ */
+export function formatarNomeProprio(
+	texto: string | null | undefined,
+): string {
+	if (!texto?.trim()) return texto || "";
+
+	return texto
+		.trim()
+		.split(/\s+/)
+		.map((palavra, index) => {
+			const lower = palavra.toLocaleLowerCase("pt-BR");
+			if (index > 0 && PARTICULAS_PT.has(lower)) return lower;
+			return capitalizarPalavra(palavra);
+		})
+		.join(" ");
 }
 
 /**
@@ -155,6 +207,7 @@ const declaracoesController = {
 	obterDescricaoFase,
 	formatarPeriodo,
 	obterTextoParticipacao,
+	formatarNomeProprio,
 	gerarNomeArquivoPdf,
 	gerarCssImpressao,
 	injetarCssNoHead,

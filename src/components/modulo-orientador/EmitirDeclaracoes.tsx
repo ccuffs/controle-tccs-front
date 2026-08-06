@@ -1,5 +1,5 @@
-import { Box, Typography, Button, Alert, Snackbar, Chip, Divider } from "@mui/material";
-import { OpenInNew } from "@mui/icons-material";
+import { Box, Typography, Button, Alert, Snackbar, Chip, Divider, Stack } from "@mui/material";
+import { OpenInNew, TableRows } from "@mui/icons-material";
 import type { GridColDef } from "@mui/x-data-grid";
 
 import CustomDataGrid from "../customs/CustomDataGrid";
@@ -27,11 +27,14 @@ export default function EmitirDeclaracoes() {
 		semestresDisponiveis,
 		// Estados de UI
 		loading,
+		gerandoTabela,
 		snackbarOpen,
 		snackbarMessage,
+		snackbarSeverity,
 		// Handlers
 		handleBaixarDeclaracao,
 		handleBaixarDeclaracaoExterno,
+		handleBaixarDeclaracaoTabela,
 		handleCloseSnackbar,
 	} = useEmitirDeclaracoes();
 
@@ -58,12 +61,16 @@ export default function EmitirDeclaracoes() {
 			headerName: "Discente",
 			width: 200,
 			flex: 1,
+			valueGetter: (_value, row) =>
+				declaracoesController.formatarNomeProprio(row.nome_dicente),
 		},
 		{
 			field: "titulo_tcc",
 			headerName: "Título do TCC",
 			width: 260,
 			flex: 2,
+			valueGetter: (_value, row) =>
+				declaracoesController.formatarNomeProprio(row.titulo_tcc),
 		},
 		{
 			field: "periodo",
@@ -98,12 +105,16 @@ export default function EmitirDeclaracoes() {
 			headerName: "Nome do Discente",
 			width: 250,
 			flex: 1,
+			valueGetter: (_value, row) =>
+				declaracoesController.formatarNomeProprio(row.nome_dicente),
 		},
 		{
 			field: "titulo_tcc",
 			headerName: "Título do TCC",
 			width: 300,
 			flex: 2,
+			valueGetter: (_value, row) =>
+				declaracoesController.formatarNomeProprio(row.titulo_tcc),
 		},
 		{
 			field: "periodo",
@@ -166,7 +177,9 @@ export default function EmitirDeclaracoes() {
 
 			<Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
 				Aqui você pode baixar declarações dos trabalhos em que
-				participou como orientador ou membro de banca.
+				participou como orientador ou membro de banca. A emissão
+				individual e a consolidada em tabela estão disponíveis apenas
+				para estudantes já avaliados em banca.
 			</Typography>
 
 			<Box sx={{ mb: 3 }}>
@@ -197,6 +210,37 @@ export default function EmitirDeclaracoes() {
 
 		{cursoSelecionado ? (
 			<Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
+				<Box>
+					<Typography variant="subtitle1" gutterBottom>
+						Declaração consolidada (tabela)
+					</Typography>
+					<Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+						Gera um único documento com todos os estudantes já avaliados em
+						banca, conforme os filtros selecionados. Disponível para
+						participações como orientador ou como membro de banca.
+					</Typography>
+					<Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
+						<Button
+							variant="outlined"
+							color="primary"
+							startIcon={<TableRows />}
+							disabled={loading || gerandoTabela}
+							onClick={() => handleBaixarDeclaracaoTabela("orientacao")}
+						>
+							Tabela — Orientações
+						</Button>
+						<Button
+							variant="outlined"
+							color="secondary"
+							startIcon={<TableRows />}
+							disabled={loading || gerandoTabela}
+							onClick={() => handleBaixarDeclaracaoTabela("banca")}
+						>
+							Tabela — Bancas
+						</Button>
+					</Stack>
+				</Box>
+
 				{/* Grid principal — declarações do próprio docente */}
 				<Box sx={{ height: 500, width: "100%", overflow: "hidden" }}>
 					<CustomDataGrid
@@ -207,7 +251,7 @@ export default function EmitirDeclaracoes() {
 						checkboxSelection={false}
 						disableSelectionOnClick={true}
 						getRowId={(row) =>
-							`${row.id_tcc}_${row.tipo_participacao}`
+							`${row.id_tcc}_${row.tipo_participacao}_${row.fase}`
 						}
 					/>
 				</Box>
@@ -261,13 +305,13 @@ export default function EmitirDeclaracoes() {
 
 			<Snackbar
 				open={snackbarOpen}
-				autoHideDuration={3000}
+				autoHideDuration={4000}
 				onClose={handleCloseSnackbar}
 				anchorOrigin={{ vertical: "top", horizontal: "center" }}
 			>
 				<Alert
 					onClose={handleCloseSnackbar}
-					severity="success"
+					severity={snackbarSeverity}
 					sx={{ width: "100%" }}
 				>
 					{snackbarMessage}

@@ -3,6 +3,7 @@ import { useAuth } from "../contexts/AuthContext";
 import declaracoesService, {
 	getDeclaracoesExternas,
 	gerarDeclaracaoExternoHtml,
+	gerarDeclaracaoTabelaHtml,
 } from "../services/declaracoes-service";
 import declaracoesController from "../controllers/declaracoes-controller";
 import type { Curso } from "../types/curso";
@@ -16,9 +17,13 @@ export function useEmitirDeclaracoes() {
 		[],
 	);
 	const [loading, setLoading] = useState(false);
+	const [gerandoTabela, setGerandoTabela] = useState(false);
 	const [cursos, setCursos] = useState<Curso[]>([]);
 	const [snackbarOpen, setSnackbarOpen] = useState(false);
 	const [snackbarMessage, setSnackbarMessage] = useState("");
+	const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">(
+		"success",
+	);
 
 	// Estados dos filtros
 	const [cursoSelecionado, setCursoSelecionado] = useState<string | number>(
@@ -67,6 +72,12 @@ export function useEmitirDeclaracoes() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [cursoSelecionado, ano, semestre, fase]);
 
+	function mostrarSnackbar(message: string, severity: "success" | "error" = "success") {
+		setSnackbarMessage(message);
+		setSnackbarSeverity(severity);
+		setSnackbarOpen(true);
+	}
+
 	async function carregarCursos() {
 		try {
 			const cursosData = await declaracoesService.getCursos();
@@ -80,10 +91,10 @@ export function useEmitirDeclaracoes() {
 			}
 		} catch (error) {
 			console.error("Erro ao carregar cursos:", error);
-			setSnackbarMessage(
+			mostrarSnackbar(
 				error instanceof Error ? error.message : "Erro ao carregar cursos",
+				"error",
 			);
-			setSnackbarOpen(true);
 		}
 	}
 
@@ -126,10 +137,10 @@ export function useEmitirDeclaracoes() {
 			setDeclaracoesExternas([]);
 			setAnosDisponiveis([]);
 			setSemestresDisponiveis([]);
-			setSnackbarMessage(
+			mostrarSnackbar(
 				error instanceof Error ? error.message : "Erro ao carregar declarações",
+				"error",
 			);
-			setSnackbarOpen(true);
 		} finally {
 			setLoading(false);
 		}
@@ -140,8 +151,10 @@ export function useEmitirDeclaracoes() {
 			const novaAba = window.open("", "_blank");
 
 			if (!novaAba) {
-				setSnackbarMessage("Por favor, permita pop-ups para visualizar a declaração");
-				setSnackbarOpen(true);
+				mostrarSnackbar(
+					"Por favor, permita pop-ups para visualizar a declaração",
+					"error",
+				);
 				return;
 			}
 
@@ -155,14 +168,13 @@ export function useEmitirDeclaracoes() {
 			novaAba.document.write(htmlFinal);
 			novaAba.document.close();
 
-			setSnackbarMessage("Declaração aberta em nova aba.");
-			setSnackbarOpen(true);
+			mostrarSnackbar("Declaração aberta em nova aba.");
 		} catch (error) {
 			console.error("Erro ao gerar declaração para externo:", error);
-			setSnackbarMessage(
+			mostrarSnackbar(
 				error instanceof Error ? error.message : "Erro ao gerar declaração",
+				"error",
 			);
-			setSnackbarOpen(true);
 		}
 	}
 
@@ -175,10 +187,10 @@ export function useEmitirDeclaracoes() {
 			const novaAba = window.open("", "_blank");
 
 			if (!novaAba) {
-				setSnackbarMessage(
+				mostrarSnackbar(
 					"Por favor, permita pop-ups para visualizar a declaração",
+					"error",
 				);
-				setSnackbarOpen(true);
 				return;
 			}
 
@@ -192,14 +204,62 @@ export function useEmitirDeclaracoes() {
 			novaAba.document.write(htmlFinal);
 			novaAba.document.close();
 
-			setSnackbarMessage("Declaração aberta em nova aba.");
-			setSnackbarOpen(true);
+			mostrarSnackbar("Declaração aberta em nova aba.");
 		} catch (error) {
 			console.error("Erro ao gerar declaração:", error);
-			setSnackbarMessage(
+			mostrarSnackbar(
 				error instanceof Error ? error.message : "Erro ao gerar declaração",
+				"error",
 			);
-			setSnackbarOpen(true);
+		}
+	}
+
+	async function handleBaixarDeclaracaoTabela(
+		tipoParticipacao: "orientacao" | "banca",
+	) {
+		if (!declaracoesController.validarCursoSelecionado(cursoSelecionado)) {
+			mostrarSnackbar("Selecione um curso para gerar a declaração", "error");
+			return;
+		}
+
+		setGerandoTabela(true);
+		try {
+			const novaAba = window.open("", "_blank");
+
+			if (!novaAba) {
+				mostrarSnackbar(
+					"Por favor, permita pop-ups para visualizar a declaração",
+					"error",
+				);
+				return;
+			}
+
+			const htmlDeclaracao = await gerarDeclaracaoTabelaHtml(tipoParticipacao, {
+				curso: cursoSelecionado,
+				ano,
+				semestre,
+				fase,
+			});
+
+			const cssImpressao = declaracoesController.gerarCssImpressao();
+			const htmlFinal = declaracoesController.injetarCssNoHead(
+				htmlDeclaracao,
+				cssImpressao,
+			);
+			novaAba.document.write(htmlFinal);
+			novaAba.document.close();
+
+			mostrarSnackbar("Declaração consolidada aberta em nova aba.");
+		} catch (error) {
+			console.error("Erro ao gerar declaração em tabela:", error);
+			mostrarSnackbar(
+				error instanceof Error
+					? error.message
+					: "Erro ao gerar declaração consolidada",
+				"error",
+			);
+		} finally {
+			setGerandoTabela(false);
 		}
 	}
 
@@ -225,11 +285,14 @@ export function useEmitirDeclaracoes() {
 		semestresDisponiveis,
 		// Estados de UI
 		loading,
+		gerandoTabela,
 		snackbarOpen,
 		snackbarMessage,
+		snackbarSeverity,
 		// Handlers
 		handleBaixarDeclaracao,
 		handleBaixarDeclaracaoExterno,
+		handleBaixarDeclaracaoTabela,
 		handleCloseSnackbar,
 	};
 }

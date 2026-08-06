@@ -104,6 +104,36 @@ export async function gerarDeclaracaoExternoHtml(
 	}
 }
 
+// GET - Gerar declaração consolidada (todos os estudantes em uma tabela)
+export async function gerarDeclaracaoTabelaHtml(
+	tipoParticipacao: "orientacao" | "banca",
+	params: DeclaracoesFiltros = {},
+): Promise<string> {
+	try {
+		const queryString = new URLSearchParams();
+		if (params.curso) queryString.append("curso", String(params.curso));
+		if (params.ano) queryString.append("ano", String(params.ano));
+		if (params.semestre)
+			queryString.append("semestre", String(params.semestre));
+		if (params.fase) queryString.append("fase", String(params.fase));
+
+		const qs = queryString.toString();
+		const response = await axiosInstance.get<string>(
+			`/declaracoes/gerar-tabela/${tipoParticipacao}${qs ? `?${qs}` : ""}`,
+			{ responseType: "text" },
+		);
+		return response;
+	} catch (error) {
+		console.error("Erro ao gerar declaração em tabela:", error);
+		throw new Error(
+			getErrorMessage(
+				error,
+				"Erro ao gerar declaração consolidada. Verifique se há estudantes já avaliados em banca.",
+			),
+		);
+	}
+}
+
 // Exportação padrão
 const declaracoesService = {
 	getCursos,
@@ -111,6 +141,7 @@ const declaracoesService = {
 	gerarDeclaracaoHtml,
 	getDeclaracoesExternas,
 	gerarDeclaracaoExternoHtml,
+	gerarDeclaracaoTabelaHtml,
 };
 
 export default declaracoesService;
