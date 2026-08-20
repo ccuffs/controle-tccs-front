@@ -852,14 +852,15 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }: TccStepp
 			if (modalType === "next_phase") {
 				// 1.1 Projeto aprovado - pergunta sobre próxima fase
 				if (opcaoSelecionada) {
-					// Sim: atualizar TCC existente para oferta atual (próxima fase)
+					// Sim: manter o mesmo TCC, avançando para fase 2 / etapa 7 (seminário)
 					const dadosAtualizados = {
 						...tccAnterior,
 						ano: ofertaAtual.ano,
 						semestre: ofertaAtual.semestre,
 						id_curso: ofertaAtual.id_curso,
-						fase: 2, // TCC II (próxima fase)
-						aprovado_projeto: true, // Se está migrando para fase 2, o projeto foi aprovado
+						fase: 2,
+						etapa: 7,
+						aprovado_projeto: true,
 					};
 
 					const response = await axiosInstance.put<{
@@ -880,6 +881,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }: TccStepp
 						semestre:
 							tccAtualizado.semestre || ofertaAtual.semestre,
 						fase: tccAtualizado.fase || 2,
+						etapa: tccAtualizado.etapa ?? 7,
 					};
 
 					setTrabalhoConclusao(tccAtualizadoCompleto);
@@ -894,20 +896,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }: TccStepp
 							tccAtualizadoCompleto.seminario_andamento || "",
 					});
 
-					// Manter a etapa atual do TCC ou definir etapa apropriada para fase 2
-					// Se o projeto foi aprovado na fase 1, continuar da etapa 6 (seminário de andamento)
-					// Se não foi aprovado, continuar da etapa atual
-					let etapaContinuacao = tccAnterior.etapa || 0;
-
-					// Se o projeto foi aprovado e estamos migrando para fase 2,
-					// continuar da etapa 6 (seminário de andamento)
-					if (
-						tccAnterior.aprovado_projeto &&
-						tccAnterior.fase === 1
-					) {
-						etapaContinuacao = 6; // Etapa do seminário de andamento
-					}
-
+					const etapaContinuacao = 7;
 					setActiveStep(etapaContinuacao);
 					if (onEtapaChange) {
 						onEtapaChange(etapaContinuacao);

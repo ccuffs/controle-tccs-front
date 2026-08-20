@@ -1421,22 +1421,27 @@ export default function Orientacao({ isOrientadorView = false }: OrientacaoProps
 						Permissoes.ORIENTACAO.VISUALIZAR_TODAS,
 					]}
 				>
-					<Box style={{ height: "500px" }}>
-						<DataGrid
-							rows={dicentes}
-							columns={columns}
-							pageSizeOptions={[10]}
-							checkboxSelection={false}
-							disableRowSelectionOnClick
-							getRowId={(row) => row.matricula}
-							initialState={{
-								pagination: { paginationModel: { pageSize: 10 } },
-								sorting: {
-									sortModel: [{ field: "nome", sort: "asc" }],
-								},
-							}}
-						/>
-					</Box>
+					<DataGrid
+						rows={dicentes}
+						columns={columns}
+						checkboxSelection={false}
+						disableRowSelectionOnClick
+						disableVirtualization
+						hideFooter
+						getRowId={(row) => row.matricula}
+						initialState={{
+							sorting: {
+								sortModel: [{ field: "nome", sort: "asc" }],
+							},
+						}}
+						sx={{
+							height:
+								56 + Math.max(dicentes.length, 1) * 52,
+							"& .MuiDataGrid-virtualScroller": {
+								overflow: "hidden !important",
+							},
+						}}
+					/>
 				</PermissionContext>
 
 				<Snackbar

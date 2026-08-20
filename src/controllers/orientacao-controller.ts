@@ -686,6 +686,9 @@ export function obterCorStatusUpload(status: string): string {
 		dicente_e_tcc_inseridos_com_usuario: "success",
 		dicente_inserido_com_usuario: "success",
 		orientacao_inserida: "success",
+		tcc_atualizado_fase2: "success",
+		dicente_inserido_tcc_atualizado_fase2: "success",
+		dicente_inserido_tcc_atualizado_fase2_com_usuario: "success",
 		dicente_inserido_orientacao_ja_existe: "info",
 		orientacao_ja_existe: "warning",
 		dicente_ja_existe: "warning",
@@ -707,6 +710,11 @@ export function obterLabelStatusUpload(status: string): string {
 		dicente_e_tcc_inseridos_com_usuario: "Novo dicente + usuário + TCC",
 		dicente_inserido_com_usuario: "Novo dicente + usuário criado",
 		orientacao_inserida: "Orientação criada",
+		tcc_atualizado_fase2: "TCC atualizado para fase 2 (etapa 7)",
+		dicente_inserido_tcc_atualizado_fase2:
+			"Dicente + TCC atualizado para fase 2",
+		dicente_inserido_tcc_atualizado_fase2_com_usuario:
+			"Dicente + usuário + TCC atualizado para fase 2",
 		dicente_inserido_orientacao_ja_existe:
 			"Novo dicente (orientação já existe)",
 		orientacao_ja_existe: "Orientação já existe",
