@@ -41,6 +41,10 @@ export default function CustomDataGrid({
 			display: "flex",
 			alignItems: "center",
 			justifyContent: "flex-start",
+			backgroundColor: "#e4e4e5",
+		},
+		"& .MuiDataGrid-scrollbarFiller": {
+			backgroundColor: "#e4e4e5",
 		},
 		...sx,
 	};

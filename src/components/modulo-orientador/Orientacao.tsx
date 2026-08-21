@@ -126,6 +126,24 @@ export default function Orientacao({ isOrientadorView = false }: OrientacaoProps
 
 	// Configuração das colunas do DataGrid
 	const columns: GridColDef<Dicente>[] = [
+		{
+			field: "__rowNumber__",
+			headerName: "#",
+			width: 60,
+			sortable: false,
+			filterable: false,
+			disableColumnMenu: true,
+			renderCell: (params) => {
+				const index = dicentes.findIndex(
+					(d) => d.matricula === params.row.matricula,
+				);
+				return (
+					<Typography variant="body2" color="text.secondary">
+						{index + 1}
+					</Typography>
+				);
+			},
+		},
 		{ field: "matricula", headerName: "Matrícula", width: 150 },
 		{ field: "nome", headerName: "Nome do Discente", width: 350 },
 		{ field: "email", headerName: "Email", width: 300 },
@@ -1421,27 +1439,35 @@ export default function Orientacao({ isOrientadorView = false }: OrientacaoProps
 						Permissoes.ORIENTACAO.VISUALIZAR_TODAS,
 					]}
 				>
-					<DataGrid
-						rows={dicentes}
-						columns={columns}
-						checkboxSelection={false}
-						disableRowSelectionOnClick
-						disableVirtualization
-						hideFooter
-						getRowId={(row) => row.matricula}
-						initialState={{
-							sorting: {
-								sortModel: [{ field: "nome", sort: "asc" }],
-							},
-						}}
-						sx={{
-							height:
-								56 + Math.max(dicentes.length, 1) * 52,
-							"& .MuiDataGrid-virtualScroller": {
-								overflow: "hidden !important",
-							},
-						}}
-					/>
+				<DataGrid
+					rows={dicentes}
+					columns={columns}
+					checkboxSelection={false}
+					disableRowSelectionOnClick
+					disableVirtualization
+					hideFooter={dicentes.length <= 100}
+					getRowId={(row) => row.matricula}
+					initialState={{
+						pagination: { paginationModel: { pageSize: 100, page: 0 } },
+						sorting: {
+							sortModel: [{ field: "nome", sort: "asc" }],
+						},
+					}}
+					sx={{
+						height: dicentes.length <= 100
+							? 56 + Math.max(dicentes.length, 1) * 52
+							: 56 + 100 * 52 + 52,
+						"& .MuiDataGrid-columnHeader": {
+							backgroundColor: "#e4e4e5",
+						},
+						"& .MuiDataGrid-scrollbarFiller": {
+							backgroundColor: "#e4e4e5",
+						},
+						"& .MuiDataGrid-virtualScroller": {
+							overflow: "hidden !important",
+						},
+					}}
+				/>
 				</PermissionContext>
 
 				<Snackbar
