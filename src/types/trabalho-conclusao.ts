@@ -1,6 +1,19 @@
 import type { Curso } from "./curso";
+import type { Defesa } from "./defesa";
 import type { Dicente } from "./dicente";
 import type { Docente } from "./docente";
+
+export interface OrientacaoEmbutida {
+	id: number;
+	codigo_docente: string;
+	id_tcc: number;
+	orientador: boolean;
+	docente?: {
+		codigo: string;
+		nome: string | null;
+		email: string;
+	};
+}
 
 export interface TrabalhoConclusao {
 	id: number;
@@ -19,6 +32,20 @@ export interface TrabalhoConclusao {
 	comentarios_tcc: string | null;
 	dicente?: Dicente;
 	curso?: Curso;
+	/** Orientações embutidas retornadas pela API (Sequelize inclui como "Orientacoes" ou "orientacoes") */
+	Orientacoes?: OrientacaoEmbutida[];
+	orientacoes?: OrientacaoEmbutida[];
+	Defesas?: Defesa[];
+	defesas?: Defesa[];
+}
+
+/** Uma linha do grid: o mesmo aluno pode aparecer duas vezes (Projeto e TCC). */
+export interface LinhaOrientacao extends Dicente {
+	idLinha: string;
+	tccId: number;
+	faseTcc: number;
+	anoTcc: number;
+	semestreTcc: number;
 }
 
 export interface Orientacao {

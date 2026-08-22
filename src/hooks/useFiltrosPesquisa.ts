@@ -26,8 +26,8 @@ export function useFiltrosPesquisa({
 	// Função para validar se um valor existe nas opções disponíveis
 	const isValidValue = useCallback(
 		(value: string | number, options: (string | number)[]) => {
-			if (!value) return true; // Valor vazio é sempre válido
-			return options.includes(value);
+			if (value === "" || value === null || value === undefined) return true;
+			return options.some((option) => String(option) === String(value));
 		},
 		[],
 	);

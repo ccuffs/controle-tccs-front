@@ -60,6 +60,9 @@ export function useOrientacao(isOrientadorView = false) {
 	const [trabalhosPorMatricula, setTrabalhosPorMatricula] = useState<
 		Record<string, TrabalhoConclusao>
 	>({});
+	const [trabalhosLista, setTrabalhosLista] = useState<TrabalhoConclusao[]>(
+		[],
+	);
 	const [loadingTrabalhos, setLoadingTrabalhos] = useState(false);
 	const [convitesPorTcc, setConvitesPorTcc] = useState<Record<number, Convite[]>>(
 		{},
@@ -80,6 +83,7 @@ export function useOrientacao(isOrientadorView = false) {
 	// Estados para modal de edição
 	const [openEditModal, setOpenEditModal] = useState(false);
 	const [selectedDicente, setSelectedDicente] = useState<Dicente | null>(null);
+	const [selectedTccId, setSelectedTccId] = useState<number | null>(null);
 	const [editData, setEditData] = useState({
 		orientador: "",
 		tema: "",
@@ -130,9 +134,10 @@ export function useOrientacao(isOrientadorView = false) {
 	}, [isAdmin, isProfessor]);
 
 	// Carregar dicentes baseado em filtros
+	// Semestre e fase com "" significam "Todos/Todas" — são seleções válidas
 	useEffect(() => {
 		if (isOrientadorView) {
-			if (cursoSelecionado && ano && semestre) {
+			if (cursoSelecionado && ano) {
 				getDicentes();
 			} else {
 				setDicentes([]);
@@ -153,16 +158,12 @@ export function useOrientacao(isOrientadorView = false) {
 			}
 		}
 
-		if (cursoSelecionado && ano && semestre && fase) {
-			getOrientacoes();
-		} else {
-			setOrientacoes([]);
-		}
-
-		if (ano && semestre) {
+		if (cursoSelecionado && ano) {
 			getTrabalhosComDetalhes();
 		} else {
 			setTrabalhosPorMatricula({});
+			setTrabalhosLista([]);
+			setConvitesPorTcc({});
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [
@@ -303,17 +304,27 @@ export function useOrientacao(isOrientadorView = false) {
 					);
 
 				setDicentes(dicentesOrdenados);
-			} else {
-				const params: Record<string, string | number> = {};
-				if (ano) params.ano = ano;
-				if (semestre) params.semestre = semestre;
-				if (fase) params.fase = fase;
+		} else {
+			const params: Record<string, string | number> = {};
+			if (orientacaoController.filtroEstaAtivo(ano)) params.ano = ano;
+			if (orientacaoController.filtroEstaAtivo(cursoSelecionado)) {
+				params.id_curso = cursoSelecionado;
+			}
 
-				const dicentesData =
-					await orientacaoService.getDicentes(params);
-				const dicentesOrdenados =
-					orientacaoController.ordenarDicentesPorNome(dicentesData);
-				setDicentes(dicentesOrdenados);
+			const dicentesData =
+				await orientacaoService.getDicentes(params);
+			const dicentesOrdenados =
+				orientacaoController.ordenarDicentesPorNome(dicentesData);
+			// Deduplicar por matrícula: o JOIN do backend pode retornar o aluno
+			// mais de uma vez quando ele possui TCCs em múltiplas fases
+			const matriculasVistas = new Set<string>();
+			const dicentesUnicos = dicentesOrdenados.filter((d) => {
+				const mat = String(d.matricula ?? "");
+				if (!mat || matriculasVistas.has(mat)) return false;
+				matriculasVistas.add(mat);
+				return true;
+			});
+			setDicentes(dicentesUnicos);
 			}
 		} catch (error) {
 			console.log(
@@ -343,16 +354,26 @@ export function useOrientacao(isOrientadorView = false) {
 		try {
 			setLoadingTrabalhos(true);
 			const params: Record<string, string | number> = {};
-			if (ano) params.ano = ano;
-			if (semestre) params.semestre = semestre;
-			if (fase) params.fase = fase;
-			if (cursoSelecionado) params.id_curso = cursoSelecionado;
+			if (orientacaoController.filtroEstaAtivo(ano)) params.ano = ano;
+			if (orientacaoController.filtroEstaAtivo(cursoSelecionado)) {
+				params.id_curso = cursoSelecionado;
+			}
 
-			const lista = await orientacaoService.getTrabalhosConclusao(params);
+			const listaCompleta =
+				await orientacaoService.getTrabalhosConclusao(params);
+			const lista = listaCompleta.filter((t) =>
+				orientacaoController.tccAtendeFiltros(t, {
+					cursoSelecionado,
+					ano,
+					semestre,
+					fase,
+				}),
+			);
+			setTrabalhosLista(lista);
 
-			const mapa =
-				orientacaoController.criarMapaTrabalhoPorMatricula(lista);
-			setTrabalhosPorMatricula(mapa as Record<string, TrabalhoConclusao>);
+		const mapa =
+			orientacaoController.criarMapaTrabalhoPorMatricula(lista, fase);
+		setTrabalhosPorMatricula(mapa as Record<string, TrabalhoConclusao>);
 
 			// Carregar convites para cada TCC
 			const idsTcc = orientacaoController.extrairIdsTcc(lista);
@@ -375,6 +396,7 @@ export function useOrientacao(isOrientadorView = false) {
 		} catch (error) {
 			console.log("Não foi possível carregar TCCs:", error);
 			setTrabalhosPorMatricula({});
+			setTrabalhosLista([]);
 			setConvitesPorTcc({});
 		} finally {
 			setLoadingTrabalhos(false);
@@ -397,25 +419,43 @@ export function useOrientacao(isOrientadorView = false) {
 		}
 	}
 
-	function getOrientadorAtual(matricula: string) {
-		const orientacao = orientacaoController.buscarOrientacaoAtual(
-			orientacoes,
-			matricula,
-			{ cursoSelecionado, ano, semestre, fase },
-		);
-		return orientacaoController.obterOrientadorAtual(orientacao);
+	function _obterTccPorIdOuMatricula(tccId?: number, matricula?: string) {
+		if (tccId) {
+			const porId = trabalhosLista.find((t) => t.id === tccId);
+			if (porId) return porId;
+		}
+		if (matricula) return trabalhosPorMatricula[matricula];
+		return undefined;
 	}
 
-	function getOrientacaoAtual(matricula: string) {
-		return orientacaoController.buscarOrientacaoAtual(
-			orientacoes,
-			matricula,
-			{ cursoSelecionado, ano, semestre, fase },
-		);
+	function _obterOrientacaoEmbutida(tccId?: number, matricula?: string) {
+		const tcc = _obterTccPorIdOuMatricula(tccId, matricula);
+		if (!tcc) return null;
+		// Sequelize serializa a associação como "Orientacoes" (nome do modelo) ou "orientacoes" (nome da propriedade)
+		const lista = tcc.Orientacoes ?? tcc.orientacoes ?? [];
+		return lista.find((o) => o.orientador === true) ?? null;
 	}
 
-	function getOrientadorNome(matricula: string) {
-		const orientador = getOrientadorAtual(matricula);
+	function getOrientadorAtual(matricula: string, tccId?: number) {
+		const o = _obterOrientacaoEmbutida(tccId, matricula);
+		if (!o) return null;
+		return { id: o.id, codigo: o.codigo_docente, nome: o.docente?.nome || "Orientador" };
+	}
+
+	function getOrientacaoAtual(matricula: string, tccId?: number) {
+		const o = _obterOrientacaoEmbutida(tccId, matricula);
+		if (!o) return null;
+		return {
+			id: o.id,
+			codigo_docente: o.codigo_docente,
+			id_tcc: o.id_tcc,
+			orientador: true as const,
+			docente: o.docente ? { nome: o.docente.nome } : undefined,
+		};
+	}
+
+	function getOrientadorNome(matricula: string, tccId?: number) {
+		const orientador = getOrientadorAtual(matricula, tccId);
 		return orientacaoController.obterNomeOrientador(orientador);
 	}
 
@@ -510,16 +550,18 @@ export function useOrientacao(isOrientadorView = false) {
 		}
 	}
 
-	function handleOpenEditModal(dicente: Dicente) {
+	function handleOpenEditModal(dicente: Dicente, tccId?: number) {
 		setSelectedDicente(dicente);
+		setSelectedTccId(tccId ?? null);
 		setLoadingEdit(true);
 		setOpenEditModal(true);
-		loadTccData(dicente.matricula);
+		loadTccData(dicente.matricula, tccId);
 	}
 
 	function handleCloseEditModal() {
 		setOpenEditModal(false);
 		setSelectedDicente(null);
+		setSelectedTccId(null);
 		setEditData({
 			orientador: "",
 			tema: "",
@@ -541,10 +583,10 @@ export function useOrientacao(isOrientadorView = false) {
 		setDocentesExternosAtual([]);
 	}
 
-	async function loadTccData(matricula: string) {
+	async function loadTccData(matricula: string, tccId?: number) {
 		try {
-			const tcc = trabalhosPorMatricula[matricula];
-			const orientador = getOrientadorAtual(matricula);
+			const tcc = _obterTccPorIdOuMatricula(tccId, matricula);
+			const orientador = getOrientadorAtual(matricula, tcc?.id);
 
 			let dadosBanca = {
 				membroBanca1: "",
@@ -666,7 +708,10 @@ export function useOrientacao(isOrientadorView = false) {
 			(defesa) => defesa.membro_banca,
 		);
 
-		const tccAtual = trabalhosPorMatricula[selectedDicente?.matricula ?? ""];
+		const tccAtual = _obterTccPorIdOuMatricula(
+			selectedTccId ?? undefined,
+			selectedDicente?.matricula,
+		);
 		const faseAtual = parseInt(String(tccAtual?.fase));
 		const convitesCorretos =
 			faseAtual === 2 ? convitesBancaFase2 : convitesBancaAtual;
@@ -717,7 +762,10 @@ export function useOrientacao(isOrientadorView = false) {
 		try {
 			setLoadingEdit(true);
 
-			const tcc = trabalhosPorMatricula[selectedDicente.matricula];
+			const tcc = _obterTccPorIdOuMatricula(
+				selectedTccId ?? undefined,
+				selectedDicente.matricula,
+			);
 			if (!tcc) {
 				throw new Error("TCC não encontrado para este dicente");
 			}
@@ -771,9 +819,11 @@ export function useOrientacao(isOrientadorView = false) {
 			// Gerenciar orientação e convites
 			const orientadorAtual = getOrientadorAtual(
 				selectedDicente.matricula,
+				tcc.id,
 			);
 			const orientacaoAtual = getOrientacaoAtual(
 				selectedDicente.matricula,
+				tcc.id,
 			);
 			const codigoOrientadorAtual = orientadorAtual?.codigo || "";
 
@@ -878,7 +928,7 @@ export function useOrientacao(isOrientadorView = false) {
 			setMessageText("Dados salvos com sucesso!");
 			setMessageSeverity("success");
 
-			await Promise.all([getOrientacoes(), getTrabalhosComDetalhes()]);
+			await getTrabalhosComDetalhes();
 
 			handleCloseEditModal();
 		} catch (error) {
@@ -898,11 +948,24 @@ export function useOrientacao(isOrientadorView = false) {
 		? orientadoresCurso.map((oc) => oc.docente)
 		: [];
 
-	const todosOsFiltrosSelecionados = isOrientadorView
-		? Boolean(cursoSelecionado && ano && semestre)
-		: Boolean(cursoSelecionado && ano && semestre && fase);
+	// Semestre="" e fase="" significam "Todos/Todas" — são escolhas válidas
+	const todosOsFiltrosSelecionados = Boolean(cursoSelecionado && ano);
 
-	const dicentesFiltrados = todosOsFiltrosSelecionados ? dicentes : [];
+	const dicentesDoRecorte = todosOsFiltrosSelecionados
+		? isOrientadorView
+			? dicentes
+			: orientacaoController.filtrarDicentesPorTrabalhos(
+					dicentes,
+					trabalhosLista,
+				)
+		: [];
+
+	const linhasOrientacao = todosOsFiltrosSelecionados
+		? orientacaoController.montarLinhasOrientacao(
+				dicentesDoRecorte,
+				trabalhosLista,
+			)
+		: [];
 
 	const anosUnicos = orientacaoController.gerarAnosUnicos(ofertasTcc);
 	const semestresUnicos =
@@ -914,12 +977,13 @@ export function useOrientacao(isOrientadorView = false) {
 		isProfessor,
 		isAdmin,
 		// Estados de dados
-		dicentes: dicentesFiltrados,
+		dicentes: linhasOrientacao,
 		cursos,
 		orientadoresCurso,
 		ofertasTcc,
 		orientacoes,
 		trabalhosPorMatricula,
+		trabalhosLista,
 		convitesPorTcc,
 		areasTcc,
 		docentesBanca,
@@ -970,6 +1034,7 @@ export function useOrientacao(isOrientadorView = false) {
 		// Estados de edição
 		openEditModal,
 		selectedDicente,
+		selectedTccId,
 		editData,
 		mostrarSeletorHorario,
 		setMostrarSeletorHorario,

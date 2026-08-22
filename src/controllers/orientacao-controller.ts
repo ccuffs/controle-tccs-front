@@ -123,48 +123,196 @@ export function ordenarDicentesPorNome(dicentes: Dicente[]): Dicente[] {
 }
 
 /**
+ * "" / null / undefined significam "Todos/Todas" — o filtro não restringe aquele campo.
+ */
+export function filtroEstaAtivo(
+	valor: string | number | null | undefined,
+): boolean {
+	return valor !== "" && valor !== null && valor !== undefined;
+}
+
+/**
+ * Um TCC entra no resultado somente se atender a todos os filtros ativos.
+ * Semestre e fase são independentes: "Todos" em um não anula o outro.
+ */
+export function tccAtendeFiltros(
+	tcc: TrabalhoLegado,
+	{ cursoSelecionado, ano, semestre, fase }: FiltrosOrientacoes,
+): boolean {
+	const cursoId = tcc.curso?.id ?? tcc.id_curso ?? tcc.idCurso;
+
+	if (
+		filtroEstaAtivo(cursoSelecionado) &&
+		Number(cursoId) !== Number(cursoSelecionado)
+	) {
+		return false;
+	}
+	if (filtroEstaAtivo(ano) && Number(tcc.ano) !== Number(ano)) {
+		return false;
+	}
+	if (
+		filtroEstaAtivo(semestre) &&
+		Number(tcc.semestre) !== Number(semestre)
+	) {
+		return false;
+	}
+	if (filtroEstaAtivo(fase) && Number(tcc.fase) !== Number(fase)) {
+		return false;
+	}
+	return true;
+}
+
+/**
  * Filtra orientações por critérios
  */
 export function filtrarOrientacoes(
 	orientacoes: OrientacaoLegado[],
-	{ cursoSelecionado, ano, semestre, fase }: FiltrosOrientacoes,
+	filtros: FiltrosOrientacoes,
 ): OrientacaoLegado[] {
 	return orientacoes.filter((o) => {
 		const tcc = o.trabalhoConclusao;
 		if (!tcc) return false;
-
-		return (
-			tcc.curso?.id === parseInt(String(cursoSelecionado)) &&
-			tcc.ano === parseInt(String(ano)) &&
-			tcc.semestre === parseInt(String(semestre)) &&
-			(fase === "" || tcc.fase === parseInt(String(fase)))
-		);
+		return tccAtendeFiltros(tcc, filtros);
 	});
 }
 
 /**
- * Extrai dicentes das orientações
+ * Mantém apenas dicentes que possuem ao menos um TCC no recorte filtrado.
+ */
+export function filtrarDicentesPorTrabalhos(
+	dicentes: Dicente[],
+	trabalhos: TrabalhoLegado[],
+): Dicente[] {
+	const matriculas = new Set(
+		trabalhos
+			.map((t) => String(t.dicente?.matricula || t.matricula || ""))
+			.filter(Boolean),
+	);
+	return dicentes.filter((d) => matriculas.has(String(d.matricula)));
+}
+
+export interface LinhaOrientacaoGrid extends Dicente {
+	idLinha: string;
+	tccId: number;
+	faseTcc: number;
+	anoTcc: number;
+	semestreTcc: number;
+}
+
+/**
+ * Uma linha por TCC. Aluno com Projeto e TCC gera duas entradas, sem agrupar.
+ */
+export function montarLinhasOrientacao(
+	dicentes: Dicente[],
+	trabalhos: TrabalhoLegado[],
+): LinhaOrientacaoGrid[] {
+	const porMatricula = new Map(
+		dicentes.map((d) => [String(d.matricula), d]),
+	);
+	const matriculas = new Set(porMatricula.keys());
+
+	const linhas: LinhaOrientacaoGrid[] = [];
+	for (const t of trabalhos) {
+		if (!t.id) continue;
+		const mat = String(t.dicente?.matricula || t.matricula || "");
+		if (!mat || !matriculas.has(mat)) continue;
+		const dicente = porMatricula.get(mat);
+		if (!dicente) continue;
+
+		linhas.push({
+			...dicente,
+			idLinha: `${mat}-${t.id}`,
+			tccId: t.id,
+			faseTcc: t.fase != null ? parseInt(String(t.fase), 10) : 0,
+			anoTcc: t.ano != null ? Number(t.ano) : 0,
+			semestreTcc: t.semestre != null ? Number(t.semestre) : 0,
+		});
+	}
+
+	return linhas.sort((a, b) => {
+		const porNome = a.nome.localeCompare(b.nome);
+		if (porNome !== 0) return porNome;
+		return a.faseTcc - b.faseTcc;
+	});
+}
+
+/**
+ * Fases distintas do aluno entre os TCCs já recortados pelos filtros.
+ */
+export function obterFasesDoDicente(
+	matricula: string,
+	trabalhos: TrabalhoLegado[],
+): number[] {
+	const mat = String(matricula);
+	const fases = new Set<number>();
+	for (const t of trabalhos) {
+		const tMat = String(t.dicente?.matricula || t.matricula || "");
+		if (tMat !== mat || t.fase == null) continue;
+		fases.add(parseInt(String(t.fase), 10));
+	}
+	return [...fases].sort((a, b) => a - b);
+}
+
+/**
+ * Extrai dicentes das orientações, deduplicando por matrícula.
+ * Um aluno com TCCs em fase 1 e fase 2 gera duas orientações; sem deduplicação
+ * ele apareceria duas vezes na lista quando o filtro de fase está em "Todas".
  */
 export function extrairDicentesDasOrientacoes(
 	orientacoes: OrientacaoLegado[],
 ): DicenteLegado[] {
+	const vistos = new Set<string>();
 	return orientacoes
 		.map((o) => o.trabalhoConclusao?.dicente)
-		.filter((dicente): dicente is DicenteLegado => dicente !== null && dicente !== undefined);
+		.filter((dicente): dicente is DicenteLegado => {
+			if (dicente == null) return false;
+			const mat = String((dicente as { matricula?: string | number }).matricula ?? "");
+			if (!mat || vistos.has(mat)) return false;
+			vistos.add(mat);
+			return true;
+		});
 }
 
 /**
- * Cria mapa de trabalhos por matrícula (escolhendo o mais recente)
+ * Cria mapa de trabalhos por matrícula.
+ * Quando `fasePreferida` é fornecida, prioriza o TCC que corresponde a essa fase
+ * (útil quando um aluno possui TCCs de fase 1 e fase 2 no mesmo período).
+ * Na ausência de preferência ou em caso de empate, seleciona o TCC com maior id.
  */
 export function criarMapaTrabalhoPorMatricula(
 	trabalhos: TrabalhoLegado[],
+	fasePreferida?: string | number | null,
 ): Record<string, TrabalhoLegado> {
+	const faseFiltro =
+		fasePreferida !== undefined && fasePreferida !== null && fasePreferida !== ""
+			? parseInt(String(fasePreferida), 10)
+			: null;
+
 	const mapa: Record<string, TrabalhoLegado> = {};
 	for (const t of trabalhos) {
 		const mat = t.dicente?.matricula || t.matricula;
 		if (!mat) continue;
 		const existente = mapa[mat];
-		if (!existente || (t.id && existente.id && t.id > existente.id)) {
+
+		if (!existente) {
+			mapa[mat] = t;
+			continue;
+		}
+
+		if (faseFiltro !== null) {
+			const tFase = t.fase != null ? parseInt(String(t.fase), 10) : null;
+			const existenteFase =
+				existente.fase != null ? parseInt(String(existente.fase), 10) : null;
+			const tBate = tFase === faseFiltro;
+			const existenteBate = existenteFase === faseFiltro;
+
+			if (tBate && !existenteBate) {
+				mapa[mat] = t;
+			} else if (tBate && existenteBate && t.id && existente.id && t.id > existente.id) {
+				mapa[mat] = t;
+			}
+			// existente bate e t não bate → mantém existente
+		} else if (t.id && existente.id && t.id > existente.id) {
 			mapa[mat] = t;
 		}
 	}
@@ -710,11 +858,11 @@ export function obterLabelStatusUpload(status: string): string {
 		dicente_e_tcc_inseridos_com_usuario: "Novo dicente + usuário + TCC",
 		dicente_inserido_com_usuario: "Novo dicente + usuário criado",
 		orientacao_inserida: "Orientação criada",
-		tcc_atualizado_fase2: "TCC atualizado para fase 2 (etapa 7)",
+		tcc_atualizado_fase2: "Novo TCC fase 2 criado com dados da fase 1",
 		dicente_inserido_tcc_atualizado_fase2:
-			"Dicente + TCC atualizado para fase 2",
+			"Dicente + Novo TCC fase 2 criado com dados da fase 1",
 		dicente_inserido_tcc_atualizado_fase2_com_usuario:
-			"Dicente + usuário + TCC atualizado para fase 2",
+			"Dicente + usuário + Novo TCC fase 2 criado com dados da fase 1",
 		dicente_inserido_orientacao_ja_existe:
 			"Novo dicente (orientação já existe)",
 		orientacao_ja_existe: "Orientação já existe",
@@ -746,7 +894,12 @@ const orientacaoController = {
 	getAnoSemestreAtual,
 	extrairCursosUnicos,
 	ordenarDicentesPorNome,
+	filtroEstaAtivo,
+	tccAtendeFiltros,
 	filtrarOrientacoes,
+	filtrarDicentesPorTrabalhos,
+	montarLinhasOrientacao,
+	obterFasesDoDicente,
 	extrairDicentesDasOrientacoes,
 	criarMapaTrabalhoPorMatricula,
 	extrairIdsTcc,

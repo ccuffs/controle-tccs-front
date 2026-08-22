@@ -128,20 +128,28 @@ export default function FiltrosPesquisa({
 			{habilitarSemestre && (
 				<FormControl sx={{ minWidth: 100 }} size="small" disabled={loading}>
 					<InputLabel>Semestre</InputLabel>
-					<Select value={semestreValue} label="Semestre" onChange={handleSemestreChange}>
+					<Select
+						value={
+							semestreValue === "" || semestreValue == null
+								? ""
+								: String(semestreValue)
+						}
+						label="Semestre"
+						onChange={handleSemestreChange}
+					>
 						<MenuItem value="">
 							<em>Todos</em>
 						</MenuItem>
 						{semestresDisponiveis.length > 0
 							? // Usar semestres das ofertas TCC se disponíveis
 								semestresDisponiveis.map((s) => (
-									<MenuItem key={s} value={s}>
+									<MenuItem key={s} value={String(s)}>
 										{s}º Semestre
 									</MenuItem>
 								))
 							: // Fallback para semestres padrão se não houver ofertas
 								[1, 2].map((s) => (
-									<MenuItem key={s} value={s}>
+									<MenuItem key={s} value={String(s)}>
 										{s}º Semestre
 									</MenuItem>
 								))}
@@ -152,7 +160,11 @@ export default function FiltrosPesquisa({
 			{habilitarFase && (
 				<FormControl sx={{ minWidth: 100 }} size="small" disabled={loading}>
 					<InputLabel>Fase</InputLabel>
-					<Select value={fase || ""} label="Fase" onChange={handleFaseChange}>
+					<Select
+						value={fase === "" || fase == null ? "" : String(fase)}
+						label="Fase"
+						onChange={handleFaseChange}
+					>
 						{habilitarFiltroTodasFases && (
 							<MenuItem value="">
 								<em>Todas</em>

@@ -25,7 +25,14 @@ import {
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { DataGrid, type GridColDef } from "@mui/x-data-grid";
+import {
+	DataGrid,
+	gridSortedRowIdsSelector,
+	useGridApiContext,
+	useGridSelector,
+	type GridColDef,
+	type GridRowId,
+} from "@mui/x-data-grid";
 import SaveIcon from "@mui/icons-material/Save";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
@@ -39,12 +46,23 @@ import FiltrosPesquisa from "../utils/FiltrosPesquisa";
 import SelecionarHorarioBanca from "../modulo-dicente/SelecionarHorarioBanca";
 import { useOrientacao } from "../../hooks/useOrientacao";
 import orientacaoController from "../../controllers/orientacao-controller";
-import type { Dicente } from "../../types/dicente";
 import type { Curso } from "../../types/curso";
-import type { Defesa } from "../../types/defesa";
+import type { LinhaOrientacao } from "../../types/trabalho-conclusao";
 
 interface OrientacaoProps {
 	isOrientadorView?: boolean;
+}
+
+function NumeroLinhaCell({ id }: { id: GridRowId }) {
+	const apiRef = useGridApiContext();
+	const idsOrdenados = useGridSelector(apiRef, gridSortedRowIdsSelector);
+	const indice = idsOrdenados.indexOf(id);
+
+	return (
+		<Typography variant="body2" color="text.secondary">
+			{indice + 1}
+		</Typography>
+	);
 }
 
 export default function Orientacao({ isOrientadorView = false }: OrientacaoProps) {
@@ -55,6 +73,7 @@ export default function Orientacao({ isOrientadorView = false }: OrientacaoProps
 		ofertasTcc: _ofertasTcc,
 		orientacoes: _orientacoes,
 		trabalhosPorMatricula,
+		trabalhosLista,
 		convitesPorTcc,
 		areasTcc: _areasTcc,
 		docentesBanca,
@@ -103,6 +122,7 @@ export default function Orientacao({ isOrientadorView = false }: OrientacaoProps
 		// Estados de edição
 		openEditModal,
 		selectedDicente,
+		selectedTccId,
 		editData,
 		mostrarSeletorHorario,
 		setMostrarSeletorHorario,
@@ -118,212 +138,242 @@ export default function Orientacao({ isOrientadorView = false }: OrientacaoProps
 		handleSaveEdit,
 		// Funções auxiliares
 		getOrientadorAtual,
-		getOrientadorNome,
 		todosOsFiltrosSelecionados,
 	} = useOrientacao(isOrientadorView);
 
 	const cursosOptions = cursos as Curso[];
 
+	const tccDaLinha = (tccId: number) =>
+		trabalhosLista.find((t) => t.id === tccId) ??
+		trabalhosPorMatricula[
+			dicentes.find((d) => d.tccId === tccId)?.matricula ?? ""
+		];
+
+	const tccEmEdicao = selectedTccId
+		? tccDaLinha(selectedTccId)
+		: selectedDicente
+			? trabalhosPorMatricula[selectedDicente.matricula]
+			: undefined;
+
 	// Configuração das colunas do DataGrid
-	const columns: GridColDef<Dicente>[] = [
+	const columns: GridColDef<LinhaOrientacao>[] = [
 		{
 			field: "__rowNumber__",
 			headerName: "#",
-			width: 60,
+			width: 48,
+			sortable: false,
+			filterable: false,
+			disableColumnMenu: true,
+			renderCell: (params) => <NumeroLinhaCell id={params.id} />,
+		},
+		{ field: "matricula", headerName: "Matrícula", width: 120 },
+		{ field: "nome", headerName: "Nome do Discente", width: 350 },
+		{ field: "email", headerName: "Email", width: 300 },
+		{
+			field: "anoSemestre",
+			headerName: "Ano/Sem.",
+			width: 84,
 			sortable: false,
 			filterable: false,
 			disableColumnMenu: true,
 			renderCell: (params) => {
-				const index = dicentes.findIndex(
-					(d) => d.matricula === params.row.matricula,
-				);
+				const { anoTcc, semestreTcc } = params.row;
+				if (!anoTcc || !semestreTcc) return null;
 				return (
-					<Typography variant="body2" color="text.secondary">
-						{index + 1}
+					<Typography variant="body2">
+						{anoTcc}/{semestreTcc}
 					</Typography>
 				);
 			},
 		},
-		{ field: "matricula", headerName: "Matrícula", width: 150 },
-		{ field: "nome", headerName: "Nome do Discente", width: 350 },
-		{ field: "email", headerName: "Email", width: 300 },
-		{
-			field: "orientador",
-			headerName: "Orientador",
-			width: 250,
-			sortable: false,
-			renderCell: (params) => {
-				const orientadorNome = getOrientadorNome(params.row.matricula);
+	{
+		field: "faseTcc",
+		headerName: "Fase",
+		width: 84,
+		sortable: false,
+		filterable: false,
+		disableColumnMenu: true,
+		renderCell: (params) => {
+			if (params.row.faseTcc === 1) {
 				return (
-					<Typography variant="body2" color="text.secondary">
-						{orientadorNome}
-					</Typography>
+					<Chip label="Projeto" size="small" color="info" variant="outlined" />
 				);
-			},
+			}
+			if (params.row.faseTcc === 2) {
+				return (
+					<Chip label="TCC" size="small" color="secondary" variant="outlined" />
+				);
+			}
+			return null;
 		},
+	},
 		{
-			field: "acoes",
-			headerName: "Ações",
+			field: "etapa",
+			headerName: "Etapa",
 			width: 120,
 			sortable: false,
 			renderCell: (params) => {
+				const tcc = tccDaLinha(params.row.tccId);
+				const etapa = tcc?.etapa ?? null;
+				const convites = tcc?.id ? convitesPorTcc[tcc.id] || [] : [];
+				const faseAtual =
+					params.row.faseTcc ||
+					(tcc?.fase != null ? parseInt(String(tcc.fase)) : null);
+
+				let showWarn = false;
+				let tooltipText = "";
+
+				let showSuccess = false;
+				let successTooltip = "";
+
+				if (etapa === 0) {
+					const temConviteOrientacao =
+						orientacaoController.temConviteOrientacao(convites);
+					const temOrientadorDefinido = !!getOrientadorAtual(
+						params.row.matricula,
+						params.row.tccId,
+					);
+					if (!temConviteOrientacao && !temOrientadorDefinido) {
+						showWarn = true;
+						tooltipText =
+							"O estudante não enviou convite para orientação";
+					} else if (temConviteOrientacao || temOrientadorDefinido) {
+						showSuccess = true;
+						successTooltip = temOrientadorDefinido
+							? "Orientador definido"
+							: "Convite para orientação enviado";
+					}
+				} else if (
+					etapa === 5 ||
+					etapa === 7 ||
+					(etapa === 8 && faseAtual === 2)
+				) {
+					const temConviteBancaFase =
+						orientacaoController.temConviteBancaNaFase(
+							convites,
+							faseAtual,
+							faseAtual ?? undefined,
+						);
+					if (!temConviteBancaFase) {
+						showWarn = true;
+						tooltipText = "O estudante não enviou convite para banca";
+					} else {
+						showSuccess = true;
+						successTooltip = "Convite para banca enviado";
+					}
+				} else if (etapa != null && etapa >= 1 && etapa <= 4) {
+					const temOrientadorDefinido = !!getOrientadorAtual(
+						params.row.matricula,
+						params.row.tccId,
+					);
+					if (temOrientadorDefinido) {
+						showSuccess = true;
+						successTooltip = "Orientador definido";
+					}
+				} else if (etapa === 6 || etapa === 8 || etapa === 9) {
+					const temConviteBancaFase =
+						orientacaoController.temConviteBancaNaFase(
+							convites,
+							faseAtual,
+							faseAtual ?? undefined,
+						);
+					if (temConviteBancaFase) {
+						showSuccess = true;
+						successTooltip = "Convites de banca enviados";
+					}
+				}
+
 				return (
-					<PermissionContext
-						permissoes={[Permissoes.ORIENTACAO.EDITAR]}
-						showError={false}
+					<Box
+						sx={{
+							display: "flex",
+							alignItems: "center",
+							gap: 1,
+						}}
 					>
-						<Button
-							variant="outlined"
-							size="small"
-							startIcon={<EditIcon />}
-							onClick={(e) => {
-								e.stopPropagation();
-								handleOpenEditModal(params.row);
-							}}
-							disabled={!todosOsFiltrosSelecionados}
-						>
-							Editar
-						</Button>
-					</PermissionContext>
+						<Typography variant="body2">
+							{etapa != null ? `Etapa ${etapa}` : "Etapa —"}
+						</Typography>
+						{showWarn && (
+							<Tooltip title={tooltipText}>
+								<WarningAmberIcon
+									color="warning"
+									fontSize="small"
+								/>
+							</Tooltip>
+						)}
+						{!showWarn && showSuccess && (
+							<Tooltip title={successTooltip}>
+								<CheckCircleIcon
+									color="success"
+									fontSize="small"
+								/>
+							</Tooltip>
+						)}
+					</Box>
 				);
 			},
+		} satisfies GridColDef<LinhaOrientacao>,
+		{
+			field: "nota",
+			headerName: "Nota",
+			width: 80,
+			sortable: false,
+			renderCell: (params) => {
+				const tcc = tccDaLinha(params.row.tccId);
+				const defesas = tcc?.Defesas || tcc?.defesas || [];
+				const faseAtual =
+					params.row.faseTcc ||
+					(tcc?.fase != null ? parseInt(String(tcc.fase)) : null);
+				const defesasFase = Array.isArray(defesas)
+					? defesas.filter((d) =>
+							faseAtual != null
+								? parseInt(String(d.fase)) === faseAtual
+								: true,
+						)
+					: [];
+				const media = orientacaoController.calcularMediaDefesa(
+					defesasFase,
+					faseAtual ?? undefined,
+				);
+
+				return (
+					<Typography
+						variant="body2"
+						color={media != null ? "text.primary" : "text.secondary"}
+					>
+						{media != null ? media.toFixed(1) : "—"}
+					</Typography>
+				);
+			},
+		} satisfies GridColDef<LinhaOrientacao>,
+	{
+		field: "acoes",
+		headerName: "Ações",
+		width: 120,
+		sortable: false,
+		renderCell: (params) => {
+			return (
+				<PermissionContext
+					permissoes={[Permissoes.ORIENTACAO.EDITAR]}
+					showError={false}
+				>
+					<Button
+						variant="outlined"
+						size="small"
+						startIcon={<EditIcon />}
+						onClick={(e) => {
+							e.stopPropagation();
+							handleOpenEditModal(params.row, params.row.tccId);
+						}}
+						disabled={!todosOsFiltrosSelecionados}
+					>
+						Editar
+					</Button>
+				</PermissionContext>
+			);
 		},
-		// Coluna Etapa/Nota - exibe quando ano e semestre estão selecionados
-		...(ano && semestre
-			? [
-					{
-						field: "etapaNota",
-						headerName: "Etapa / Nota",
-						width: 220,
-						sortable: false,
-						renderCell: (params) => {
-							const tcc = trabalhosPorMatricula[params.row.matricula];
-							const etapa = tcc?.etapa ?? null;
-							const convites = tcc?.id ? convitesPorTcc[tcc.id] || [] : [];
-							const tccComDefesasLegado = tcc as
-								| (typeof tcc & { Defesas?: Defesa[]; defesas?: Defesa[] })
-								| undefined;
-							const defesas =
-								tccComDefesasLegado?.Defesas ||
-								tccComDefesasLegado?.defesas ||
-								[];
-
-							let showWarn = false;
-							let tooltipText = "";
-
-							let showSuccess = false;
-							let successTooltip = "";
-
-							if (etapa === 0) {
-								const temConviteOrientacao =
-									orientacaoController.temConviteOrientacao(convites);
-								const temOrientadorDefinido = !!getOrientadorAtual(
-									params.row.matricula,
-								);
-								if (!temConviteOrientacao && !temOrientadorDefinido) {
-									showWarn = true;
-									tooltipText =
-										"O estudante não enviou convite para orientação";
-								} else if (temConviteOrientacao || temOrientadorDefinido) {
-									showSuccess = true;
-									successTooltip = temOrientadorDefinido
-										? "Orientador definido"
-										: "Convite para orientação enviado";
-								}
-							} else if (
-								etapa === 5 ||
-								etapa === 7 ||
-								(etapa === 8 && parseInt(String(tcc?.fase)) === 2)
-							) {
-								const faseAtualTcc =
-									tcc?.fase != null ? parseInt(String(tcc.fase)) : null;
-								const temConviteBancaFase =
-									orientacaoController.temConviteBancaNaFase(
-										convites,
-										faseAtualTcc,
-										fase,
-									);
-								if (!temConviteBancaFase) {
-									showWarn = true;
-									tooltipText = "O estudante não enviou convite para banca";
-								} else {
-									showSuccess = true;
-									successTooltip = "Convite para banca enviado";
-								}
-							} else if (etapa != null && etapa >= 1 && etapa <= 4) {
-								const temOrientadorDefinido = !!getOrientadorAtual(
-									params.row.matricula,
-								);
-								if (temOrientadorDefinido) {
-									showSuccess = true;
-									successTooltip = "Orientador definido";
-								}
-							} else if (etapa === 6 || etapa === 8 || etapa === 9) {
-								const faseAtualTcc =
-									tcc?.fase != null ? parseInt(String(tcc.fase)) : null;
-								const temConviteBancaFase =
-									orientacaoController.temConviteBancaNaFase(
-										convites,
-										faseAtualTcc,
-										fase,
-									);
-								if (temConviteBancaFase) {
-									showSuccess = true;
-									successTooltip = "Convites de banca enviados";
-								}
-							}
-
-							const faseAtual =
-								tcc?.fase != null ? parseInt(String(tcc.fase)) : null;
-							const defesasFase = Array.isArray(defesas)
-								? defesas.filter((d) =>
-										fase ? parseInt(String(d.fase)) === faseAtual : true,
-									)
-								: [];
-							const media = orientacaoController.calcularMediaDefesa(
-								defesasFase,
-								faseAtual ?? undefined,
-							);
-
-							return (
-								<Box
-									sx={{
-										display: "flex",
-										alignItems: "center",
-										gap: 1,
-									}}
-								>
-									<Typography variant="body2">
-										{etapa != null ? `Etapa ${etapa}` : "Etapa —"}
-									</Typography>
-									{showWarn && (
-										<Tooltip title={tooltipText}>
-											<WarningAmberIcon
-												color="warning"
-												fontSize="small"
-											/>
-										</Tooltip>
-									)}
-									{!showWarn && showSuccess && (
-										<Tooltip title={successTooltip}>
-											<CheckCircleIcon
-												color="success"
-												fontSize="small"
-											/>
-										</Tooltip>
-									)}
-									<Typography
-										variant="body2"
-										color={media != null ? "text.primary" : "text.secondary"}
-									>
-										{media != null ? `Nota ${media.toFixed(1)}` : "Nota —"}
-									</Typography>
-								</Box>
-							);
-						},
-					} satisfies GridColDef<Dicente>,
-				]
-			: []),
+	},
 	];
 
 	return (
@@ -364,7 +414,7 @@ export default function Orientacao({ isOrientadorView = false }: OrientacaoProps
 						</Box>
 					) : todosOsFiltrosSelecionados ? (
 						<Typography variant="body2" color="text.secondary">
-							{`${dicentes.length} discente${
+							{`${dicentes.length} registro${
 								dicentes.length !== 1 ? "s" : ""
 							} encontrado${dicentes.length !== 1 ? "s" : ""}`}
 						</Typography>
@@ -650,7 +700,12 @@ export default function Orientacao({ isOrientadorView = false }: OrientacaoProps
 												variant="body2"
 												color="text.secondary"
 											>
-												<strong>Fase:</strong> {fase}
+												<strong>Fase:</strong>{" "}
+												{tccEmEdicao?.fase === 2
+													? "TCC"
+													: tccEmEdicao?.fase === 1
+														? "Projeto"
+														: fase}
 											</Typography>
 										</Grid>
 										<Grid size={{ xs: 12, md: 4 }}>
@@ -658,7 +713,10 @@ export default function Orientacao({ isOrientadorView = false }: OrientacaoProps
 												variant="body2"
 												color="text.secondary"
 											>
-												<strong>Período:</strong> {ano}/{semestre}
+												<strong>Período:</strong>{" "}
+												{tccEmEdicao
+													? `${tccEmEdicao.ano}/${tccEmEdicao.semestre}`
+													: `${ano}/${semestre}`}
 											</Typography>
 										</Grid>
 									</Grid>
@@ -742,9 +800,7 @@ export default function Orientacao({ isOrientadorView = false }: OrientacaoProps
 											>
 												{(() => {
 													const tccAtual =
-														trabalhosPorMatricula[
-															selectedDicente?.matricula ?? ""
-														];
+														tccEmEdicao;
 													const faseTcc = tccAtual?.fase;
 													const maxEtapa =
 														orientacaoController.obterEtapaMaxima(
@@ -799,9 +855,7 @@ export default function Orientacao({ isOrientadorView = false }: OrientacaoProps
 										>
 											{(() => {
 												const tccAtual =
-													trabalhosPorMatricula[
-														selectedDicente?.matricula ?? ""
-													];
+													tccEmEdicao;
 												const faseAtual = parseInt(
 													String(tccAtual?.fase),
 												);
@@ -822,9 +876,7 @@ export default function Orientacao({ isOrientadorView = false }: OrientacaoProps
 										{/* Data e Hora da Defesa - apenas para etapas 5 e 8 */}
 										{(() => {
 											const tccAtual =
-												trabalhosPorMatricula[
-													selectedDicente?.matricula ?? ""
-												];
+												tccEmEdicao;
 											return orientacaoController.isEdicaoBancaHabilitada(
 												editData.etapa,
 												tccAtual?.fase ?? 0,
@@ -841,10 +893,7 @@ export default function Orientacao({ isOrientadorView = false }: OrientacaoProps
 															value={editData.dataHoraDefesa}
 															onChange={(newValue) => {
 																const tccAtual =
-																	trabalhosPorMatricula[
-																		selectedDicente?.matricula ??
-																			""
-																	];
+																	tccEmEdicao;
 																const edicaoHabilitada =
 																	orientacaoController.isEdicaoBancaHabilitada(
 																		editData.etapa,
@@ -860,10 +909,7 @@ export default function Orientacao({ isOrientadorView = false }: OrientacaoProps
 															}}
 															disabled={(() => {
 																const tccAtual =
-																	trabalhosPorMatricula[
-																		selectedDicente?.matricula ??
-																			""
-																	];
+																	tccEmEdicao;
 																return !orientacaoController.isEdicaoBancaHabilitada(
 																	editData.etapa,
 																	tccAtual?.fase ?? 0,
@@ -874,10 +920,7 @@ export default function Orientacao({ isOrientadorView = false }: OrientacaoProps
 																	fullWidth: true,
 																	helperText: (() => {
 																		const tccAtual =
-																			trabalhosPorMatricula[
-																				selectedDicente?.matricula ??
-																					""
-																			];
+																			tccEmEdicao;
 																		const faseAtual = parseInt(
 																			String(tccAtual?.fase),
 																		);
@@ -956,10 +999,7 @@ export default function Orientacao({ isOrientadorView = false }: OrientacaoProps
 																	),
 																	fase: (() => {
 																		const tccAtual =
-																			trabalhosPorMatricula[
-																				selectedDicente?.matricula ??
-																					""
-																			];
+																			tccEmEdicao;
 																		return parseInt(
 																			String(tccAtual?.fase),
 																		);
@@ -995,9 +1035,7 @@ export default function Orientacao({ isOrientadorView = false }: OrientacaoProps
 										{/* Campos de seleção de membros da banca - apenas para etapas 5 e 8 */}
 										{(() => {
 											const tccAtual =
-												trabalhosPorMatricula[
-													selectedDicente?.matricula ?? ""
-												];
+												tccEmEdicao;
 											return orientacaoController.isEdicaoBancaHabilitada(
 												editData.etapa,
 												tccAtual?.fase ?? 0,
@@ -1022,10 +1060,7 @@ export default function Orientacao({ isOrientadorView = false }: OrientacaoProps
 															value={editData.membroBanca1}
 															onChange={(e) => {
 																const tccAtual =
-																	trabalhosPorMatricula[
-																		selectedDicente?.matricula ??
-																			""
-																	];
+																	tccEmEdicao;
 																const edicaoHabilitada =
 																	orientacaoController.isEdicaoBancaHabilitada(
 																		editData.etapa,
@@ -1041,10 +1076,7 @@ export default function Orientacao({ isOrientadorView = false }: OrientacaoProps
 															}}
 															disabled={(() => {
 																const tccAtual =
-																	trabalhosPorMatricula[
-																		selectedDicente?.matricula ??
-																			""
-																	];
+																	tccEmEdicao;
 																return !orientacaoController.isEdicaoBancaHabilitada(
 																	editData.etapa,
 																	tccAtual?.fase ?? 0,
@@ -1106,10 +1138,7 @@ export default function Orientacao({ isOrientadorView = false }: OrientacaoProps
 															value={editData.membroBanca2}
 															onChange={(e) => {
 																const tccAtual =
-																	trabalhosPorMatricula[
-																		selectedDicente?.matricula ??
-																			""
-																	];
+																	tccEmEdicao;
 																const edicaoHabilitada =
 																	orientacaoController.isEdicaoBancaHabilitada(
 																		editData.etapa,
@@ -1125,10 +1154,7 @@ export default function Orientacao({ isOrientadorView = false }: OrientacaoProps
 															}}
 															disabled={(() => {
 																const tccAtual =
-																	trabalhosPorMatricula[
-																		selectedDicente?.matricula ??
-																			""
-																	];
+																	tccEmEdicao;
 																return !orientacaoController.isEdicaoBancaHabilitada(
 																	editData.etapa,
 																	tccAtual?.fase ?? 0,
@@ -1178,9 +1204,7 @@ export default function Orientacao({ isOrientadorView = false }: OrientacaoProps
 										{/* Informações sobre convites existentes por fase */}
 										{(() => {
 											const tccAtual =
-												trabalhosPorMatricula[
-													selectedDicente?.matricula ?? ""
-												];
+												tccEmEdicao;
 											const faseAtual = parseInt(String(tccAtual?.fase));
 											const etapaAtual = parseInt(
 												String(editData.etapa),
@@ -1391,9 +1415,7 @@ export default function Orientacao({ isOrientadorView = false }: OrientacaoProps
 								{/* Seminário de Andamento - apenas para fase 2 */}
 								{(() => {
 									const tccAtual =
-										trabalhosPorMatricula[
-											selectedDicente?.matricula ?? ""
-										];
+										tccEmEdicao;
 									return parseInt(String(tccAtual?.fase)) === 2;
 								})() && (
 									<TextField
@@ -1446,7 +1468,7 @@ export default function Orientacao({ isOrientadorView = false }: OrientacaoProps
 					disableRowSelectionOnClick
 					disableVirtualization
 					hideFooter={dicentes.length <= 100}
-					getRowId={(row) => row.matricula}
+					getRowId={(row) => row.idLinha}
 					initialState={{
 						pagination: { paginationModel: { pageSize: 100, page: 0 } },
 						sorting: {

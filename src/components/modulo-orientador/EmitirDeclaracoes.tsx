@@ -199,7 +199,7 @@ export default function EmitirDeclaracoes() {
 					habilitarFase={true}
 					mostrarTodosCursos={true}
 					habilitarFiltroTodasFases={true}
-					habilitarFiltroOrientacao={true}
+					habilitarFiltroOrientacao={false}
 					habilitarFiltroProjeto={true}
 					habilitarFiltroTcc={true}
 					loading={loading}
