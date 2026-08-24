@@ -1,6 +1,6 @@
 import axiosInstance from "../auth/axios";
 import { getErrorMessage } from "../utils/apiError";
-import type { Defesa } from "../types/defesa";
+import type { Defesa, DatasDefesaTcc, PeriodoLetivo } from "../types/defesa";
 import type { Orientacao } from "../types/trabalho-conclusao";
 import type { OrientadorCurso } from "../types/curso";
 
@@ -111,6 +111,33 @@ export async function gerarAtaDefesaHtml(
 	}
 }
 
+// GET - Janelas de defesa (ano/semestre/curso/fase com início e fim)
+export async function getDatasDefesa(
+	params?: Record<string, unknown>,
+): Promise<DatasDefesaTcc[]> {
+	try {
+		const response = await axiosInstance.get<{ datasDefesa: DatasDefesaTcc[] }>(
+			"/datas-defesa",
+			{ params },
+		);
+		return response.datasDefesa || [];
+	} catch (error) {
+		console.error("Erro ao buscar datas de defesa:", error);
+		throw new Error(getErrorMessage(error, "Erro ao buscar datas de defesa"));
+	}
+}
+
+// GET - Calendário acadêmico (ano-semestre com início e fim)
+export async function getAnoSemestres(): Promise<PeriodoLetivo[]> {
+	try {
+		const response = await axiosInstance.get<PeriodoLetivo[]>("/ano-semestre");
+		return response || [];
+	} catch (error) {
+		console.error("Erro ao buscar anos-semestres:", error);
+		throw new Error(getErrorMessage(error, "Erro ao buscar anos-semestres"));
+	}
+}
+
 // Exportação padrão
 const avaliarDefesasService = {
 	getCursosOrientador,
@@ -119,6 +146,8 @@ const avaliarDefesasService = {
 	salvarAvaliacaoDefesa,
 	atualizarTrabalhoConclusao,
 	gerarAtaDefesaHtml,
+	getDatasDefesa,
+	getAnoSemestres,
 };
 
 export default avaliarDefesasService;

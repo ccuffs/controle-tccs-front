@@ -1,8 +1,20 @@
 import { useState, useEffect, useContext, useCallback, type SyntheticEvent } from "react";
 import { AuthContext } from "../contexts/AuthContext";
+import axiosInstance from "../auth/axios";
 import dicentesService from "../services/dicentes-service";
 import trabalhoConclusaoService from "../services/trabalho-conclusao-service";
 import moduloDiscenteController from "../controllers/modulo-discente-controller";
+
+interface OfertaResumo {
+	ano: number;
+	semestre: number;
+}
+
+interface TccResumo {
+	ano?: number;
+	semestre?: number;
+	etapa?: number | null;
+}
 
 export function useModuloDiscente() {
 	const { usuario } = useContext(AuthContext) ?? {};
@@ -28,27 +40,42 @@ export function useModuloDiscente() {
 			let etapa = 0;
 
 			if (matricula) {
-				// Buscar o trabalho de conclusão do discente
+				// Buscar a última oferta para determinar o semestre corrente
+				let oferta: OfertaResumo | null = null;
 				try {
-					const responseTcc =
-						await trabalhoConclusaoService.getTrabalhoConclusaoByDiscente(
-							matricula,
-						);
-					etapa =
-						moduloDiscenteController.processTccResponse(
-							responseTcc,
-						);
-				} catch (tccError) {
-					// Se não existe TCC ou erro ao buscar, etapa permanece 0
-					console.log("Trabalho de conclusão não encontrado");
-					etapa = 0;
+					oferta = await axiosInstance.get<OfertaResumo>(
+						"/ofertas-tcc/ultima",
+					);
+				} catch {
+					// sem oferta cadastrada — etapa permanece 0
+				}
+
+				if (oferta?.ano && oferta?.semestre) {
+					// O backend ordena por fase DESC, então o TCC retornado é
+					// sempre o de fase mais avançada para o semestre corrente.
+					try {
+						const tcc: TccResumo | null =
+							await trabalhoConclusaoService.getTrabalhoConclusaoByDiscente(
+								matricula,
+							);
+						if (
+							tcc &&
+							tcc.ano === oferta.ano &&
+							tcc.semestre === oferta.semestre
+						) {
+							etapa =
+								moduloDiscenteController.processTccResponse(tcc);
+						}
+					} catch {
+						// nenhum TCC encontrado — etapa permanece 0
+					}
 				}
 			}
 
 			setEtapaAtual(etapa);
 		} catch (error) {
 			console.error("Erro ao carregar etapa atual:", error);
-			setEtapaAtual(0); // Em caso de erro, começa na etapa 0
+			setEtapaAtual(0);
 		} finally {
 			setLoading(false);
 		}

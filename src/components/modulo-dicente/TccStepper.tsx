@@ -190,12 +190,10 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }: TccStepp
 		try {
 			setLoading(true);
 
-			// Primeiro, buscar a última oferta TCC
+			// Buscar a última oferta TCC (usada para determinar o semestre corrente)
 			const oferta = await axiosInstance.get<OfertaLocal>(
 				"/ofertas-tcc/ultima",
 			);
-
-			console.log("Resposta da API da oferta:", oferta);
 
 			if (
 				!oferta ||
@@ -209,7 +207,6 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }: TccStepp
 				);
 			}
 
-			console.log("Oferta extraída:", oferta);
 			setOfertaAtual(oferta);
 
 			// Buscar o discente pelo id_usuario
@@ -217,98 +214,123 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }: TccStepp
 				`/dicentes/usuario/${usuario?.id}`,
 			);
 
-			console.log("Resposta da API do discente:", discente);
-
 			if (!discente || !discente.matricula) {
-				throw new Error(
-					"Resposta da API do discente não contém dados válidos",
-				);
-			}
-
-			console.log("Discente extraído:", discente);
-
-			if (discente && discente.matricula) {
-				// Buscar o trabalho de conclusão do discente
-				const tcc = await axiosInstance.get<TrabalhoLocal | null>(
-					`/trabalho-conclusao/discente/${discente.matricula}`,
-				);
-
-				if (tcc) {
-					if (!tcc || !tcc.id) {
-						throw new Error(
-							"Resposta da API do TCC não contém dados válidos",
-						);
-					}
-
-					console.log("TCC extraído:", tcc);
-
-					// Verificar se o TCC é da oferta atual ou anterior
-					const isTccOfertaAtual =
-						tcc.ano === oferta.ano &&
-						tcc.semestre === oferta.semestre;
-
-					if (!isTccOfertaAtual) {
-						// TCC é de oferta anterior - aplicar regras de importação
-						setTccAnterior(tcc);
-
-						if (tcc.aprovado_tcc) {
-							// 1.3 TCC já concluído - exibir mensagem
-							setShowCompletedMessage(true);
-							return;
-						} else if (tcc.aprovado_projeto) {
-							// 1.1 Projeto aprovado - perguntar se quer seguir com próxima fase
-							setModalType("next_phase");
-							setOpenImportModal(true);
-							return;
-						} else {
-							// 1.2 Projeto não aprovado - perguntar se quer importar TCC anterior
-							setModalType("import");
-							setOpenImportModal(true);
-							return;
-						}
-					} else {
-						// TCC da oferta atual - carregar normalmente
-						// Garantir que o id_curso esteja presente, mesmo que a API não o retorne
-						const tccCompleto: TrabalhoLocal = {
-							...tcc,
-							id_curso: tcc.id_curso || oferta.id_curso,
-							ano: tcc.ano || oferta.ano,
-							semestre: tcc.semestre || oferta.semestre,
-							fase: tcc.fase || oferta.fase,
-						};
-
-						setTrabalhoConclusao(tccCompleto);
-						setBloquearAtualizacaoEtapa(
-							isEtapaFinalBloqueada(tccCompleto),
-						);
-						setFormData({
-							tema: tccCompleto.tema || "",
-							titulo: tccCompleto.titulo || "",
-							resumo: tccCompleto.resumo || "",
-							seminario_andamento:
-								tccCompleto.seminario_andamento || "",
-						});
-
-						// Usar a etapa do banco de dados
-						const etapaBanco = tccCompleto.etapa || 0;
-						setActiveStep(etapaBanco);
-						if (onEtapaChange) {
-							onEtapaChange(etapaBanco);
-						}
-
-						// Carregar convites existentes se houver
-						await carregarConvites(tccCompleto.id);
-					}
-				} else {
-					// Criar novo trabalho de conclusão se não existir
-					await criarNovoTrabalhoConclusao(discente.matricula);
-				}
-			} else {
 				setMessageText(
 					"Usuário não possui matrícula de discente associada!",
 				);
 				setMessageSeverity("error");
 				setOpenMessage(true);
+				return;
+			}
+
+			// Buscar o TCC mais recente do discente.
+			// O backend ordena por fase DESC, então se o estudante tem fase 1 e
+			// fase 2 no mesmo semestre, a fase 2 é retornada (fase mais avançada).
+			let tcc: TrabalhoLocal | null = null;
+			try {
+				tcc = await axiosInstance.get<TrabalhoLocal>(
+					`/trabalho-conclusao/discente/${discente.matricula}`,
+				);
+			} catch (err: unknown) {
+				const status =
+					(err as { response?: { status?: number } })?.response
+						?.status;
+				if (status !== 404) {
+					throw err;
+				}
+			}
+
+			if (tcc?.id) {
+				const mesmoSemestre =
+					tcc.ano === oferta.ano && tcc.semestre === oferta.semestre;
+
+				if (mesmoSemestre) {
+					// Se for TCC de fase 2 sem aprovação, verificar se a fase 1
+					// foi aprovada em registro separado e propagar automaticamente.
+					if (tcc.fase === 2 && !tcc.aprovado_projeto) {
+						try {
+							const params = new URLSearchParams();
+							params.append("matricula", discente.matricula);
+							params.append("fase", "1");
+							const respF1 = await axiosInstance.get<{
+								trabalhos?: TrabalhoLocal[];
+							}>(`/trabalho-conclusao?${params.toString()}`);
+							const tccsF1 = respF1?.trabalhos || [];
+							const fase1Aprovada = tccsF1.some(
+								(t) => t.aprovado_projeto === true,
+							);
+							if (fase1Aprovada) {
+								const etapaFase2 = Math.max(
+									tcc.etapa || 0,
+									6,
+								);
+								await axiosInstance.put(
+									`/trabalho-conclusao/${tcc.id}`,
+									{
+										...tcc,
+										aprovado_projeto: true,
+										etapa: etapaFase2,
+									},
+								);
+								tcc = {
+									...tcc,
+									aprovado_projeto: true,
+									etapa: etapaFase2,
+								};
+							}
+						} catch {
+							// Se a verificação falhar, prosseguir com o TCC como está
+						}
+					}
+
+					// TCC do semestre atual — carregar normalmente
+					const tccCompleto: TrabalhoLocal = {
+						...tcc,
+						id_curso: tcc.id_curso || oferta.id_curso,
+						ano: tcc.ano,
+						semestre: tcc.semestre,
+						fase: tcc.fase,
+					};
+
+					setTrabalhoConclusao(tccCompleto);
+					setBloquearAtualizacaoEtapa(
+						isEtapaFinalBloqueada(tccCompleto),
+					);
+					setFormData({
+						tema: tccCompleto.tema || "",
+						titulo: tccCompleto.titulo || "",
+						resumo: tccCompleto.resumo || "",
+						seminario_andamento:
+							tccCompleto.seminario_andamento || "",
+					});
+
+					const etapaBanco = tccCompleto.etapa || 0;
+					setActiveStep(etapaBanco);
+					if (onEtapaChange) {
+						onEtapaChange(etapaBanco);
+					}
+
+					await carregarConvites(tccCompleto.id);
+				} else {
+					// TCC de semestre anterior — aplicar regras de importação
+					setTccAnterior(tcc);
+
+					if (tcc.aprovado_tcc) {
+						// TCC já concluído em semestre anterior
+						setShowCompletedMessage(true);
+					} else if (tcc.aprovado_projeto) {
+						// Projeto aprovado — oferecer continuação na próxima fase
+						setModalType("next_phase");
+						setOpenImportModal(true);
+					} else {
+						// Projeto não aprovado — oferecer importação de dados
+						setModalType("import");
+						setOpenImportModal(true);
+					}
+				}
+			} else {
+				// Nenhum TCC encontrado — criar novo para a oferta atual
+				await criarNovoTrabalhoConclusao(discente.matricula);
 			}
 		} catch (error) {
 			console.error("Erro ao carregar trabalho de conclusão:", error);
@@ -851,56 +873,56 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }: TccStepp
 
 			if (modalType === "next_phase") {
 				// 1.1 Projeto aprovado - pergunta sobre próxima fase
-				if (opcaoSelecionada) {
-					// Sim: manter o mesmo TCC, avançando para fase 2 / etapa 7 (seminário)
-					const dadosAtualizados = {
-						...tccAnterior,
-						ano: ofertaAtual.ano,
-						semestre: ofertaAtual.semestre,
-						id_curso: ofertaAtual.id_curso,
-						fase: 2,
-						etapa: 7,
-						aprovado_projeto: true,
-					};
+			if (opcaoSelecionada) {
+				// Sim: manter o mesmo TCC, avançando para fase 2 / etapa 6 (seminário)
+				const dadosAtualizados = {
+					...tccAnterior,
+					ano: ofertaAtual.ano,
+					semestre: ofertaAtual.semestre,
+					id_curso: ofertaAtual.id_curso,
+					fase: 2,
+					etapa: 6,
+					aprovado_projeto: true,
+				};
 
-					const response = await axiosInstance.put<{
-						trabalho?: TrabalhoLocal;
-					}>(
-						`/trabalho-conclusao/${tccAnterior.id}`,
-						dadosAtualizados,
-					);
+				const response = await axiosInstance.put<{
+					trabalho?: TrabalhoLocal;
+				}>(
+					`/trabalho-conclusao/${tccAnterior.id}`,
+					dadosAtualizados,
+				);
 
-					const tccAtualizado: TrabalhoLocal =
-						response?.trabalho || (response as unknown as TrabalhoLocal) || dadosAtualizados;
-					// Garantir que o id_curso esteja presente, mesmo que a API não o retorne
-					const tccAtualizadoCompleto: TrabalhoLocal = {
-						...tccAtualizado,
-						id_curso:
-							tccAtualizado.id_curso || ofertaAtual.id_curso,
-						ano: tccAtualizado.ano || ofertaAtual.ano,
-						semestre:
-							tccAtualizado.semestre || ofertaAtual.semestre,
-						fase: tccAtualizado.fase || 2,
-						etapa: tccAtualizado.etapa ?? 7,
-					};
+				const tccAtualizado: TrabalhoLocal =
+					response?.trabalho || (response as unknown as TrabalhoLocal) || dadosAtualizados;
+				// Garantir que o id_curso esteja presente, mesmo que a API não o retorne
+				const tccAtualizadoCompleto: TrabalhoLocal = {
+					...tccAtualizado,
+					id_curso:
+						tccAtualizado.id_curso || ofertaAtual.id_curso,
+					ano: tccAtualizado.ano || ofertaAtual.ano,
+					semestre:
+						tccAtualizado.semestre || ofertaAtual.semestre,
+					fase: tccAtualizado.fase || 2,
+					etapa: tccAtualizado.etapa ?? 6,
+				};
 
-					setTrabalhoConclusao(tccAtualizadoCompleto);
-					setBloquearAtualizacaoEtapa(
-						isEtapaFinalBloqueada(tccAtualizadoCompleto),
-					);
-					setFormData({
-						tema: tccAtualizadoCompleto.tema || "",
-						titulo: tccAtualizadoCompleto.titulo || "",
-						resumo: tccAtualizadoCompleto.resumo || "",
-						seminario_andamento:
-							tccAtualizadoCompleto.seminario_andamento || "",
-					});
+				setTrabalhoConclusao(tccAtualizadoCompleto);
+				setBloquearAtualizacaoEtapa(
+					isEtapaFinalBloqueada(tccAtualizadoCompleto),
+				);
+				setFormData({
+					tema: tccAtualizadoCompleto.tema || "",
+					titulo: tccAtualizadoCompleto.titulo || "",
+					resumo: tccAtualizadoCompleto.resumo || "",
+					seminario_andamento:
+						tccAtualizadoCompleto.seminario_andamento || "",
+				});
 
-					const etapaContinuacao = 7;
-					setActiveStep(etapaContinuacao);
-					if (onEtapaChange) {
-						onEtapaChange(etapaContinuacao);
-					}
+				const etapaContinuacao = 6;
+				setActiveStep(etapaContinuacao);
+				if (onEtapaChange) {
+					onEtapaChange(etapaContinuacao);
+				}
 
 					await carregarConvites(tccAnterior.id);
 
@@ -952,37 +974,26 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }: TccStepp
 			} else if (modalType === "import") {
 				// 1.2 Projeto não aprovado - pergunta sobre importar
 				if (opcaoSelecionada) {
-					// Sim: criar novo TCC copiando valores do anterior
-					const novoTcc = {
-						matricula: discente.matricula,
-						tema: tccAnterior.tema || "",
-						titulo: tccAnterior.titulo || "",
-						resumo: tccAnterior.resumo || "",
-						etapa: 0, // Sempre começar na etapa 0
+					// Sim: manter o mesmo TCC (mesmo id), apenas atualizando o
+					// período para o semestre atual — mesmo padrão usado ao
+					// avançar de fase (evita duplicar o registro do dicente).
+					const dadosAtualizados = {
+						...tccAnterior,
 						ano: ofertaAtual.ano,
 						semestre: ofertaAtual.semestre,
 						id_curso: ofertaAtual.id_curso,
 						fase: ofertaAtual.fase,
+						etapa: 0, // Sempre começar na etapa 0
 					};
 
-					const tccImportado = await axiosInstance.post<TrabalhoLocal>(
-						"/trabalho-conclusao",
-						novoTcc,
-					);
+					const response = await axiosInstance.put<{
+						trabalho?: TrabalhoLocal;
+					}>(`/trabalho-conclusao/${tccAnterior.id}`, dadosAtualizados);
+
+					const tccImportado: TrabalhoLocal =
+						response?.trabalho || (response as unknown as TrabalhoLocal) || dadosAtualizados;
 
 					console.log("Resposta da API ao importar TCC:", tccImportado);
-					console.log("Tipo da resposta:", typeof tccImportado);
-					console.log(
-						"Estrutura da resposta:",
-						Object.keys(tccImportado ?? {}),
-					);
-
-					console.log("TCC importado extraído:", tccImportado);
-					console.log("Tipo do TCC importado:", typeof tccImportado);
-					console.log(
-						"Estrutura do TCC importado:",
-						tccImportado ? Object.keys(tccImportado) : "null",
-					);
 
 					if (!tccImportado || !tccImportado.id) {
 						console.error("Resposta inválida da API:", tccImportado);
@@ -998,6 +1009,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }: TccStepp
 						ano: tccImportado.ano || ofertaAtual.ano,
 						semestre: tccImportado.semestre || ofertaAtual.semestre,
 						fase: tccImportado.fase || ofertaAtual.fase,
+						etapa: tccImportado.etapa ?? 0,
 					};
 
 					setTrabalhoConclusao(tccCompletoImportado);
@@ -1005,9 +1017,9 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }: TccStepp
 						isEtapaFinalBloqueada(tccCompletoImportado),
 					);
 					setFormData({
-						tema: novoTcc.tema,
-						titulo: novoTcc.titulo,
-						resumo: novoTcc.resumo,
+						tema: tccCompletoImportado.tema || "",
+						titulo: tccCompletoImportado.titulo || "",
+						resumo: tccCompletoImportado.resumo || "",
 						seminario_andamento: "",
 					});
 					setActiveStep(0);
@@ -1015,26 +1027,10 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }: TccStepp
 						onEtapaChange(0);
 					}
 
-					await carregarConvites(tccImportado.id);
-
-					// Verificar se o TCC foi realmente criado no banco
-					try {
-						const verificacao = await axiosInstance.get(
-							`/trabalho-conclusao/${tccImportado.id}`,
-						);
-						console.log(
-							"Verificação da criação do TCC importado:",
-							verificacao,
-						);
-					} catch (verifError) {
-						console.error(
-							"Erro ao verificar TCC importado:",
-							verifError,
-						);
-					}
+					await carregarConvites(tccCompletoImportado.id);
 
 					setMessageText(
-						`TCC importado com sucesso para ${ofertaAtual.ano}/${ofertaAtual.semestre}!`,
+						`TCC atualizado para ${ofertaAtual.ano}/${ofertaAtual.semestre}!`,
 					);
 					setMessageSeverity("success");
 					setOpenMessage(true);
@@ -2476,25 +2472,27 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }: TccStepp
 				Processo do TCC
 			</Typography>
 
-			{ofertaAtual && (
-				<Paper
-					sx={{
-						p: 2,
-						mb: 2,
-						bgcolor: "primary.light",
-						color: "primary.contrastText",
-					}}
-				>
-					<Typography variant="h6" gutterBottom>
-						Oferta TCC Atual
-					</Typography>
-					<Typography variant="body2">
-						Ano: {ofertaAtual.ano} • Semestre:{" "}
-						{ofertaAtual.semestre} • Curso:{" "}
-						{ofertaAtual.curso?.nome} • Fase: {ofertaAtual.fase}
-					</Typography>
-				</Paper>
-			)}
+		{ofertaAtual && (
+			<Paper
+				sx={{
+					p: 2,
+					mb: 2,
+					bgcolor: "primary.light",
+					color: "primary.contrastText",
+				}}
+			>
+				<Typography variant="h6" gutterBottom>
+					Oferta TCC Atual
+				</Typography>
+				<Typography variant="body2">
+					Ano: {trabalhoConclusao?.ano || ofertaAtual.ano} •
+					Semestre:{" "}
+					{trabalhoConclusao?.semestre || ofertaAtual.semestre} •
+					Curso: {ofertaAtual.curso?.nome} • Fase:{" "}
+					{trabalhoConclusao?.fase || ofertaAtual.fase}
+				</Typography>
+			</Paper>
+		)}
 
 			<Paper
 				sx={{

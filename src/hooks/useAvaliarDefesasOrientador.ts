@@ -100,32 +100,42 @@ export function useAvaliarDefesasOrientador() {
 				codigo_docente: codigoDocente,
 				orientador: true,
 			};
-			const orientacoesResp =
-				await avaliarDefesasService.getOrientacoes(paramsOrientacoes);
+			const [orientacoesResp, respDefesas, datasDefesa, periodosLetivos] =
+				await Promise.all([
+					avaliarDefesasService.getOrientacoes(paramsOrientacoes),
+					avaliarDefesasService.getDefesas(),
+					avaliarDefesasService
+						.getDatasDefesa(
+							cursoSelecionado
+								? { id_curso: cursoSelecionado }
+								: undefined,
+						)
+						.catch(() => []),
+					avaliarDefesasService.getAnoSemestres().catch(() => []),
+				]);
 
-			// Processar orientações
+			// Orientações do curso (sem filtrar pelo período atual do TCC:
+			// a defesa pode pertencer a um semestre anterior ao do trabalho).
 			const orientacoesFiltradas =
 				avaliarDefesasController.filtrarOrientacoes(
 					orientacoesResp,
 					cursoSelecionado,
-					ano,
-					semestre,
 				);
 			setOrientacoes(orientacoesFiltradas);
 
-			// Buscar defesas para o período
-			const respDefesas = await avaliarDefesasService.getDefesas({
-				ano,
-				semestre,
-				fase,
-			});
+			const janelasPeriodo = [...datasDefesa, ...periodosLetivos];
 
-			// Processar defesas
 			const idsTcc = new Set(orientacoesFiltradas.map((t) => t.id));
+			const mapaTccsCurso =
+				avaliarDefesasController.criarMapaTcc(orientacoesFiltradas);
 			const defesasFiltradas = avaliarDefesasController.filtrarDefesas(
 				respDefesas,
 				idsTcc,
 				fase,
+				ano,
+				semestre,
+				mapaTccsCurso,
+				janelasPeriodo,
 			);
 			setDefesas(defesasFiltradas);
 

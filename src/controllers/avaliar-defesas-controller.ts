@@ -14,6 +14,7 @@ interface TrabalhoLegado {
 	id: number;
 	ano?: number;
 	semestre?: number;
+	id_curso?: number;
 	titulo?: string | null;
 	fase?: number;
 	comentarios_tcc?: string | null;
@@ -41,6 +42,7 @@ interface DefesaLegado {
 	avaliacao?: number | null;
 	orientador?: boolean;
 	membroBanca?: MembroBancaLegado;
+	trabalhoConclusao?: TrabalhoLegado;
 }
 
 interface MembroBancaProcessado {
@@ -74,6 +76,15 @@ interface CardDefesa {
 type AvaliacoesEdicao = Record<string, string>;
 type ComentariosTcc = Record<number, string>;
 
+export interface JanelaPeriodoDefesa {
+	ano: number | string;
+	semestre: number | string;
+	inicio?: string | Date | null;
+	fim?: string | Date | null;
+	fase?: number | string;
+	id_curso?: number | string;
+}
+
 /**
  * Obtém o ano e semestre atual
  */
@@ -84,37 +95,172 @@ export function getAnoSemestreAtual(): { ano: number; semestre: number } {
 	return { ano, semestre };
 }
 
+function filtroEstaAtivo(valor: string | number | null | undefined): boolean {
+	return valor !== "" && valor !== null && valor !== undefined;
+}
+
+function toDateOnly(valor: string | Date | null | undefined): string | null {
+	if (!valor) return null;
+	if (typeof valor === "string") {
+		const ymd = valor.match(/^(\d{4}-\d{2}-\d{2})/);
+		if (ymd?.[1]) return ymd[1];
+		const dt = new Date(valor);
+		if (Number.isNaN(dt.getTime())) return null;
+		const m = String(dt.getUTCMonth() + 1).padStart(2, "0");
+		const d = String(dt.getUTCDate()).padStart(2, "0");
+		return `${dt.getUTCFullYear()}-${m}-${d}`;
+	}
+	const dt = new Date(valor);
+	if (Number.isNaN(dt.getTime())) return null;
+	const m = String(dt.getUTCMonth() + 1).padStart(2, "0");
+	const d = String(dt.getUTCDate()).padStart(2, "0");
+	return `${dt.getUTCFullYear()}-${m}-${d}`;
+}
+
+function dataEstaNoIntervalo(
+	data: string,
+	inicio: string | Date | null | undefined,
+	fim: string | Date | null | undefined,
+): boolean {
+	const d = toDateOnly(data);
+	const i = toDateOnly(inicio);
+	const f = toDateOnly(fim);
+	if (!d || !i || !f) return false;
+	return d >= i && d <= f;
+}
+
 /**
- * Filtra orientações por curso, ano e semestre
+ * Ano/semestre da defesa pela janela cadastrada em datas de defesa
+ * (ou no calendário acadêmico). Julho permanece no 1º semestre quando
+ * a janela assim o define.
+ */
+export function obterPeriodoPelaJanela(
+	dataDefesa: string | null | undefined,
+	fase: number | string,
+	janelas: JanelaPeriodoDefesa[],
+	cursoId?: number,
+): { ano: number; semestre: number } | null {
+	const data = toDateOnly(dataDefesa);
+	if (!data || janelas.length === 0) return null;
+
+	const doCurso = janelas.filter(
+		(j) =>
+			j.id_curso == null ||
+			cursoId == null ||
+			Number(j.id_curso) === Number(cursoId),
+	);
+	const daFase = doCurso.filter(
+		(j) => j.fase != null && Number(j.fase) === Number(fase),
+	);
+	const semFase = doCurso.filter((j) => j.fase == null);
+
+	for (const lista of [daFase, semFase]) {
+		const match = lista.find((j) => dataEstaNoIntervalo(data, j.inicio, j.fim));
+		if (match) {
+			return { ano: Number(match.ano), semestre: Number(match.semestre) };
+		}
+	}
+	return null;
+}
+
+/**
+ * Período da defesa: janela de datas de defesa (ou calendário), senão o TCC.
+ */
+export function obterPeriodoDefesa(
+	defesa: DefesaLegado,
+	tcc?: TrabalhoLegado,
+	janelas: JanelaPeriodoDefesa[] = [],
+): { ano: number; semestre: number } | null {
+	const cursoId = defesa.trabalhoConclusao?.curso?.id
+		?? defesa.trabalhoConclusao?.id_curso
+		?? tcc?.curso?.id
+		?? tcc?.id_curso;
+
+	const daJanela = obterPeriodoPelaJanela(
+		defesa.data_defesa,
+		defesa.fase,
+		janelas,
+		cursoId,
+	);
+	if (daJanela) return daJanela;
+
+	const origem = defesa.trabalhoConclusao ?? tcc;
+	if (origem?.ano != null && origem?.semestre != null) {
+		return { ano: Number(origem.ano), semestre: Number(origem.semestre) };
+	}
+	return null;
+}
+
+function defesaAtendePeriodo(
+	defesa: DefesaLegado,
+	ano: string | number,
+	semestre: string | number,
+	tcc?: TrabalhoLegado,
+	janelas: JanelaPeriodoDefesa[] = [],
+): boolean {
+	const periodo = obterPeriodoDefesa(defesa, tcc, janelas);
+	if (!periodo) {
+		return !filtroEstaAtivo(ano) && !filtroEstaAtivo(semestre);
+	}
+	if (filtroEstaAtivo(ano) && Number(periodo.ano) !== Number(ano)) {
+		return false;
+	}
+	if (
+		filtroEstaAtivo(semestre) &&
+		Number(periodo.semestre) !== Number(semestre)
+	) {
+		return false;
+	}
+	return true;
+}
+
+/**
+ * Filtra orientações do curso selecionado.
+ * Não restringe por ano/semestre do TCC: a defesa pode ser de um semestre
+ * anterior ao período atual do trabalho (ex.: projeto em 2026/1 e TCC em 2026/2).
  */
 export function filtrarOrientacoes(
 	orientacoes: OrientacaoLegado[],
 	cursoSelecionado: string | number,
-	ano: string | number,
-	semestre: string | number,
 ): TrabalhoLegado[] {
 	return orientacoes
-		.filter(
-			(o) =>
-				o.trabalhoConclusao &&
-				o.trabalhoConclusao.curso?.id === parseInt(String(cursoSelecionado)) &&
-				o.trabalhoConclusao.ano === parseInt(String(ano)) &&
-				o.trabalhoConclusao.semestre === parseInt(String(semestre)),
-		)
+		.filter((o) => {
+			const tcc = o.trabalhoConclusao;
+			if (!tcc) return false;
+			if (!filtroEstaAtivo(cursoSelecionado)) return true;
+			const cursoId = tcc.curso?.id ?? tcc.id_curso;
+			return Number(cursoId) === Number(cursoSelecionado);
+		})
 		.map((o) => o.trabalhoConclusao as TrabalhoLegado);
 }
 
 /**
- * Filtra defesas por TCCs do orientador e fase
+ * Filtra defesas por TCCs do orientador, fase e período (curso/ano/semestre da tela).
  */
 export function filtrarDefesas(
 	defesas: DefesaLegado[],
 	idsTcc: Set<number>,
 	fase: string | number,
+	ano: string | number = "",
+	semestre: string | number = "",
+	mapaTcc?: Map<number, TrabalhoLegado>,
+	janelas: JanelaPeriodoDefesa[] = [],
 ): DefesaLegado[] {
 	return defesas
 		.filter((d) => idsTcc.has(d.id_tcc))
-		.filter((d) => !fase || parseInt(String(d.fase)) === parseInt(String(fase)));
+		.filter(
+			(d) =>
+				!filtroEstaAtivo(fase) || Number(d.fase) === Number(fase),
+		)
+		.filter((d) =>
+			defesaAtendePeriodo(
+				d,
+				ano,
+				semestre,
+				mapaTcc?.get(d.id_tcc),
+				janelas,
+			),
+		);
 }
 
 /**
@@ -496,6 +642,8 @@ export function limparAvaliacoes(
 // Exportação padrão
 const avaliarDefesasController = {
 	getAnoSemestreAtual,
+	obterPeriodoPelaJanela,
+	obterPeriodoDefesa,
 	filtrarOrientacoes,
 	filtrarDefesas,
 	criarMapaTcc,

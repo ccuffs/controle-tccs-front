@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import axios from "axios";
 import { useTheme } from "@mui/material/styles";
 import {
 	Box,
@@ -13,6 +14,19 @@ import {
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 
 import axiosInstance from "../../auth/axios";
+import { getErrorMessage } from "../../utils/apiError";
+
+const MENSAGEM_DATAS_NAO_DEFINIDAS =
+	"As datas de defesa ainda não foram definidas.";
+
+function isDatasDefesaAusentes(error: unknown): boolean {
+	if (axios.isAxiosError(error) && error.response?.status === 404) {
+		return true;
+	}
+	return getErrorMessage(error, "")
+		.toLowerCase()
+		.includes("datas de defesa não encontradas");
+}
 
 interface Oferta {
 	ano: number;
@@ -33,6 +47,7 @@ interface Disponibilidade {
 }
 
 interface Grade {
+	datas?: string[];
 	disponibilidades?: Disponibilidade[];
 	[key: string]: unknown;
 }
@@ -53,7 +68,7 @@ export default function SelecionarHorarioBanca({
 	selectedSlot,
 }: SelecionarHorarioBancaProps) {
 	const theme = useTheme();
-	const [loading, setLoading] = useState(false);
+	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState("");
 	const [gradeBase, setGradeBase] = useState<Grade | null>(null); // datas/horarios
 	const [disponOrientador, setDisponOrientador] = useState<Set<string>>(new Set());
@@ -67,7 +82,10 @@ export default function SelecionarHorarioBanca({
 
 	useEffect(() => {
 		async function carregar() {
-			if (!oferta || !possuiMembrosValidos) return;
+			if (!oferta || !possuiMembrosValidos) {
+				setLoading(false);
+				return;
+			}
 			setLoading(true);
 			setError("");
 			try {
@@ -88,6 +106,11 @@ export default function SelecionarHorarioBanca({
 
 				// Preservar referência de datas/horarios (usaremos do orientador como base)
 				const base = respOrient.grade || null;
+				const datas = Array.isArray(base?.datas) ? base.datas : [];
+				if (!base || datas.length === 0) {
+					setGradeBase(null);
+					return;
+				}
 				setGradeBase(base);
 
 				const toKey = (d: string, h: string) => `${d}|${h}`;
@@ -111,7 +134,12 @@ export default function SelecionarHorarioBanca({
 				setDisponMembro2(extrairSet(respM2));
 			} catch (e) {
 				console.error(e);
-				setError("Erro ao carregar disponibilidades dos docentes.");
+				if (isDatasDefesaAusentes(e)) {
+					setGradeBase(null);
+					setError("");
+				} else {
+					setError("Erro ao carregar disponibilidades dos docentes.");
+				}
 			} finally {
 				setLoading(false);
 			}
@@ -197,26 +225,28 @@ export default function SelecionarHorarioBanca({
 		);
 	}
 
+	if (!gradeBase) {
+		return (
+			<Alert severity="info" sx={{ mb: 2 }}>
+				{MENSAGEM_DATAS_NAO_DEFINIDAS}
+			</Alert>
+		);
+	}
+
 	return (
 		<Box>
 			<Typography variant="h6" gutterBottom>
 				Selecione um horário comum para a banca
 			</Typography>
 
-			{!gradeBase && (
-				<Alert severity="info">
-					Não há grade de datas/horários configurada para esta oferta.
-				</Alert>
-			)}
-
-			{gradeBase && Object.keys(intersecao).length === 0 && (
+			{Object.keys(intersecao).length === 0 && (
 				<Alert severity="info">
 					Não foi encontrada nenhuma interseção de horário entre o
 					orientador e os dois membros da banca.
 				</Alert>
 			)}
 
-			{gradeBase && Object.keys(intersecao).length > 0 && (
+			{Object.keys(intersecao).length > 0 && (
 				<Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
 					{Object.keys(intersecao)
 						.sort()

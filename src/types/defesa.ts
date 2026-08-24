@@ -25,6 +25,22 @@ export interface DisponibilidadeBanca {
 	curso?: Curso;
 }
 
+export interface DatasDefesaTcc {
+	ano: number;
+	semestre: number;
+	id_curso: number;
+	fase: number;
+	inicio: string | null;
+	fim: string | null;
+}
+
+export interface PeriodoLetivo {
+	ano: number;
+	semestre: number;
+	inicio?: string | Date | null;
+	fim?: string | Date | null;
+}
+
 export interface GradeDisponibilidade {
 	horarios: string[];
 	datas: string[];
