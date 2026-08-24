@@ -209,7 +209,7 @@ export default function ConvitesRecebidosOrientador() {
 		{
 			field: "dataEnvio",
 			headerName: "Data do Convite",
-			width: 150,
+			width: 128,
 			renderCell: (params) => (
 				<div
 					style={{
@@ -253,7 +253,7 @@ export default function ConvitesRecebidosOrientador() {
 			field: "actions",
 			headerName: "Ações",
 			sortable: false,
-			width: 200,
+			width: 160,
 			renderCell: (params) => {
 				// Se foi respondido (tem data_feedback), mostrar mensagem
 				if (params.row.foiRespondido) {
@@ -319,6 +319,7 @@ export default function ConvitesRecebidosOrientador() {
 					habilitarAno
 					habilitarSemestre
 					habilitarFase
+					habilitarFiltroOrientacao={false}
 					mostrarTodosCursos={false}
 					loading={loading}
 				/>
@@ -419,7 +420,7 @@ export default function ConvitesRecebidosOrientador() {
 					// no-op em `verificarPermissaoPorIds`. Comportamento preservado.
 					permissoes={[Permissoes.ORIENTACAO.VISUALIZAR]}
 				>
-					<Box style={{ height: "500px" }}>
+					<Box>
 						<Typography
 							variant="body2"
 							color="text.secondary"
@@ -430,10 +431,17 @@ export default function ConvitesRecebidosOrientador() {
 						<CustomDataGrid
 							rows={rows}
 							columns={columns}
-							pageSize={5}
 							checkboxSelection={false}
 							disableSelectionOnClick
 							rowSpanning={false}
+							hideFooter
+							autoHeight
+							disableVirtualization
+							paginationModel={{
+								page: 0,
+								pageSize: Math.max(rows.length, 1),
+							}}
+							pageSizeOptions={[Math.max(rows.length, 1)]}
 							getRowId={(row) => {
 								return `${row.id_tcc}-${row.codigo_docente}-${row.fase}`;
 							}}

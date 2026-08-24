@@ -56,11 +56,31 @@ export async function responderConvite(
 	}
 }
 
+export interface PeriodoLetivoConvite {
+	ano: number;
+	semestre: number;
+	inicio?: string | Date | null;
+	fim?: string | Date | null;
+}
+
+// GET - Calendário acadêmico (ano-semestre com início e fim)
+export async function getAnoSemestres(): Promise<PeriodoLetivoConvite[]> {
+	try {
+		const response =
+			await axiosInstance.get<PeriodoLetivoConvite[]>("/ano-semestre");
+		return Array.isArray(response) ? response : [];
+	} catch (error) {
+		console.error("Erro ao buscar anos-semestres:", error);
+		return [];
+	}
+}
+
 // Exportação padrão
 const convitesService = {
 	getConvitesDocente,
 	getCursosOrientador,
 	responderConvite,
+	getAnoSemestres,
 };
 
 export default convitesService;

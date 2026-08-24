@@ -11,8 +11,9 @@ interface DicenteLegado {
 interface TrabalhoLegado {
 	curso?: CursoLegado;
 	dicente?: DicenteLegado;
-	ano?: number;
-	semestre?: number;
+	id_curso?: number;
+	ano?: number | string;
+	semestre?: number | string;
 	titulo?: string | null;
 }
 
@@ -23,6 +24,15 @@ interface ConviteLegado {
 	data_envio?: string;
 	data_feedback?: string | null;
 	trabalhoConclusao?: TrabalhoLegado;
+	TrabalhoConclusao?: TrabalhoLegado;
+	trabalho_conclusao?: TrabalhoLegado;
+}
+
+export interface JanelaPeriodoConvite {
+	ano: number | string;
+	semestre: number | string;
+	inicio?: string | Date | null;
+	fim?: string | Date | null;
 }
 
 interface ConviteProcessado extends ConviteLegado {
@@ -58,6 +68,121 @@ export function getAnoSemestreAtual(): { ano: number; semestre: number } {
 	return { ano, semestre };
 }
 
+function filtroEstaAtivo(valor: string | number | null | undefined): boolean {
+	return valor !== "" && valor !== null && valor !== undefined;
+}
+
+function obterTrabalhoConvite(
+	convite: ConviteLegado,
+): TrabalhoLegado | undefined {
+	return (
+		convite.trabalhoConclusao ??
+		convite.TrabalhoConclusao ??
+		convite.trabalho_conclusao
+	);
+}
+
+function toDateOnly(valor: string | Date | null | undefined): string | null {
+	if (!valor) return null;
+	if (typeof valor === "string") {
+		const ymd = valor.match(/^(\d{4}-\d{2}-\d{2})/);
+		if (ymd?.[1]) return ymd[1];
+		const dt = new Date(valor);
+		if (Number.isNaN(dt.getTime())) return null;
+		const m = String(dt.getUTCMonth() + 1).padStart(2, "0");
+		const d = String(dt.getUTCDate()).padStart(2, "0");
+		return `${dt.getUTCFullYear()}-${m}-${d}`;
+	}
+	const dt = new Date(valor);
+	if (Number.isNaN(dt.getTime())) return null;
+	const m = String(dt.getUTCMonth() + 1).padStart(2, "0");
+	const d = String(dt.getUTCDate()).padStart(2, "0");
+	return `${dt.getUTCFullYear()}-${m}-${d}`;
+}
+
+function dataEstaNoIntervalo(
+	data: string,
+	inicio: string | Date | null | undefined,
+	fim: string | Date | null | undefined,
+): boolean {
+	const d = toDateOnly(data);
+	const i = toDateOnly(inicio);
+	const f = toDateOnly(fim);
+	if (!d || !i || !f) return false;
+	return d >= i && d <= f;
+}
+
+/**
+ * Período do convite: janela acadêmica da data de envio, senão o mês
+ * do envio, senão o TCC. O semestre do TCC pode ter avançado
+ * (ex.: projeto em 2026/1 e TCC em 2026/2) sem que o convite pertença
+ * ao período atual.
+ */
+export function obterPeriodoConvite(
+	convite: ConviteLegado,
+	janelas: JanelaPeriodoConvite[] = [],
+): { ano: number; semestre: number } | null {
+	const dataEnvio = toDateOnly(convite.data_envio);
+	if (dataEnvio && janelas.length > 0) {
+		const match = janelas.find((j) =>
+			dataEstaNoIntervalo(dataEnvio, j.inicio, j.fim),
+		);
+		if (match) {
+			return { ano: Number(match.ano), semestre: Number(match.semestre) };
+		}
+	}
+
+	if (dataEnvio) {
+		const [anoEnvio, mesEnvio] = dataEnvio.split("-").map(Number);
+		if (anoEnvio && mesEnvio) {
+			return { ano: anoEnvio, semestre: mesEnvio <= 6 ? 1 : 2 };
+		}
+	}
+
+	const tcc = obterTrabalhoConvite(convite);
+	if (tcc?.ano != null && tcc?.semestre != null) {
+		return { ano: Number(tcc.ano), semestre: Number(tcc.semestre) };
+	}
+	return null;
+}
+
+function conviteAtendeFiltros(
+	convite: ConviteLegado,
+	{ cursoSelecionado, ano, semestre, fase }: FiltrosConvites,
+	janelas: JanelaPeriodoConvite[] = [],
+): boolean {
+	// A opção "Orientação" (fase 0) foi removida do filtro: "Todas" não a inclui.
+	if (Number(convite.fase) === 0) return false;
+
+	const tcc = obterTrabalhoConvite(convite);
+	if (
+		filtroEstaAtivo(cursoSelecionado) &&
+		Number(tcc?.curso?.id ?? tcc?.id_curso) !== Number(cursoSelecionado)
+	) {
+		return false;
+	}
+
+	const periodo = obterPeriodoConvite(convite, janelas);
+	if (filtroEstaAtivo(ano) || filtroEstaAtivo(semestre)) {
+		if (!periodo) return false;
+		if (filtroEstaAtivo(ano) && Number(periodo.ano) !== Number(ano)) {
+			return false;
+		}
+		if (
+			filtroEstaAtivo(semestre) &&
+			Number(periodo.semestre) !== Number(semestre)
+		) {
+			return false;
+		}
+	}
+
+	if (filtroEstaAtivo(fase) && Number(convite.fase) !== Number(fase)) {
+		return false;
+	}
+
+	return true;
+}
+
 /**
  * Filtra convites por curso
  */
@@ -65,11 +190,11 @@ export function filtrarPorCurso<T extends ConviteLegado>(
 	convites: T[],
 	cursoSelecionado: string | number | undefined,
 ): T[] {
-	if (!cursoSelecionado) return convites;
-	return convites.filter(
-		(convite) =>
-			convite?.trabalhoConclusao?.curso?.id === parseInt(String(cursoSelecionado)),
-	);
+	if (!filtroEstaAtivo(cursoSelecionado)) return convites;
+	return convites.filter((convite) => {
+		const tcc = obterTrabalhoConvite(convite);
+		return Number(tcc?.curso?.id ?? tcc?.id_curso) === Number(cursoSelecionado);
+	});
 }
 
 /**
@@ -78,11 +203,13 @@ export function filtrarPorCurso<T extends ConviteLegado>(
 export function filtrarPorAno<T extends ConviteLegado>(
 	convites: T[],
 	ano: string | number | undefined,
+	janelas: JanelaPeriodoConvite[] = [],
 ): T[] {
-	if (!ano) return convites;
-	return convites.filter(
-		(convite) => convite?.trabalhoConclusao?.ano === parseInt(String(ano)),
-	);
+	if (!filtroEstaAtivo(ano)) return convites;
+	return convites.filter((convite) => {
+		const periodo = obterPeriodoConvite(convite, janelas);
+		return periodo != null && Number(periodo.ano) === Number(ano);
+	});
 }
 
 /**
@@ -91,12 +218,13 @@ export function filtrarPorAno<T extends ConviteLegado>(
 export function filtrarPorSemestre<T extends ConviteLegado>(
 	convites: T[],
 	semestre: string | number | undefined,
+	janelas: JanelaPeriodoConvite[] = [],
 ): T[] {
-	if (!semestre) return convites;
-	return convites.filter(
-		(convite) =>
-			convite?.trabalhoConclusao?.semestre === parseInt(String(semestre)),
-	);
+	if (!filtroEstaAtivo(semestre)) return convites;
+	return convites.filter((convite) => {
+		const periodo = obterPeriodoConvite(convite, janelas);
+		return periodo != null && Number(periodo.semestre) === Number(semestre);
+	});
 }
 
 /**
@@ -106,9 +234,11 @@ export function filtrarPorFase<T extends ConviteLegado>(
 	convites: T[],
 	fase: string | number | undefined,
 ): T[] {
-	if (fase === "") return convites;
+	if (!filtroEstaAtivo(fase)) {
+		return convites.filter((convite) => Number(convite.fase) !== 0);
+	}
 	return convites.filter(
-		(convite) => convite?.fase === parseInt(String(fase)),
+		(convite) => Number(convite.fase) === Number(fase),
 	);
 }
 
@@ -117,30 +247,12 @@ export function filtrarPorFase<T extends ConviteLegado>(
  */
 export function aplicarFiltros<T extends ConviteLegado>(
 	convites: T[],
-	{ cursoSelecionado, ano, semestre, fase }: FiltrosConvites,
+	filtros: FiltrosConvites,
+	janelas: JanelaPeriodoConvite[] = [],
 ): T[] {
-	let convitesFiltrados = convites;
-
-	if (cursoSelecionado) {
-		convitesFiltrados = filtrarPorCurso(
-			convitesFiltrados,
-			cursoSelecionado,
-		);
-	}
-
-	if (ano) {
-		convitesFiltrados = filtrarPorAno(convitesFiltrados, ano);
-	}
-
-	if (semestre) {
-		convitesFiltrados = filtrarPorSemestre(convitesFiltrados, semestre);
-	}
-
-	if (fase !== "") {
-		convitesFiltrados = filtrarPorFase(convitesFiltrados, fase);
-	}
-
-	return convitesFiltrados;
+	return convites.filter((convite) =>
+		conviteAtendeFiltros(convite, filtros, janelas),
+	);
 }
 
 /**
@@ -178,19 +290,22 @@ export function formatarData(data: string | null | undefined): string | null {
 export function prepararConvitesParaGrid(
 	convites: ConviteLegado[],
 ): ConviteProcessado[] {
-	return convites.map((convite) => ({
-		...convite,
-		nomeDicente: convite?.trabalhoConclusao?.dicente?.nome || "N/A",
-		matriculaDicente:
-			convite?.trabalhoConclusao?.dicente?.matricula || "N/A",
-		tituloTcc: convite?.trabalhoConclusao?.titulo || "N/A",
-		nomeCurso: convite?.trabalhoConclusao?.curso?.nome || "N/A",
-		mensagemEnvio: convite?.mensagem_envio || "Sem mensagem",
-		dataEnvio: formatarData(convite?.data_envio) || "N/A",
-		dataFeedback: formatarData(convite?.data_feedback),
-		foiRespondido: !!convite?.data_feedback,
-		faseDescricao: obterDescricaoFase(convite?.fase, convite?.orientacao),
-	}));
+	return convites.map((convite) => {
+		const tcc = obterTrabalhoConvite(convite);
+		return {
+			...convite,
+			trabalhoConclusao: tcc,
+			nomeDicente: tcc?.dicente?.nome || "N/A",
+			matriculaDicente: tcc?.dicente?.matricula || "N/A",
+			tituloTcc: tcc?.titulo || "N/A",
+			nomeCurso: tcc?.curso?.nome || "N/A",
+			mensagemEnvio: convite?.mensagem_envio || "Sem mensagem",
+			dataEnvio: formatarData(convite?.data_envio) || "N/A",
+			dataFeedback: formatarData(convite?.data_feedback),
+			foiRespondido: !!convite?.data_feedback,
+			faseDescricao: obterDescricaoFase(convite?.fase, convite?.orientacao),
+		};
+	});
 }
 
 /**
@@ -248,6 +363,7 @@ const convitesRecebidosController = {
 	filtrarPorSemestre,
 	filtrarPorFase,
 	aplicarFiltros,
+	obterPeriodoConvite,
 	obterDescricaoFase,
 	formatarData,
 	prepararConvitesParaGrid,

@@ -79,19 +79,22 @@ export function useConvitesRecebidosOrientador() {
 				return;
 			}
 
-			// Buscar convites do orientador logado
-			const convitesRaw = await convitesService.getConvitesDocente(
-				usuario.id,
-			);
+			const [convitesRaw, periodosLetivos] = await Promise.all([
+				convitesService.getConvitesDocente(usuario.id),
+				convitesService.getAnoSemestres(),
+			]);
 
-			// Aplicar filtros
 			const convitesFiltrados =
-				convitesRecebidosController.aplicarFiltros(convitesRaw, {
-					cursoSelecionado,
-					ano,
-					semestre,
-					fase,
-				});
+				convitesRecebidosController.aplicarFiltros(
+					convitesRaw,
+					{
+						cursoSelecionado,
+						ano,
+						semestre,
+						fase,
+					},
+					periodosLetivos,
+				);
 
 			setConvites(convitesFiltrados);
 		} catch (error) {
