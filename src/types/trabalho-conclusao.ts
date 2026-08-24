@@ -46,6 +46,9 @@ export interface LinhaOrientacao extends Dicente {
 	faseTcc: number;
 	anoTcc: number;
 	semestreTcc: number;
+	/** true quando a linha representa um período já concluído (ex.: fase 1 de
+	 * um TCC que já avançou para fase 2) — apenas leitura, sem edição. */
+	historico: boolean;
 }
 
 export interface Orientacao {

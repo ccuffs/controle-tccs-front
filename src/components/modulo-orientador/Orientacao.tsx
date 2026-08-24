@@ -353,23 +353,36 @@ export default function Orientacao({ isOrientadorView = false }: OrientacaoProps
 		width: 120,
 		sortable: false,
 		renderCell: (params) => {
+			const desabilitado =
+				!todosOsFiltrosSelecionados || params.row.historico;
+
+			const botao = (
+				<Button
+					variant="outlined"
+					size="small"
+					startIcon={<EditIcon />}
+					onClick={(e) => {
+						e.stopPropagation();
+						handleOpenEditModal(params.row, params.row.tccId);
+					}}
+					disabled={desabilitado}
+				>
+					Editar
+				</Button>
+			);
+
 			return (
 				<PermissionContext
 					permissoes={[Permissoes.ORIENTACAO.EDITAR]}
 					showError={false}
 				>
-					<Button
-						variant="outlined"
-						size="small"
-						startIcon={<EditIcon />}
-						onClick={(e) => {
-							e.stopPropagation();
-							handleOpenEditModal(params.row, params.row.tccId);
-						}}
-						disabled={!todosOsFiltrosSelecionados}
-					>
-						Editar
-					</Button>
+					{params.row.historico ? (
+						<Tooltip title="Fase já concluída: edição disponível apenas no período da fase atual (TCC)">
+							<span>{botao}</span>
+						</Tooltip>
+					) : (
+						botao
+					)}
 				</PermissionContext>
 			);
 		},

@@ -21,6 +21,8 @@ interface TrabalhoLegado {
 	dicente?: DicenteLegado;
 	id_curso?: number;
 	idCurso?: number;
+	Defesas?: DefesaLegado[];
+	defesas?: DefesaLegado[];
 }
 
 interface DicenteLegado {
@@ -163,6 +165,135 @@ export function tccAtendeFiltros(
 }
 
 /**
+ * Determina o semestre a partir do mês de uma defesa: defesas de janeiro (1)
+ * até julho (7) pertencem ao semestre 1; de agosto (8) a dezembro (12), ao
+ * semestre 2.
+ */
+export function calcularSemestrePorMes(mes: number): number {
+	return mes >= 1 && mes <= 7 ? 1 : 2;
+}
+
+/**
+ * Um TCC de fase 2 tem seu próprio registro atualizado (mesmo id) quando o
+ * aluno avança de fase — o registro passa a refletir apenas o período atual
+ * (fase 2), perdendo o ano/semestre em que a fase 1 (Projeto) ocorreu. Esta
+ * função reconstrói esse período histórico a partir da data da defesa de
+ * fase 1 (quando existente), para que o TCC continue aparecendo no
+ * ano/semestre correto quando filtrado pela fase 1.
+ */
+export function obterPeriodoDefesaFase1(
+	tcc: TrabalhoLegado,
+): { ano: number; semestre: number } | null {
+	const defesas = tcc.Defesas || tcc.defesas || [];
+	if (!Array.isArray(defesas)) return null;
+
+	const defesaFase1 = defesas.find(
+		(d) =>
+			parseInt(String(d.fase)) === 1 && !d.orientador && d.data_defesa,
+	);
+
+	if (!defesaFase1?.data_defesa) return null;
+
+	const data = new Date(defesaFase1.data_defesa);
+	if (Number.isNaN(data.getTime())) return null;
+
+	return {
+		ano: data.getFullYear(),
+		semestre: calcularSemestrePorMes(data.getMonth() + 1),
+	};
+}
+
+export interface VistaOrientacao {
+	faseView: number;
+	anoView: number;
+	semestreView: number;
+	/** true quando a vista representa um período já concluído (ex.: fase 1
+	 * de um TCC que já avançou para fase 2) — apenas leitura. */
+	historico: boolean;
+}
+
+/**
+ * Gera as "vistas" possíveis de um TCC: a vista atual (estado real do
+ * registro) e, quando o TCC já está em fase 2 e possui defesa de fase 1
+ * registrada, uma vista histórica representando o período em que a fase 1
+ * (Projeto) ocorreu.
+ */
+export function obterVistasTrabalho(tcc: TrabalhoLegado): VistaOrientacao[] {
+	const faseAtual = tcc.fase != null ? parseInt(String(tcc.fase), 10) : null;
+	const vistaAtual: VistaOrientacao = {
+		faseView: faseAtual ?? 0,
+		anoView: tcc.ano != null ? Number(tcc.ano) : 0,
+		semestreView: tcc.semestre != null ? Number(tcc.semestre) : 0,
+		historico: false,
+	};
+
+	const vistas = [vistaAtual];
+
+	if (faseAtual === 2) {
+		const periodoFase1 = obterPeriodoDefesaFase1(tcc);
+		if (
+			periodoFase1 &&
+			(periodoFase1.ano !== vistaAtual.anoView ||
+				periodoFase1.semestre !== vistaAtual.semestreView)
+		) {
+			vistas.push({
+				faseView: 1,
+				anoView: periodoFase1.ano,
+				semestreView: periodoFase1.semestre,
+				historico: true,
+			});
+		}
+	}
+
+	return vistas;
+}
+
+/**
+ * Verifica se uma vista específica de um TCC atende aos filtros selecionados.
+ */
+export function vistaAtendeFiltros(
+	tcc: TrabalhoLegado,
+	vista: VistaOrientacao,
+	{ cursoSelecionado, ano, semestre, fase }: FiltrosOrientacoes,
+): boolean {
+	const cursoId = tcc.curso?.id ?? tcc.id_curso ?? tcc.idCurso;
+
+	if (
+		filtroEstaAtivo(cursoSelecionado) &&
+		Number(cursoId) !== Number(cursoSelecionado)
+	) {
+		return false;
+	}
+	if (filtroEstaAtivo(ano) && Number(vista.anoView) !== Number(ano)) {
+		return false;
+	}
+	if (
+		filtroEstaAtivo(semestre) &&
+		Number(vista.semestreView) !== Number(semestre)
+	) {
+		return false;
+	}
+	if (filtroEstaAtivo(fase) && Number(vista.faseView) !== Number(fase)) {
+		return false;
+	}
+	return true;
+}
+
+/**
+ * Retorna as vistas de um TCC que atendem aos filtros selecionados (pode ser
+ * mais de uma, por exemplo quando os filtros de semestre/fase estão em
+ * "Todos").
+ */
+export function vistasQueAtendemFiltros(
+	tcc: TrabalhoLegado,
+	filtros: FiltrosOrientacoes,
+): VistaOrientacao[] {
+	return obterVistasTrabalho(tcc).filter((vista) =>
+		vistaAtendeFiltros(tcc, vista, filtros),
+	);
+}
+
+/**
  * Filtra orientações por critérios
  */
 export function filtrarOrientacoes(
@@ -197,14 +328,21 @@ export interface LinhaOrientacaoGrid extends Dicente {
 	faseTcc: number;
 	anoTcc: number;
 	semestreTcc: number;
+	/** true quando esta linha representa um período já concluído (ex.: fase 1
+	 * de um TCC que já avançou para fase 2) — apenas leitura, sem edição. */
+	historico: boolean;
 }
 
 /**
- * Uma linha por TCC. Aluno com Projeto e TCC gera duas entradas, sem agrupar.
+ * Uma linha por vista de TCC que atenda aos filtros selecionados. Aluno com
+ * Projeto e TCC gera duas entradas, sem agrupar. Um TCC que já avançou de
+ * fase 1 para fase 2 também pode gerar uma linha histórica (somente leitura)
+ * representando o período em que esteve na fase 1, além da linha atual.
  */
 export function montarLinhasOrientacao(
 	dicentes: Dicente[],
 	trabalhos: TrabalhoLegado[],
+	filtros: FiltrosOrientacoes,
 ): LinhaOrientacaoGrid[] {
 	const porMatricula = new Map(
 		dicentes.map((d) => [String(d.matricula), d]),
@@ -219,14 +357,18 @@ export function montarLinhasOrientacao(
 		const dicente = porMatricula.get(mat);
 		if (!dicente) continue;
 
-		linhas.push({
-			...dicente,
-			idLinha: `${mat}-${t.id}`,
-			tccId: t.id,
-			faseTcc: t.fase != null ? parseInt(String(t.fase), 10) : 0,
-			anoTcc: t.ano != null ? Number(t.ano) : 0,
-			semestreTcc: t.semestre != null ? Number(t.semestre) : 0,
-		});
+		const vistas = vistasQueAtendemFiltros(t, filtros);
+		for (const vista of vistas) {
+			linhas.push({
+				...dicente,
+				idLinha: `${mat}-${t.id}-${vista.faseView}-${vista.anoView}-${vista.semestreView}`,
+				tccId: t.id,
+				faseTcc: vista.faseView,
+				anoTcc: vista.anoView,
+				semestreTcc: vista.semestreView,
+				historico: vista.historico,
+			});
+		}
 	}
 
 	return linhas.sort((a, b) => {
@@ -896,6 +1038,11 @@ const orientacaoController = {
 	ordenarDicentesPorNome,
 	filtroEstaAtivo,
 	tccAtendeFiltros,
+	calcularSemestrePorMes,
+	obterPeriodoDefesaFase1,
+	obterVistasTrabalho,
+	vistaAtendeFiltros,
+	vistasQueAtendemFiltros,
 	filtrarOrientacoes,
 	filtrarDicentesPorTrabalhos,
 	montarLinhasOrientacao,

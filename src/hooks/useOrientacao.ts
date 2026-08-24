@@ -286,12 +286,15 @@ export function useOrientacao(isOrientadorView = false) {
 				const orientacoesData =
 					await orientacaoService.getOrientacoes(params);
 
+				// Filtra apenas por curso e ano: a granularidade fina de
+				// semestre/fase é resolvida depois, ao montar as linhas com
+				// base nos TCCs e suas defesas (necessário para que um TCC
+				// que já avançou para a fase 2 continue aparecendo no
+				// semestre da fase 1 quando esse for o filtro selecionado).
 				const orientacoesFiltradas =
 					orientacaoController.filtrarOrientacoes(orientacoesData, {
 						cursoSelecionado,
 						ano,
-						semestre,
-						fase,
 					});
 
 				const dicentesData =
@@ -361,13 +364,11 @@ export function useOrientacao(isOrientadorView = false) {
 
 			const listaCompleta =
 				await orientacaoService.getTrabalhosConclusao(params);
-			const lista = listaCompleta.filter((t) =>
-				orientacaoController.tccAtendeFiltros(t, {
-					cursoSelecionado,
-					ano,
-					semestre,
-					fase,
-				}),
+			const filtrosAtuais = { cursoSelecionado, ano, semestre, fase };
+			const lista = listaCompleta.filter(
+				(t) =>
+					orientacaoController.vistasQueAtendemFiltros(t, filtrosAtuais)
+						.length > 0,
 			);
 			setTrabalhosLista(lista);
 
@@ -964,6 +965,7 @@ export function useOrientacao(isOrientadorView = false) {
 		? orientacaoController.montarLinhasOrientacao(
 				dicentesDoRecorte,
 				trabalhosLista,
+				{ cursoSelecionado, ano, semestre, fase },
 			)
 		: [];
 
