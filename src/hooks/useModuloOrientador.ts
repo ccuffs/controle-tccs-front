@@ -7,7 +7,7 @@ export interface GerenciarDisponibilidadeHandle {
 	confirmNavigation: () => boolean;
 }
 
-export function useModuloOrientador({ isBanca = false } = {}) {
+export function useModuloOrientador({ isBanca = false, isAdminOuProfessor = false } = {}) {
 	const [tabValue, setTabValue] = useState(0);
 	const gerenciarDisponibilidadeRef = useRef<GerenciarDisponibilidadeHandle | null>(null);
 

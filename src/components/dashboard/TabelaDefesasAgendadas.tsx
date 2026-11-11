@@ -1,6 +1,5 @@
 import { useTheme } from "@mui/material/styles";
 import { Box, Card, CardContent, Typography } from "@mui/material";
-import type { ResponsiveStyleValue } from "@mui/system";
 import MuiTooltip from "@mui/material/Tooltip";
 import type { GridColDef } from "@mui/x-data-grid";
 
@@ -9,10 +8,9 @@ import type { DefesaAgendada } from "../../types/dashboard";
 
 interface TabelaDefesasAgendadasProps {
 	defesasAgendadas: DefesaAgendada[];
-	largura?: ResponsiveStyleValue<string | number>;
 }
 
-export default function TabelaDefesasAgendadas({ defesasAgendadas, largura }: TabelaDefesasAgendadasProps) {
+export default function TabelaDefesasAgendadas({ defesasAgendadas }: TabelaDefesasAgendadasProps) {
 	const theme = useTheme();
 
 	const tituloTooltip = (row: DefesaAgendada) => (
@@ -136,21 +134,21 @@ export default function TabelaDefesasAgendadas({ defesasAgendadas, largura }: Ta
 		<Card
 			sx={{
 				backgroundColor: theme.palette.background.default,
-				height: 360,
+				height: "100%",
 				display: "flex",
 				flexDirection: "column",
-				width: largura || { xs: "100%", md: 560 },
+				width: "100%",
 			}}
 		>
-			<CardContent
-				sx={{
-					display: "flex",
-					flexDirection: "column",
-					height: "100%",
-					padding: "16px",
-					"&:last-child": { paddingBottom: "16px" },
-				}}
-			>
+		<CardContent
+			sx={{
+				display: "flex",
+				flexDirection: "column",
+				flexGrow: 1,
+				padding: "16px",
+				"&:last-child": { paddingBottom: "16px" },
+			}}
+		>
 				<Typography variant="subtitle1" gutterBottom>
 					Defesas agendadas
 				</Typography>

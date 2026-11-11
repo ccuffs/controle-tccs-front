@@ -1,6 +1,5 @@
 import { useTheme } from "@mui/material/styles";
 import { Box, Card, CardContent, Typography } from "@mui/material";
-import type { ResponsiveStyleValue } from "@mui/system";
 import {
 	ResponsiveContainer,
 	PieChart,
@@ -14,13 +13,11 @@ import type { ConvitesStatusResponse } from "../../types/dashboard";
 interface GraficoConvitesOrientacaoProps {
 	convitesOrientacaoStatus: ConvitesStatusResponse;
 	faseLabel?: string;
-	largura?: ResponsiveStyleValue<string | number>;
 }
 
 export default function GraficoConvitesOrientacao({
 	convitesOrientacaoStatus,
 	faseLabel,
-	largura,
 }: GraficoConvitesOrientacaoProps) {
 	const theme = useTheme();
 
@@ -39,15 +36,21 @@ export default function GraficoConvitesOrientacao({
 				height: "100%",
 				display: "flex",
 				flexDirection: "column",
-				width: largura || { xs: "100%", md: 436 },
+				width: "100%",
 			}}
 		>
-			<CardContent>
-				<Typography variant="subtitle1" gutterBottom>
-					Convites para orientação {faseLabel}
-				</Typography>
-				<Box sx={{ minHeight: 260 }}>
-					{convitesOrientacaoStatus.total > 0 ? (
+		<CardContent
+			sx={{
+				display: "flex",
+				flexDirection: "column",
+				flexGrow: 1,
+			}}
+		>
+			<Typography variant="subtitle1" gutterBottom>
+				Convites para orientação {faseLabel}
+			</Typography>
+			<Box sx={{ minHeight: 260, flexGrow: 1 }}>
+				{convitesOrientacaoStatus.total > 0 ? (
 						<ResponsiveContainer width="100%" height={260}>
 							<PieChart>
 								<Tooltip

@@ -67,16 +67,16 @@ function Navbar() {
 			</Toolbar>
 			<Divider />
 			<List>
-				<PermissionContext
-					grupos={[Permissoes.GRUPOS.ADMIN, Permissoes.GRUPOS.PROFESSOR_CCR]}
-					showError={false}
-				>
-					<ListItem disablePadding>
-						<ListItemButton onClick={handleClickHome}>
-							<ListItemText primary="Dashboard" />
-						</ListItemButton>
-					</ListItem>
-				</PermissionContext>
+			<PermissionContext
+				grupos={[Permissoes.GRUPOS.ADMIN, Permissoes.GRUPOS.PROFESSOR_CCR]}
+				showError={false}
+			>
+				<ListItem disablePadding>
+					<ListItemButton onClick={handleClickHome}>
+						<ListItemText primary="Dashboard" />
+					</ListItemButton>
+				</ListItem>
+			</PermissionContext>
 				<PermissionContext grupos={[Permissoes.GRUPOS.ADMIN]} showError={false}>
 					<ListItem disablePadding>
 						<ListItemButton onClick={handleClickCursos}>
@@ -110,16 +110,16 @@ function Navbar() {
 						</ListItemButton>
 					</ListItem>
 				</PermissionContext>
-				<PermissionContext
-					grupos={[Permissoes.GRUPOS.ORIENTADOR]}
-					showError={false}
-				>
-					<ListItem disablePadding>
-						<ListItemButton onClick={handleClickModuloOrientador}>
-							<ListItemText primary="Módulo do Orientador" />
-						</ListItemButton>
-					</ListItem>
-				</PermissionContext>
+			<PermissionContext
+				grupos={[Permissoes.GRUPOS.ORIENTADOR, Permissoes.GRUPOS.PROFESSOR]}
+				showError={false}
+			>
+				<ListItem disablePadding>
+					<ListItemButton onClick={handleClickModuloOrientador}>
+						<ListItemText primary="Módulo do Orientador" />
+					</ListItemButton>
+				</ListItem>
+			</PermissionContext>
 				{isBancaOnly && (
 					<ListItem disablePadding>
 						<ListItemButton onClick={handleClickModuloOrientador}>

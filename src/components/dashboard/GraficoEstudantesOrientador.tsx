@@ -1,6 +1,5 @@
 import { useTheme } from "@mui/material/styles";
 import { Box, Card, CardContent, Typography } from "@mui/material";
-import type { ResponsiveStyleValue } from "@mui/system";
 import {
 	ResponsiveContainer,
 	BarChart,
@@ -16,13 +15,11 @@ import type { OrientadoresDefinidosResponse } from "../../types/dashboard";
 interface GraficoEstudantesOrientadorProps {
 	dadosGraficoOrientador: OrientadoresDefinidosResponse;
 	faseLabel?: string;
-	largura?: ResponsiveStyleValue<string | number>;
 }
 
 export default function GraficoEstudantesOrientador({
 	dadosGraficoOrientador,
 	faseLabel,
-	largura,
 }: GraficoEstudantesOrientadorProps) {
 	const theme = useTheme();
 
@@ -48,7 +45,7 @@ export default function GraficoEstudantesOrientador({
 				height: "100%",
 				display: "flex",
 				flexDirection: "column",
-				width: largura || { xs: "100%", md: 406 },
+				width: "100%",
 			}}
 		>
 			<CardContent

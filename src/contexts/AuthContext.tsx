@@ -67,7 +67,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
 				usuario: action.payload.usuario,
 				token: action.payload.token,
 				isAuthenticated: true,
-				loading: false,
+				// loading permanece true até que carregarPermissoes() finalize
 			};
 		case "LOGIN_FAILURE":
 			return {
@@ -131,6 +131,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 				success: false,
 				error: error instanceof Error ? error.message : "Erro ao fazer login",
 			};
+		} finally {
+			// Garante que o loading é liberado somente após os grupos serem carregados
+			dispatch({ type: "SET_LOADING", payload: false });
 		}
 	};
 

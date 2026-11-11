@@ -42,11 +42,15 @@ function ConditionalRoute() {
 	const isAdmin = gruposUsuario.some(
 		(grupo) => grupo.id === Permissoes.GRUPOS.ADMIN,
 	);
+	// Coordenadores (PROFESSOR_CCR) — veem todos os dados no Dashboard principal
 	const isProfessor = gruposUsuario.some(
 		(grupo) => grupo.id === Permissoes.GRUPOS.PROFESSOR_CCR,
 	);
+	// Orientadores e professores regulares (PROFESSOR) — roteados para o ModuloOrientador
 	const isOrientador = gruposUsuario.some(
-		(grupo) => grupo.id === Permissoes.GRUPOS.ORIENTADOR,
+		(grupo) =>
+			grupo.id === Permissoes.GRUPOS.ORIENTADOR ||
+			grupo.id === Permissoes.GRUPOS.PROFESSOR,
 	);
 	const isEstudante = gruposUsuario.some(
 		(grupo) => grupo.id === Permissoes.GRUPOS.ESTUDANTE,

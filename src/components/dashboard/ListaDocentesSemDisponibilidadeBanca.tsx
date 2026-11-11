@@ -1,6 +1,5 @@
 import { useTheme } from "@mui/material/styles";
 import { Box, Card, CardContent, Typography } from "@mui/material";
-import type { ResponsiveStyleValue } from "@mui/system";
 import type { GridColDef } from "@mui/x-data-grid";
 
 import CustomDataGrid from "../customs/CustomDataGrid";
@@ -9,7 +8,9 @@ import type { DocenteSemDisponibilidadeBanca } from "../../types/dashboard";
 interface ListaDocentesSemDisponibilidadeBancaProps {
 	docentes: DocenteSemDisponibilidadeBanca[];
 	faseLabel?: string;
-	largura?: ResponsiveStyleValue<string | number>;
+	/** Altura da área de conteúdo em px — deve corresponder a alturaDocentes/alturaDefesas
+	 *  para que o card fique com a mesma altura dos gráficos de barras. */
+	alturaConteudo?: number;
 }
 
 // `loadingOverlay` não existe em `GridLocaleText` (sem efeito na grade),
@@ -22,7 +23,7 @@ const localeText = {
 export default function ListaDocentesSemDisponibilidadeBanca({
 	docentes,
 	faseLabel,
-	largura,
+	alturaConteudo,
 }: ListaDocentesSemDisponibilidadeBancaProps) {
 	const theme = useTheme();
 
@@ -67,22 +68,27 @@ export default function ListaDocentesSemDisponibilidadeBanca({
 	];
 
 	const titulo = `Docentes sem disponibilidade de banca${faseLabel ? ` ${faseLabel}` : ""}`;
+	// Altura total do card = área de conteúdo + overhead de título + padding (≈68 px)
+	const alturaCard = Math.max(400, alturaConteudo ?? 0) + 68;
+	// Altura disponível para o DataGrid:
+	// alturaCard − padding CardContent (32) − título+margin (30) − Box mt (8) − texto "Total"+margin (28) − margem de segurança (4)
+	const alturaDataGrid = Math.max(260, alturaCard - 102);
 
 	return (
 		<Card
 			sx={{
 				backgroundColor: theme.palette.background.default,
-				height: 360,
+				height: alturaCard,
 				display: "flex",
 				flexDirection: "column",
-				width: largura || { xs: "100%", md: 695 },
+				width: "100%",
 			}}
 		>
 			<CardContent
 				sx={{
 					display: "flex",
 					flexDirection: "column",
-					height: "100%",
+					flexGrow: 1,
 					padding: "16px",
 					"&:last-child": { paddingBottom: "16px" },
 				}}
@@ -99,8 +105,8 @@ export default function ListaDocentesSemDisponibilidadeBanca({
 					>
 						Todos os docentes já informaram disponibilidade de banca
 					</Typography>
-				) : (
-					<Box sx={{ mt: 1, flexGrow: 1, overflow: "auto" }}>
+			) : (
+					<Box sx={{ mt: 1 }}>
 						<Typography
 							variant="body2"
 							color="text.secondary"
@@ -109,17 +115,19 @@ export default function ListaDocentesSemDisponibilidadeBanca({
 							Total: {docentes.length} docente
 							{docentes.length !== 1 ? "s" : ""}
 						</Typography>
-						<CustomDataGrid
-							rows={docentes}
-							columns={columns}
-							pageSize={5}
-							checkboxSelection={false}
-							disableSelectionOnClick
-							rowSpanning={false}
-							getRowId={(row) => row.codigo_docente}
-							rowHeight={52}
-							localeText={localeText}
-						/>
+						<Box sx={{ height: alturaDataGrid }}>
+							<CustomDataGrid
+								rows={docentes}
+								columns={columns}
+								autoPageSize
+								checkboxSelection={false}
+								disableSelectionOnClick
+								rowSpanning={false}
+								getRowId={(row) => row.codigo_docente}
+								rowHeight={44}
+								localeText={localeText}
+							/>
+						</Box>
 					</Box>
 				)}
 			</CardContent>

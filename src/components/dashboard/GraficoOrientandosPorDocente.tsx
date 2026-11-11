@@ -1,6 +1,5 @@
 import { useTheme } from "@mui/material/styles";
 import { Box, Card, CardContent, Typography } from "@mui/material";
-import type { ResponsiveStyleValue } from "@mui/system";
 import {
 	ResponsiveContainer,
 	BarChart,
@@ -15,14 +14,12 @@ interface GraficoOrientandosPorDocenteProps {
 	dadosDocentes: { docente?: string; quantidade: number }[];
 	faseLabel?: string;
 	alturaDocentes?: number;
-	largura?: ResponsiveStyleValue<string | number>;
 }
 
 export default function GraficoOrientandosPorDocente({
 	dadosDocentes,
 	faseLabel,
 	alturaDocentes,
-	largura,
 }: GraficoOrientandosPorDocenteProps) {
 	const theme = useTheme();
 
@@ -33,14 +30,20 @@ export default function GraficoOrientandosPorDocente({
 				height: "100%",
 				display: "flex",
 				flexDirection: "column",
-				width: largura || { xs: "100%", md: 695 },
+				width: "100%",
 			}}
 		>
-			<CardContent>
-				<Typography variant="subtitle1" gutterBottom>
-					Orientandos por docente {faseLabel}
-				</Typography>
-				<Box sx={{ minHeight: 400 }}>
+		<CardContent
+			sx={{
+				display: "flex",
+				flexDirection: "column",
+				flexGrow: 1,
+			}}
+		>
+			<Typography variant="subtitle1" gutterBottom>
+				Orientandos por docente {faseLabel}
+			</Typography>
+			<Box sx={{ minHeight: 400, flexGrow: 1 }}>
 					<ResponsiveContainer width="100%" height={alturaDocentes}>
 						<BarChart
 							data={[...dadosDocentes].sort((a, b) =>

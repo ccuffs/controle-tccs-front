@@ -1,6 +1,5 @@
 import { useTheme } from "@mui/material/styles";
 import { Box, Card, CardContent, Typography } from "@mui/material";
-import type { ResponsiveStyleValue } from "@mui/system";
 import {
 	ResponsiveContainer,
 	BarChart,
@@ -15,14 +14,12 @@ interface GraficoDefesasPorDocenteProps {
 	dadosDefesasDocentes: { docente?: string; quantidade: number }[];
 	faseLabel?: string;
 	alturaDefesas?: number;
-	largura?: ResponsiveStyleValue<string | number>;
 }
 
 export default function GraficoDefesasPorDocente({
 	dadosDefesasDocentes,
 	faseLabel,
 	alturaDefesas,
-	largura,
 }: GraficoDefesasPorDocenteProps) {
 	const theme = useTheme();
 
@@ -33,14 +30,20 @@ export default function GraficoDefesasPorDocente({
 				height: "100%",
 				display: "flex",
 				flexDirection: "column",
-				width: largura || { xs: "100%", md: 695 },
+				width: "100%",
 			}}
 		>
-			<CardContent>
-				<Typography variant="subtitle1" gutterBottom>
-					Bancas aceitas por docente {faseLabel}
-				</Typography>
-				<Box sx={{ minHeight: 400 }}>
+		<CardContent
+			sx={{
+				display: "flex",
+				flexDirection: "column",
+				flexGrow: 1,
+			}}
+		>
+			<Typography variant="subtitle1" gutterBottom>
+				Bancas aceitas por docente {faseLabel}
+			</Typography>
+			<Box sx={{ minHeight: 400, flexGrow: 1 }}>
 					<ResponsiveContainer width="100%" height={alturaDefesas}>
 						<BarChart
 							data={[...dadosDefesasDocentes].sort((a, b) =>

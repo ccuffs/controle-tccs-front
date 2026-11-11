@@ -81,58 +81,48 @@ export default function Dashboard({ forceOrientador = false }: DashboardProps) {
 				/>
 			</Stack>
 
-			<Grid container spacing={2} sx={{ mt: 3 }}>
-				{/* Gráfico 1: Estudantes com orientador definido na oferta e Donut por etapa, lado a lado */}
-				{(isAdmin || isProfessor) && (
-					<>
-						<Grid size={{ xs: 12, md: 4, lg: 4 }}>
-							<GraficoEstudantesOrientador
-								dadosGraficoOrientador={dadosGraficoOrientador}
-								faseLabel={faseLabel}
-								largura={396}
-							/>
-						</Grid>
-						{/* Donut por etapa ao lado */}
-						<Grid size={{ xs: 12, md: 4, lg: 4 }}>
-							<GraficoDistribuicaoEtapas
-								dadosEtapas={dadosEtapas}
-								faseLabel={faseLabel}
-								largura={396}
-							/>
-						</Grid>
-						{/* Tabela de Defesas agendadas ao lado */}
-						<Grid size={{ xs: 12, md: 4, lg: 4 }}>
-							<TabelaDefesasAgendadas
-								defesasAgendadas={defesasAgendadas}
-								largura={580}
-							/>
-						</Grid>
-					</>
-				)}
-			</Grid>
+			{/* Linha 1 (admin/coordenador): Estudantes com orientador + Distribuição etapas + Defesas agendadas */}
+			{(isAdmin || isProfessor) && (
+				<Grid container spacing={2} sx={{ mt: 3 }}>
+					<Grid size={{ xs: 12, md: 4, lg: 4 }} sx={{ display: "flex" }}>
+					<GraficoEstudantesOrientador
+						dadosGraficoOrientador={dadosGraficoOrientador}
+						faseLabel={faseLabel}
+					/>
+					</Grid>
+					<Grid size={{ xs: 12, md: 4, lg: 4 }} sx={{ display: "flex" }}>
+					<GraficoDistribuicaoEtapas
+						dadosEtapas={dadosEtapas}
+						faseLabel={faseLabel}
+					/>
+					</Grid>
+					<Grid size={{ xs: 12, md: 4, lg: 4 }} sx={{ display: "flex" }}>
+					<TabelaDefesasAgendadas
+						defesasAgendadas={defesasAgendadas}
+					/>
+					</Grid>
+				</Grid>
+			)}
 
 			{/* Orientador (apenas quando forçado em ModuloOrientador):
-          1ª linha → Etapas, Convites orientação, Convites banca
-          2ª linha → Convites no período, Defesas agendadas */}
+			    1ª linha → Etapas, Convites orientação, Convites banca
+			    2ª linha → Convites no período, Defesas agendadas */}
 			{!isAdmin && !isProfessor && isOrientador && isOrientadorView && (
 				<>
 					<Grid container spacing={2} sx={{ mt: 3 }}>
-						{/* Distribuição por etapa */}
-						<Grid size={{ xs: 12, md: 4, lg: 4 }}>
+						<Grid size={{ xs: 12, md: 4, lg: 4 }} sx={{ display: "flex" }}>
 							<GraficoDistribuicaoEtapas
 								dadosEtapas={dadosEtapas}
 								faseLabel={faseLabel}
 							/>
 						</Grid>
-						{/* Convites orientação (donut) */}
-						<Grid size={{ xs: 12, md: 4, lg: 4 }}>
+						<Grid size={{ xs: 12, md: 4, lg: 4 }} sx={{ display: "flex" }}>
 							<GraficoConvitesOrientacao
 								convitesOrientacaoStatus={convitesOrientacaoStatus}
 								faseLabel={faseLabel}
 							/>
 						</Grid>
-						{/* Convites banca (donut) */}
-						<Grid size={{ xs: 12, md: 4, lg: 4 }}>
+						<Grid size={{ xs: 12, md: 4, lg: 4 }} sx={{ display: "flex" }}>
 							<GraficoConvitesBanca
 								convitesBancaStatus={convitesBancaStatus}
 								faseLabel={faseLabel}
@@ -141,39 +131,33 @@ export default function Dashboard({ forceOrientador = false }: DashboardProps) {
 					</Grid>
 
 					<Grid container spacing={2} sx={{ mt: 3 }}>
-						{/* Convites enviados no período (linha) */}
-						<Grid size={{ xs: 12, md: 8 }}>
+						<Grid size={{ xs: 12, md: 8 }} sx={{ display: "flex" }}>
 							<GraficoConvitesPeriodo
 								dadosConvites={dadosConvites}
 								faseLabel={faseLabel}
 								ticksConvites={ticksConvites}
 							/>
 						</Grid>
-						{/* Defesas agendadas */}
-						<Grid size={{ xs: 12, md: 4, lg: 4 }}>
-							<TabelaDefesasAgendadas
-								defesasAgendadas={defesasAgendadas}
-								largura={666}
-							/>
+						<Grid size={{ xs: 12, md: 4, lg: 4 }} sx={{ display: "flex" }}>
+						<TabelaDefesasAgendadas
+							defesasAgendadas={defesasAgendadas}
+						/>
 						</Grid>
 					</Grid>
 				</>
 			)}
 
-			{/* Gráficos 2 e 3: Orientandos por docente e Defesas aceitas por docente lado a lado */}
+			{/* Linha 2 (admin/coordenador): Orientandos por docente + Bancas aceitas por docente */}
 			{(isAdmin || isProfessor) && (
 				<Grid container spacing={2} sx={{ mt: 3 }}>
-					{/* Gráfico 2: Barras horizontais - Orientandos por docente */}
-					<Grid size={{ xs: 12, md: 6, lg: 6 }}>
+					<Grid size={{ xs: 12, md: 6, lg: 6 }} sx={{ display: "flex" }}>
 						<GraficoOrientandosPorDocente
 							dadosDocentes={dadosDocentes}
 							faseLabel={faseLabel}
 							alturaDocentes={alturaDocentes}
 						/>
 					</Grid>
-
-					{/* Gráfico 3: Barras horizontais - Defesas aceitas por docente */}
-					<Grid size={{ xs: 12, md: 6, lg: 6 }}>
+					<Grid size={{ xs: 12, md: 6, lg: 6 }} sx={{ display: "flex" }}>
 						<GraficoDefesasPorDocente
 							dadosDefesasDocentes={dadosDefesasDocentes}
 							faseLabel={faseLabel}
@@ -183,55 +167,50 @@ export default function Dashboard({ forceOrientador = false }: DashboardProps) {
 				</Grid>
 			)}
 
-			{/* Cards: Estudantes sem convite de banca + Docentes sem disponibilidade */}
-			{(isAdmin || isProfessor || isOrientador) && (
-				<Grid container spacing={2} sx={{ mt: 3 }}>
-					<Grid size={{ xs: 12, md: isOrientadorView ? 12 : 6 }}>
-						<ListaEstudantesSemConviteBanca
-							estudantes={estudantesSemConviteBanca}
-							faseLabel={faseLabel}
-						/>
-					</Grid>
-					{!isOrientadorView && (
-						<Grid size={{ xs: 12, md: 6 }}>
-							<ListaDocentesSemDisponibilidadeBanca
-								docentes={docentesSemDisponibilidadeBanca}
-								faseLabel={faseLabel}
-							/>
-						</Grid>
-					)}
+		{/* Linha 3 (admin/coordenador): Estudantes sem convite + Docentes sem disponibilidade */}
+		{(isAdmin || isProfessor) && (
+			<Grid container spacing={2} sx={{ mt: 3 }}>
+				<Grid size={{ xs: 12, md: 6 }} sx={{ display: "flex" }}>
+					<ListaEstudantesSemConviteBanca
+						estudantes={estudantesSemConviteBanca}
+						faseLabel={faseLabel}
+						alturaConteudo={Math.max(alturaDocentes, alturaDefesas)}
+					/>
 				</Grid>
-			)}
+				<Grid size={{ xs: 12, md: 6 }} sx={{ display: "flex" }}>
+					<ListaDocentesSemDisponibilidadeBanca
+						docentes={docentesSemDisponibilidadeBanca}
+						faseLabel={faseLabel}
+						alturaConteudo={Math.max(alturaDocentes, alturaDefesas)}
+					/>
+				</Grid>
+			</Grid>
+		)}
 
-			{/* Gráfico 4: Linha - Convites enviados no período (por tipo) e Donuts de convites */}
-			{(isAdmin || isProfessor || (isOrientador && !isOrientadorView)) && (
-				<Grid container spacing={2} sx={{ mt: 3 }}>
-					<Grid size={{ xs: 12, md: 8 }}>
-						<GraficoConvitesPeriodo
-							dadosConvites={dadosConvites}
-							faseLabel={faseLabel}
-							ticksConvites={ticksConvites}
-							largura={580}
-						/>
-					</Grid>
-					{/* Donut: Convites de orientação (respondidos x pendentes) ao lado */}
-					<Grid size={{ xs: 12, md: 4, lg: 4 }}>
-						<GraficoConvitesOrientacao
-							convitesOrientacaoStatus={convitesOrientacaoStatus}
-							faseLabel={faseLabel}
-							largura={396}
-						/>
-					</Grid>
-					{/* Donut: Convites de banca (respondidos x pendentes) */}
-					<Grid size={{ xs: 12, md: 4, lg: 4 }}>
-						<GraficoConvitesBanca
-							convitesBancaStatus={convitesBancaStatus}
-							faseLabel={faseLabel}
-							largura={396}
-						/>
-					</Grid>
+		{/* Linha 4 (admin/coordenador): Convites no período + Donuts de convites orientação e banca */}
+		{(isAdmin || isProfessor) && (
+			<Grid container spacing={2} sx={{ mt: 3 }}>
+				<Grid size={{ xs: 12, md: 6 }} sx={{ display: "flex" }}>
+					<GraficoConvitesPeriodo
+						dadosConvites={dadosConvites}
+						faseLabel={faseLabel}
+						ticksConvites={ticksConvites}
+					/>
 				</Grid>
-			)}
+				<Grid size={{ xs: 12, md: 3 }} sx={{ display: "flex" }}>
+					<GraficoConvitesOrientacao
+						convitesOrientacaoStatus={convitesOrientacaoStatus}
+						faseLabel={faseLabel}
+					/>
+				</Grid>
+				<Grid size={{ xs: 12, md: 3 }} sx={{ display: "flex" }}>
+					<GraficoConvitesBanca
+						convitesBancaStatus={convitesBancaStatus}
+						faseLabel={faseLabel}
+					/>
+				</Grid>
+			</Grid>
+		)}
 		</Box>
 	);
 }

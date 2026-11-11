@@ -1,6 +1,5 @@
 import { useTheme } from "@mui/material/styles";
 import { Box, Card, CardContent, Typography } from "@mui/material";
-import type { ResponsiveStyleValue } from "@mui/system";
 import {
 	ResponsiveContainer,
 	LineChart,
@@ -17,14 +16,12 @@ interface GraficoConvitesPeriodoProps {
 	dadosConvites: ConvitePeriodoPonto[];
 	faseLabel?: string;
 	ticksConvites?: string[];
-	largura?: ResponsiveStyleValue<string | number>;
 }
 
 export default function GraficoConvitesPeriodo({
 	dadosConvites,
 	faseLabel,
 	ticksConvites,
-	largura,
 }: GraficoConvitesPeriodoProps) {
 	const theme = useTheme();
 
@@ -35,14 +32,20 @@ export default function GraficoConvitesPeriodo({
 				height: "100%",
 				display: "flex",
 				flexDirection: "column",
-				width: largura || { xs: "100%", md: 666 },
+				width: "100%",
 			}}
 		>
-			<CardContent>
-				<Typography variant="subtitle1" gutterBottom>
-					Convites enviados no período {faseLabel}
-				</Typography>
-				<Box sx={{ minHeight: 300 }}>
+		<CardContent
+			sx={{
+				display: "flex",
+				flexDirection: "column",
+				flexGrow: 1,
+			}}
+		>
+			<Typography variant="subtitle1" gutterBottom>
+				Convites enviados no período {faseLabel}
+			</Typography>
+			<Box sx={{ minHeight: 300, flexGrow: 1 }}>
 					{dadosConvites && dadosConvites.length > 0 ? (
 						<ResponsiveContainer width="100%" height={300}>
 							<LineChart

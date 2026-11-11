@@ -1,6 +1,5 @@
 import { useTheme } from "@mui/material/styles";
 import { Box, Card, CardContent, Typography } from "@mui/material";
-import type { ResponsiveStyleValue } from "@mui/system";
 import {
 	ResponsiveContainer,
 	PieChart,
@@ -13,13 +12,11 @@ import {
 interface GraficoDistribuicaoEtapasProps {
 	dadosEtapas: { name: string; value: number; etapa: number }[];
 	faseLabel?: string;
-	largura?: ResponsiveStyleValue<string | number>;
 }
 
 export default function GraficoDistribuicaoEtapas({
 	dadosEtapas,
 	faseLabel,
-	largura,
 }: GraficoDistribuicaoEtapasProps) {
 	const theme = useTheme();
 
@@ -30,7 +27,7 @@ export default function GraficoDistribuicaoEtapas({
 				height: "100%",
 				display: "flex",
 				flexDirection: "column",
-				width: largura || { xs: "100%", md: 436 },
+				width: "100%",
 			}}
 		>
 			<CardContent

@@ -21,8 +21,15 @@ export default function ModuloOrientador() {
 		gruposUsuario?.some((g) => g.id === Permissoes.GRUPOS.BANCA) &&
 		!gruposUsuario?.some((g) => g.id === Permissoes.GRUPOS.ORIENTADOR);
 
+	// Admin e coordenadores podem acessar a aba Dashboard com visão global
+	const isAdminOuProfessor = gruposUsuario?.some(
+		(g) =>
+			g.id === Permissoes.GRUPOS.ADMIN ||
+			g.id === Permissoes.GRUPOS.PROFESSOR_CCR,
+	);
+
 	const { tabValue, gerenciarDisponibilidadeRef, handleTabChange } =
-		useModuloOrientador({ isBanca });
+		useModuloOrientador({ isBanca, isAdminOuProfessor });
 
 	return (
 		<Box sx={{ width: 1400 }}>

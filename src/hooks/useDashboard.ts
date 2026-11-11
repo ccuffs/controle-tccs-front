@@ -24,6 +24,7 @@ export function useDashboard({ forceOrientador = false }: { forceOrientador?: bo
 		[gruposUsuario, forceOrientador],
 	);
 
+	// isProfessor = apenas coordenadores (PROFESSOR_CCR) — veem todos os dados
 	const isProfessor = useMemo(
 		() =>
 			!forceOrientador &&
@@ -31,10 +32,15 @@ export function useDashboard({ forceOrientador = false }: { forceOrientador?: bo
 		[gruposUsuario, forceOrientador],
 	);
 
+	// isOrientador = orientadores e professores regulares — veem apenas os próprios dados
 	const isOrientador = useMemo(
 		() =>
 			forceOrientador ||
-			gruposUsuario?.some((g) => g.id === Permissoes.GRUPOS.ORIENTADOR),
+			gruposUsuario?.some(
+				(g) =>
+					g.id === Permissoes.GRUPOS.ORIENTADOR ||
+					g.id === Permissoes.GRUPOS.PROFESSOR,
+			),
 		[gruposUsuario, forceOrientador],
 	);
 
@@ -252,7 +258,25 @@ export function useDashboard({ forceOrientador = false }: { forceOrientador?: bo
 				}
 
 				if (defesas.status === "fulfilled") {
-					setDefesasAgendadas(defesas.value.itens || []);
+					let itensDefesas = defesas.value.itens || [];
+
+					// Segurança extra no frontend: para perfis que não são admin nem
+					// coordenador (PROFESSOR_CCR), exibir somente as defesas em que
+					// o usuário logado aparece como orientador ou membro de banca.
+					// Admin e coordenador veem todas (comportamento inalterado).
+					if (!isAdmin && !isProfessor && isOrientador && usuario?.nome) {
+						const nomeNormalizado = usuario.nome.trim().toLowerCase();
+						itensDefesas = itensDefesas.filter((d) => {
+							const isOrientadorDaDefesa =
+								(d.orientador || "").trim().toLowerCase() === nomeNormalizado;
+							const isBancaDaDefesa = (d.banca || []).some(
+								(b) => b.trim().toLowerCase() === nomeNormalizado,
+							);
+							return isOrientadorDaDefesa || isBancaDaDefesa;
+						});
+					}
+
+					setDefesasAgendadas(itensDefesas);
 				}
 
 				if (convites.status === "fulfilled") {
