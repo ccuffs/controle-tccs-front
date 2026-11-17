@@ -24,6 +24,20 @@ const FORM_VAZIO: FormExterno = {
 	siape: "",
 };
 
+/**
+ * Serializa um objeto Date usando o horário LOCAL (sem conversão para UTC),
+ * gerando "YYYY-MM-DDTHH:mm:ss". Isso evita que o offset do fuso horário
+ * do navegador desloque o horário ao chamar .toISOString() (que sempre
+ * converte para UTC).
+ */
+function formatLocalISOString(date: Date): string {
+	const pad = (n: number) => String(n).padStart(2, "0");
+	return (
+		`${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+		`T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+	);
+}
+
 export function useMembrosExternos() {
 	const { usuario } = useAuth();
 
@@ -214,7 +228,7 @@ export function useMembrosExternos() {
 			await adicionarMembroExterno({
 				id_tcc: tccSelecionado.id,
 				fase: tccSelecionado.fase,
-				data_hora_defesa: dataHoraDefesa ? dataHoraDefesa.toISOString() : "",
+				data_hora_defesa: dataHoraDefesa ? formatLocalISOString(dataHoraDefesa) : "",
 				docente: {
 					nome: form.nome.trim(),
 					email: form.email.trim(),
