@@ -23,7 +23,7 @@ import {
 
 import axiosInstance from "../../auth/axios";
 import { AuthContext } from "../../contexts/AuthContext";
-import { formatarDataDefesaUTC } from "../../controllers/disponibilidade-banca-controller";
+import { formatarDataDefesaUTC, formatarData, formatarHora } from "../../controllers/disponibilidade-banca-controller";
 import type { Convite } from "../../types/convite";
 
 import VisualizarTemasTCC from "./VisualizarTemasTCC";
@@ -1707,29 +1707,27 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }: TccStepp
 					selectedHorarioBancaFase1.data &&
 					selectedHorarioBancaFase1.hora
 				) {
-					dataStr = new Date(
-						selectedHorarioBancaFase1.data,
-					).toLocaleDateString("pt-BR");
-					horaStr = selectedHorarioBancaFase1.hora;
+					// Slot selecionado localmente: data é "YYYY-MM-DD" (string pura).
+					// NÃO usar new Date() pois ele interpreta como meia-noite UTC e
+					// toLocaleDateString() aplica o offset do fuso, podendo mostrar
+					// o dia anterior para usuários em UTC-3.
+					dataStr = formatarData(selectedHorarioBancaFase1.data);
+					horaStr = formatarHora(selectedHorarioBancaFase1.hora);
 				} else {
 					const defesaAgendada =
 						defesasFase1 && defesasFase1.length > 0
 							? defesasFase1.find((d) => !!d.data_defesa) ||
 								defesasFase1[0]
 							: null;
-					const dataHoraFormatada =
-						defesaAgendada && defesaAgendada.data_defesa
-							? new Date(defesaAgendada.data_defesa)
-							: null;
-					dataStr = dataHoraFormatada
-						? dataHoraFormatada.toLocaleDateString("pt-BR")
-						: null;
-					horaStr = dataHoraFormatada
-						? dataHoraFormatada.toLocaleTimeString("pt-BR", {
-								hour: "2-digit",
-								minute: "2-digit",
-							})
-						: null;
+					// data_defesa vem do banco como "wall-clock UTC":
+					// 17:00 armazenado = 17:00 para exibir.
+					// formatarDataDefesaUTC usa getters UTC para evitar que
+					// toLocaleTimeString subtraia o offset e mostre 14:00.
+					if (defesaAgendada && defesaAgendada.data_defesa) {
+						const formatted = formatarDataDefesaUTC(defesaAgendada.data_defesa);
+						dataStr = formatted.dataStr;
+						horaStr = formatted.horaStr;
+					}
 				}
 
 				// Notas da banca de FASE 1
@@ -2712,11 +2710,12 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }: TccStepp
 											selectedHorarioBancaFase2.data &&
 											selectedHorarioBancaFase2.hora
 										) {
-											dataStr = new Date(
-												selectedHorarioBancaFase2.data,
-											).toLocaleDateString("pt-BR");
-											horaStr =
-												selectedHorarioBancaFase2.hora;
+											// Slot selecionado localmente: data é "YYYY-MM-DD" (string pura).
+											// NÃO usar new Date() pois ele interpreta como meia-noite UTC e
+											// toLocaleDateString() aplica o offset do fuso, podendo mostrar
+											// o dia anterior para usuários em UTC-3.
+											dataStr = formatarData(selectedHorarioBancaFase2.data);
+											horaStr = formatarHora(selectedHorarioBancaFase2.hora);
 										} else {
 											const defesaAgendada =
 												defesasFase2 &&
@@ -2726,27 +2725,15 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }: TccStepp
 																!!d.data_defesa,
 														) || defesasFase2[0]
 													: null;
-											const dataHoraFormatada =
-												defesaAgendada &&
-												defesaAgendada.data_defesa
-													? new Date(
-															defesaAgendada.data_defesa,
-														)
-													: null;
-											dataStr = dataHoraFormatada
-												? dataHoraFormatada.toLocaleDateString(
-														"pt-BR",
-													)
-												: null;
-											horaStr = dataHoraFormatada
-												? dataHoraFormatada.toLocaleTimeString(
-														"pt-BR",
-														{
-															hour: "2-digit",
-															minute: "2-digit",
-														},
-													)
-												: null;
+											// data_defesa vem do banco como "wall-clock UTC":
+											// 17:00 armazenado = 17:00 para exibir.
+											// formatarDataDefesaUTC usa getters UTC para evitar que
+											// toLocaleTimeString subtraia o offset e mostre 14:00.
+											if (defesaAgendada && defesaAgendada.data_defesa) {
+												const formatted = formatarDataDefesaUTC(defesaAgendada.data_defesa);
+												dataStr = formatted.dataStr;
+												horaStr = formatted.horaStr;
+											}
 										}
 
 										return (
