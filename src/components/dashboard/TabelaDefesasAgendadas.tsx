@@ -166,8 +166,8 @@ export default function TabelaDefesasAgendadas({ defesasAgendadas }: TabelaDefes
 						sx={{
 							mt: 1,
 							flexGrow: 1,
+							minHeight: 0,
 							overflow: "auto",
-							maxHeight: "calc(360 - 80px)", // 360px - altura do título e padding
 						}}
 					>
 						<CustomDataGrid
