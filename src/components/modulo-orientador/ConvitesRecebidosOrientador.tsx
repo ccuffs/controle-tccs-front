@@ -320,7 +320,7 @@ export default function ConvitesRecebidosOrientador() {
 					habilitarSemestre
 					habilitarFase
 					habilitarFiltroOrientacao={false}
-					mostrarTodosCursos={false}
+					mostrarTodosCursos={true}
 					loading={loading}
 				/>
 				<Snackbar

@@ -1,8 +1,33 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import convitesService from "../services/convites-service";
 import convitesRecebidosController from "../controllers/convites-recebidos-controller";
 import type { Convite } from "../types/convite";
+import type { TrabalhoConclusao } from "../types/trabalho-conclusao";
+
+/** Extrai cursos únicos a partir dos convites (para membros de banca que não
+ *  possuem orientações, e portanto não têm cursos vindos do endpoint de orientadores). */
+function extrairCursosDoConvites(convites: Convite[]) {
+	const vistos = new Set<number>();
+	const cursos: TrabalhoConclusao["curso"][] = [];
+
+	for (const convite of convites) {
+		const tcc =
+			convite.trabalhoConclusao ??
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			(convite as any).TrabalhoConclusao ??
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			(convite as any).trabalho_conclusao;
+
+		const curso = tcc?.curso;
+		if (curso?.id && !vistos.has(curso.id)) {
+			vistos.add(curso.id);
+			cursos.push(curso);
+		}
+	}
+
+	return cursos;
+}
 
 interface ConviteSelecionado extends Convite {
 	acao: boolean;
@@ -13,6 +38,10 @@ export function useConvitesRecebidosOrientador() {
 
 	const [convites, setConvites] = useState<Convite[]>([]);
 	const [cursos, setCursos] = useState<unknown[]>([]);
+
+	/** Todos os convites brutos (sem filtragem), guardados para popular o
+	 *  filtro de cursos quando o docente não possui orientações (ex.: banca). */
+	const allConvitesRawRef = useRef<Convite[]>([]);
 	const [cursoSelecionado, setCursoSelecionado] = useState<string | number>("");
 	const [ano, setAno] = useState<string | number>(
 		convitesRecebidosController.getAnoSemestreAtual().ano,
@@ -83,6 +112,20 @@ export function useConvitesRecebidosOrientador() {
 				convitesService.getConvitesDocente(usuario.id),
 				convitesService.getAnoSemestres(),
 			]);
+
+			// Guardar os convites brutos (sem filtros) para popular os cursos
+			// no caso de docentes de banca que não possuem orientações.
+			allConvitesRawRef.current = convitesRaw;
+
+			// Se ainda não há cursos carregados (ex.: membro de banca sem
+			// orientações), populá-los a partir dos próprios convites.
+			setCursos((prevCursos) => {
+				if (prevCursos.length === 0) {
+					const cursosDoConvites = extrairCursosDoConvites(convitesRaw);
+					return cursosDoConvites.length > 0 ? cursosDoConvites : prevCursos;
+				}
+				return prevCursos;
+			});
 
 			const convitesFiltrados =
 				convitesRecebidosController.aplicarFiltros(
