@@ -135,6 +135,7 @@ export default function TabelaDefesasAgendadas({ defesasAgendadas }: TabelaDefes
 			sx={{
 				backgroundColor: theme.palette.background.default,
 				height: "100%",
+				maxHeight: 460,
 				display: "flex",
 				flexDirection: "column",
 				width: "100%",
@@ -145,6 +146,7 @@ export default function TabelaDefesasAgendadas({ defesasAgendadas }: TabelaDefes
 				display: "flex",
 				flexDirection: "column",
 				flexGrow: 1,
+				overflow: "hidden",
 				padding: "16px",
 				"&:last-child": { paddingBottom: "16px" },
 			}}
