@@ -13,6 +13,8 @@ interface DefenseListProps {
 	modoDocente?: boolean;
 	/** Ações do rodapé do painel de detalhes. */
 	acoesDetalhe?: (defesa: DefesaAgenda, fechar: () => void) => ReactNode;
+	/** Conteúdo extra no fim do painel de detalhes (ex.: histórico). */
+	extraDetalhe?: (defesa: DefesaAgenda) => ReactNode;
 	vazio?: { titulo: string; texto: string };
 	/** Quantidade máxima de linhas exibidas (ex.: 5 na Visão geral). */
 	limite?: number;
@@ -27,6 +29,7 @@ export default function DefenseList({
 	carregando = false,
 	modoDocente = false,
 	acoesDetalhe,
+	extraDetalhe,
 	vazio = { titulo: "Nenhuma defesa encontrada", texto: "Não há defesas para a combinação de filtros selecionada." },
 	limite,
 }: DefenseListProps) {
@@ -85,6 +88,7 @@ export default function DefenseList({
 				defesa={selecionada}
 				onClose={() => setSelecionada(null)}
 				acoes={selecionada && acoesDetalhe ? acoesDetalhe(selecionada, () => setSelecionada(null)) : undefined}
+				extra={selecionada && extraDetalhe ? extraDetalhe(selecionada) : undefined}
 			/>
 		</Card>
 	);

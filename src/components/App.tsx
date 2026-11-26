@@ -12,7 +12,6 @@ import { ExigirItem, ExigirPerfil, RedirecionarInicio, RedirecionarInicioPerfil 
 import type { Perfil } from "./layout/navegacao";
 import { NoticeProvider } from "./ui";
 
-import Cursos from "./Cursos";
 import Dashboard from "./Dashboard";
 import AvaliarDefesasOrientador from "./modulo-orientador/AvaliarDefesasOrientador";
 import ConvitesRecebidosOrientador from "./modulo-orientador/ConvitesRecebidosOrientador";
@@ -29,6 +28,10 @@ import Login from "./utils/Login";
 import Discentes from "./cadastros/Discentes";
 import Docentes from "./cadastros/Docentes";
 import Temas from "./cadastros/Temas";
+import CursosPagina from "./cadastros/CursosPagina";
+import Orientacoes from "./orientacoes/Orientacoes";
+import Defesas from "./defesas/Defesas";
+import ImportarLista from "./importar/ImportarLista";
 import VisaoGeral from "./visao-geral/VisaoGeral";
 
 /** Página de um item do menu: só abre se o item for permitido ao usuário. */
@@ -62,27 +65,13 @@ function App() {
 						<Route path="coordenacao" element={<ExigirPerfil perfil="coordenacao" />}>
 							<Route index element={<RedirecionarInicioPerfil perfil="coordenacao" />} />
 							<Route path="visao-geral" element={pagina("coordenacao", "visao-geral", <VisaoGeral />)} />
-							<Route path="orientacoes" element={pagina("coordenacao", "orientacoes", <Orientacao />)} />
-							<Route
-								path="defesas"
-								element={pagina("coordenacao", "defesas", <EmMigracao titulo="Defesas" fase="Fase 3" />)}
-							/>
+							<Route path="orientacoes" element={pagina("coordenacao", "orientacoes", <Orientacoes />)} />
+							<Route path="defesas" element={pagina("coordenacao", "defesas", <Defesas />)} />
 							<Route path="discentes" element={pagina("coordenacao", "discentes", <Discentes />)} />
 							<Route path="docentes" element={pagina("coordenacao", "docentes", <Docentes />)} />
 							<Route path="temas" element={pagina("coordenacao", "temas", <Temas />)} />
-							<Route path="cursos" element={pagina("coordenacao", "cursos", <Cursos />)} />
-							<Route
-								path="importar"
-								element={pagina(
-									"coordenacao",
-									"importar",
-									<EmMigracao
-										titulo="Importar lista de discentes"
-										fase="Fase 3"
-										observacao="Enquanto isso, a importação continua disponível em Orientações."
-									/>,
-								)}
-							/>
+							<Route path="cursos" element={pagina("coordenacao", "cursos", <CursosPagina />)} />
+							<Route path="importar" element={pagina("coordenacao", "importar", <ImportarLista />)} />
 							<Route path="design-system" element={pagina("coordenacao", "design-system", <DesignSystem />)} />
 						</Route>
 
