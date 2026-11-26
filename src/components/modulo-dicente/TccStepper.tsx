@@ -22,11 +22,11 @@ import { formatarDataDefesaUTC, formatarData, formatarHora } from "../../control
 import type { Convite } from "../../types/convite";
 import ConviteOrientadorModal from "./ConviteOrientadorModal";
 import ConviteBancaModal from "./ConviteBancaModal";
-import SelecionarHorarioBanca from "./SelecionarHorarioBanca";
 import { Button as BotaoDesign, useNotice } from "../ui";
 import EtapaTemaTituloResumo from "../discente/etapas/EtapaTemaTituloResumo";
 import EtapaEscolherOrientador from "../discente/etapas/EtapaEscolherOrientador";
 import EtapaConviteBanca from "../discente/etapas/EtapaConviteBanca";
+import EtapaAgendarDefesa from "../discente/etapas/EtapaAgendarDefesa";
 import { useJornadaTcc, steps, type ConviteLocal } from "./useJornadaTcc";
 import type { ContextoTcc } from "./useJornadaTcc";
 
@@ -101,6 +101,27 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange, modoJornad
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [openMessage]);
 
+	// Agendamento da defesa (etapa 5 no TCC I, 8 no TCC II): orientador e membros com convite aceito na fase.
+	const renderAgendarDefesa = (fase: 1 | 2) => {
+		if (!trabalhoConclusao) return null;
+		const orientador = conviteExistente?.aceito
+			? { codigo: conviteExistente.codigo_docente, nome: conviteExistente.docente?.nome ?? conviteExistente.codigo_docente }
+			: null;
+		const membros = convitesBanca
+			.filter((c) => c.aceito === true && !!c.data_feedback && c.fase === fase)
+			.map((c) => ({ codigo: c.codigo_docente, nome: c.docente?.nome ?? c.codigo_docente }));
+		return (
+			<EtapaAgendarDefesa
+				oferta={{ ano: trabalhoConclusao.ano, semestre: trabalhoConclusao.semestre, id_curso: trabalhoConclusao.id_curso, fase }}
+				orientador={orientador}
+				membros={membros}
+				defesas={fase === 1 ? defesasFase1 : defesasFase2}
+				selecionado={fase === 1 ? selectedHorarioBancaFase1 : selectedHorarioBancaFase2}
+				onSelecionar={fase === 1 ? setSelectedHorarioBancaFase1 : setSelectedHorarioBancaFase2}
+			/>
+		);
+	};
+
 	const renderStepContent = (step: number) => {
 		switch (step) {
 			case 0:
@@ -138,155 +159,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange, modoJornad
 			case 5: {
 				// Etapa 6: Selecionar horário da banca do Projeto (Fase 1)
 				if (!trabalhoConclusao) return null;
-				if (trabalhoConclusao.fase === 1) {
-					const codigoOrientadorF1 = conviteExistente?.aceito
-						? conviteExistente.codigo_docente
-						: null;
-					const membrosAceitosFase1 = convitesBanca
-						.filter(
-							(c) =>
-								c.aceito === true &&
-								!!c.data_feedback &&
-								c.fase === 1,
-						)
-						.map((c) => c.codigo_docente);
-
-					// Verificar se já existe defesa agendada para fase 1
-					const jaTemDefesaFase1 = temDefesaAgendada(1);
-					const dadosDefesaFase1 = obterDadosDefesaAgendada(1);
-
-					return (
-						<Box sx={{ mt: 2 }}>
-							<Typography variant="h6" gutterBottom>
-								Etapa 6: Selecionar Horário da Banca do Projeto
-							</Typography>
-
-							{/* Se já tem defesa agendada, mostrar apenas o resumo */}
-							{jaTemDefesaFase1 && dadosDefesaFase1 ? (
-								<Paper sx={{ p: 3, mb: 2 }}>
-									<Alert severity="success" sx={{ mb: 2 }}>
-										<Typography variant="body2">
-											✅{" "}
-											<strong>
-												Horário já selecionado!
-											</strong>{" "}
-											A defesa da banca do projeto já foi
-											agendada.
-										</Typography>
-									</Alert>
-
-									<Typography
-										variant="subtitle1"
-										gutterBottom
-									>
-										Horário da Defesa do Projeto
-									</Typography>
-									<Alert severity="info" sx={{ mb: 2 }}>
-										<Typography variant="body2">
-											<strong>Data:</strong>{" "}
-											{dadosDefesaFase1.dataStr}
-										</Typography>
-										<Typography variant="body2">
-											<strong>Horário:</strong>{" "}
-											{dadosDefesaFase1.horaStr}
-										</Typography>
-									</Alert>
-
-									{/* Mostrar notas da banca se disponíveis */}
-									{defesasFase1 &&
-										defesasFase1.length > 0 && (
-											<Box>
-												<Typography
-													variant="subtitle1"
-													gutterBottom
-												>
-													Avaliações da Banca
-												</Typography>
-												{defesasFase1.map((d, idx) => (
-													<Alert
-														key={idx}
-														severity={
-															d.avaliacao != null
-																? "info"
-																: "warning"
-														}
-														sx={{ mb: 1 }}
-													>
-														<Typography variant="body2">
-															<strong>
-																Docente:
-															</strong>{" "}
-															{d.membroBanca
-																?.nome ||
-																d.membro_banca}
-														</Typography>
-														<Typography variant="body2">
-															<strong>
-																Nota:
-															</strong>{" "}
-															{d.avaliacao != null
-																? Number(
-																		d.avaliacao,
-																	).toFixed(1)
-																: "Aguardando avaliação"}
-														</Typography>
-													</Alert>
-												))}
-											</Box>
-										)}
-								</Paper>
-							) : (
-								/* Se não tem defesa agendada, mostrar seleção de horário */
-								<Box>
-									{!codigoOrientadorF1 && (
-										<Alert
-											severity="warning"
-											sx={{ mb: 2 }}
-										>
-											O convite ao orientador ainda não
-											foi aceito.
-										</Alert>
-									)}
-									{membrosAceitosFase1.length !== 2 && (
-										<Alert
-											severity="warning"
-											sx={{ mb: 2 }}
-										>
-											É necessário ter 2 docentes
-											convidados com convite aceito para a
-											banca do projeto.
-										</Alert>
-									)}
-									{codigoOrientadorF1 &&
-										membrosAceitosFase1.length === 2 && (
-											<SelecionarHorarioBanca
-												oferta={{
-													ano: trabalhoConclusao.ano,
-													semestre:
-														trabalhoConclusao.semestre,
-													id_curso:
-														trabalhoConclusao.id_curso,
-													fase: 1,
-												}}
-												codigoOrientador={
-													codigoOrientadorF1
-												}
-												codigosMembrosBanca={
-													membrosAceitosFase1
-												}
-												selectedSlot={
-													selectedHorarioBancaFase1
-												}
-												onChange={
-													setSelectedHorarioBancaFase1
-												}
-											/>
-										)}
-								</Box>
-							)}
-						</Box>
-					);
-				}
+				if (trabalhoConclusao.fase === 1) return renderAgendarDefesa(1);
 				// Fase 2: nesta etapa, exibir DADOS DA FASE 1 (banca do projeto)
 				// Preferir o horário selecionado localmente da fase 1; se não houver, usar o registro de defesa agendada da fase 1
 				let dataStr: string | null = null;
@@ -470,139 +343,8 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange, modoJornad
 						onConvidar={handleOpenConviteBancaFinalModal}
 					/>
 				);
-			case 8: {
-				// Etapa 9: Selecionar horário de banca comum a orientador + 2 membros aceitos
-				if (!trabalhoConclusao) {
-					return null;
-				}
-				// Recuperar orientador aceito (conviteOrientacao) e 2 membros aceitos da fase correta
-				const codigoOrientador = conviteExistente?.aceito
-					? conviteExistente.codigo_docente
-					: null;
-				const membrosAceitosFase = convitesBanca
-					.filter((c) => c.aceito === true && !!c.data_feedback)
-					.filter((c) =>
-						trabalhoConclusao.fase === 2
-							? c.fase === 2
-							: c.fase === 1,
-					)
-					.map((c) => c.codigo_docente);
-
-				// Verificar se já existe defesa agendada para fase 2
-				const jaTemDefesaFase2 = temDefesaAgendada(2);
-				const dadosDefesaFase2 = obterDadosDefesaAgendada(2);
-
-				return (
-					<Box sx={{ mt: 2 }}>
-						<Typography variant="h6" gutterBottom>
-							Etapa 9: Selecionar Horário da Banca Final
-						</Typography>
-
-						{/* Se já tem defesa agendada, mostrar apenas o resumo */}
-						{jaTemDefesaFase2 && dadosDefesaFase2 ? (
-							<Paper sx={{ p: 3, mb: 2 }}>
-								<Alert severity="success" sx={{ mb: 2 }}>
-									<Typography variant="body2">
-										✅{" "}
-										<strong>Horário já selecionado!</strong>{" "}
-										A defesa final já foi agendada.
-									</Typography>
-								</Alert>
-
-								<Typography variant="subtitle1" gutterBottom>
-									Horário da Defesa Final
-								</Typography>
-								<Alert severity="info" sx={{ mb: 2 }}>
-									<Typography variant="body2">
-										<strong>Data:</strong>{" "}
-										{dadosDefesaFase2.dataStr}
-									</Typography>
-									<Typography variant="body2">
-										<strong>Horário:</strong>{" "}
-										{dadosDefesaFase2.horaStr}
-									</Typography>
-								</Alert>
-
-								{/* Mostrar notas da banca se disponíveis */}
-								{defesasFase2 && defesasFase2.length > 0 && (
-									<Box>
-										<Typography
-											variant="subtitle1"
-											gutterBottom
-										>
-											Avaliações da Banca Final
-										</Typography>
-										{defesasFase2.map((d, idx) => (
-											<Alert
-												key={idx}
-												severity={
-													d.avaliacao != null
-														? "info"
-														: "warning"
-												}
-												sx={{ mb: 1 }}
-											>
-												<Typography variant="body2">
-													<strong>Docente:</strong>{" "}
-													{d.membroBanca?.nome ||
-														d.membro_banca}
-												</Typography>
-												<Typography variant="body2">
-													<strong>Nota:</strong>{" "}
-													{d.avaliacao != null
-														? Number(
-																d.avaliacao,
-															).toFixed(1)
-														: "Aguardando avaliação"}
-												</Typography>
-											</Alert>
-										))}
-									</Box>
-								)}
-							</Paper>
-						) : (
-							/* Se não tem defesa agendada, mostrar seleção de horário */
-							<Box>
-								{!codigoOrientador && (
-									<Alert severity="warning" sx={{ mb: 2 }}>
-										O convite ao orientador ainda não foi
-										aceito.
-									</Alert>
-								)}
-								{membrosAceitosFase.length !== 2 && (
-									<Alert severity="warning" sx={{ mb: 2 }}>
-										É necessário ter 2 docentes convidados
-										com convite aceito.
-									</Alert>
-								)}
-								{codigoOrientador &&
-									membrosAceitosFase.length === 2 && (
-										<SelecionarHorarioBanca
-											oferta={{
-												ano: trabalhoConclusao.ano,
-												semestre:
-													trabalhoConclusao.semestre,
-												id_curso:
-													trabalhoConclusao.id_curso,
-												fase: trabalhoConclusao.fase,
-											}}
-											codigoOrientador={codigoOrientador}
-											codigosMembrosBanca={
-												membrosAceitosFase
-											}
-											selectedSlot={
-												selectedHorarioBancaFase2
-											}
-											onChange={
-												setSelectedHorarioBancaFase2
-											}
-										/>
-									)}
-							</Box>
-						)}
-					</Box>
-				);
-			}
+			case 8:
+				return trabalhoConclusao?.fase === 2 ? renderAgendarDefesa(2) : null;
 			default:
 				return "Etapa desconhecida";
 		}
@@ -1208,6 +950,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange, modoJornad
 
 						{/* Mensagem de ajuda para etapa 6 (fase 1) ou 8 (fase 2) */}
 						{activeStep === 5 &&
+							!modoJornada &&
 							trabalhoConclusao?.fase === 1 &&
 							!validarEtapaAtual() && (
 								<Alert severity="warning" sx={{ mt: 2 }}>
@@ -1291,9 +1034,17 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange, modoJornad
 							const ultima = activeStep === getEtapasValidas().length - 1;
 							const finalizar =
 								ultima && (trabalhoConclusao?.fase !== 2 || (trabalhoConclusao?.fase === 2 && trabalhoConclusao?.aprovado_projeto));
+							// Etapa de horário ainda sem defesa: o botão final é o que agenda (POST /defesas/agendar).
+							const faseAtual = trabalhoConclusao?.fase === 2 ? 2 : 1;
+							const agendar =
+								finalizar && activeStep === (faseAtual === 2 ? 8 : 5) && !temDefesaAgendada(faseAtual);
 							return (
-								<BotaoDesign onClick={handleNext} disabled={saving || !validarEtapaAtual()} icon={finalizar ? "check" : undefined}>
-									{saving ? "Salvando…" : finalizar ? "Finalizar" : "Continuar"}
+								<BotaoDesign
+									onClick={handleNext}
+									disabled={saving || !validarEtapaAtual()}
+									icon={agendar ? "event_available" : finalizar ? "check" : undefined}
+								>
+									{saving ? "Salvando…" : agendar ? "Agendar defesa" : finalizar ? "Finalizar" : "Continuar"}
 								</BotaoDesign>
 							);
 						})()}

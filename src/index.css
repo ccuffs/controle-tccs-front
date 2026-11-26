@@ -195,3 +195,15 @@
 .docente-opcao input{accent-color:var(--teal-600);width:16px;height:16px;flex:none}
 .docente-lista-vazia{padding:16px;font-size:11px;color:var(--muted);text-align:center}
 .readonly-box>.material-symbols-rounded{flex:none}
+/* Agendamento da defesa do discente (etapas 5 e 8): horários em comum por data e defesa agendada. */
+.horarios-comuns{display:flex;flex-direction:column;margin-top:14px}
+.horario-dia{display:grid;grid-template-columns:44px 1fr;gap:14px;padding:14px 0;border-top:1px solid var(--border)}.horario-dia:first-child{border-top:0}
+.horario-dia>div:last-child>strong{font-size:12px}
+.horario-opcoes{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.horario-opcao{cursor:pointer;height:34px;min-width:72px;padding:0 12px;border:1px solid var(--border-strong);border-radius:8px;background:var(--surface);color:var(--text);font-size:12px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:4px}
+.horario-opcao:hover{border-color:var(--teal-500)}
+.horario-opcao.selected{background:var(--teal-600);border-color:var(--teal-600);color:#fff}
+.defesa-agendada{display:flex;align-items:center;gap:14px;margin-top:0}.defesa-agendada>div:nth-child(2){display:flex;flex-direction:column;gap:3px;flex:1}
+.defesa-agendada>div:nth-child(2)>strong{font-size:13px}.defesa-agendada>div:nth-child(2)>span{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px}
+.defesa-agendada>.chip{position:static}
+.banca-membros:not(.status-card){margin-top:18px}
