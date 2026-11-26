@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
 	Box,
 	Stepper,
@@ -8,7 +9,6 @@ import {
 	TextField,
 	Paper,
 	Alert,
-	Snackbar,
 	CircularProgress,
 	LinearProgress,
 	Dialog,
@@ -24,6 +24,7 @@ import VisualizarTemasTCC from "./VisualizarTemasTCC";
 import ConviteOrientadorModal from "./ConviteOrientadorModal";
 import ConviteBancaModal from "./ConviteBancaModal";
 import SelecionarHorarioBanca from "./SelecionarHorarioBanca";
+import { Button as BotaoDesign, useNotice } from "../ui";
 import { useJornadaTcc, steps, type ConviteLocal } from "./useJornadaTcc";
 import type { ContextoTcc } from "./useJornadaTcc";
 
@@ -84,6 +85,15 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange, modoJornad
 		handleImportData,
 		handleCloseMessage,
 	} = useJornadaTcc({ etapaInicial, onEtapaChange, onContexto });
+
+	// Avisos no Snackbar único do app (useNotice), como nas demais telas do novo design.
+	const notificar = useNotice();
+	useEffect(() => {
+		if (!openMessage) return;
+		notificar(messageText, messageSeverity);
+		handleCloseMessage(null);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [openMessage]);
 
 	const renderStepContent = (step: number) => {
 		switch (step) {
@@ -1390,18 +1400,6 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange, modoJornad
 					</Typography>
 				</Paper>
 
-				<Snackbar
-					open={openMessage}
-					autoHideDuration={6000}
-					onClose={handleCloseMessage}
-				>
-					<Alert
-						severity={messageSeverity}
-						onClose={handleCloseMessage}
-					>
-						{messageText}
-					</Alert>
-				</Snackbar>
 			</Box>
 		);
 	}
@@ -1431,15 +1429,9 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange, modoJornad
 					<Box>
 						{renderStepContent(activeStep)}
 
-						<Box
-							sx={{
-								display: "flex",
-								flexDirection: "row",
-								pt: 2,
-							}}
-						>
-							<Box sx={{ flex: "1 1 auto" }} />
-							<Button
+						<div className="jornada-acoes">
+							<span />
+							<BotaoDesign
 								onClick={() => {
 									const novaEtapa = activeStep + 1;
 									setActiveStep(novaEtapa);
@@ -1447,12 +1439,10 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange, modoJornad
 										onEtapaChange(novaEtapa);
 									}
 								}}
-								variant="contained"
-								color="primary"
 							>
-								Próximo
-							</Button>
-						</Box>
+								Continuar
+							</BotaoDesign>
+						</div>
 					</Box>
 				</Paper>
 			</Box>
@@ -1490,11 +1480,12 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange, modoJornad
 		)}
 
 			<Paper
-				sx={{
-					p: 3,
-					mb: 3,
-					backgroundColor: theme.palette.background.default,
-				}}
+				elevation={modoJornada ? 0 : 1}
+				sx={
+					modoJornada
+						? { p: 0, mb: 0, backgroundColor: "transparent", backgroundImage: "none" }
+						: { p: 3, mb: 3, backgroundColor: theme.palette.background.default }
+				}
 			>
 				<Stepper activeStep={activeStep} sx={{ mb: 4, display: modoJornada ? "none" : undefined }}>
 					{getEtapasValidas().map((label, index) => {
@@ -1596,97 +1587,6 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange, modoJornad
 						);
 					})}
 				</Stepper>
-
-				{/* Botões de navegação na parte superior */}
-				{activeStep !== getEtapasValidas().length && (
-					<Box
-						sx={{
-							display: "flex",
-							flexDirection: "row",
-							mb: 3,
-							justifyContent: "space-between",
-							alignItems: "center",
-						}}
-					>
-						<Box sx={{ display: "flex", gap: 1 }}>
-							{activeStep > 0 && (
-								<Button
-									color="inherit"
-									onClick={() => {
-										if (onEtapaChange) {
-											onEtapaChange(0);
-										}
-									}}
-									variant="outlined"
-									size="small"
-								>
-									Voltar para Temas
-								</Button>
-							)}
-							<Button
-								color="inherit"
-								disabled={activeStep === 0}
-								onClick={handleBack}
-								variant="outlined"
-								size="small"
-							>
-								Voltar
-							</Button>
-						</Box>
-						{/* Só mostrar o botão se não estiver na etapa final ou se o projeto estiver aprovado na fase 2 */}
-						{(() => {
-							const isLastStep =
-								activeStep === getEtapasValidas().length - 1;
-							const canShowFinalizeButton =
-								isLastStep &&
-								(trabalhoConclusao?.fase !== 2 ||
-									(trabalhoConclusao?.fase === 2 &&
-										trabalhoConclusao?.aprovado_projeto));
-
-							return canShowFinalizeButton ? (
-								<Button
-									onClick={handleNext}
-									disabled={saving || !validarEtapaAtual()}
-									variant="contained"
-									color="primary"
-									size="small"
-								>
-									{saving ? (
-										<>
-											<CircularProgress
-												size={16}
-												sx={{ mr: 1 }}
-											/>
-											Salvando...
-										</>
-									) : (
-										"Finalizar"
-									)}
-								</Button>
-							) : (
-								<Button
-									onClick={handleNext}
-									disabled={saving || !validarEtapaAtual()}
-									variant="contained"
-									color="primary"
-									size="small"
-								>
-									{saving ? (
-										<>
-											<CircularProgress
-												size={16}
-												sx={{ mr: 1 }}
-											/>
-											Salvando...
-										</>
-									) : (
-										"Próximo"
-									)}
-								</Button>
-							);
-						})()}
-					</Box>
-				)}
 
 				{activeStep === getEtapasValidas().length ? (
 					<Box>
@@ -2058,17 +1958,27 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange, modoJornad
 							)}
 					</Box>
 				)}
+				{/* Navegação da jornada: abaixo do conteúdo; no celular, fixa acima da navegação inferior. */}
+				{activeStep !== getEtapasValidas().length && (
+					<div className="jornada-acoes">
+						<BotaoDesign variant="secondary" onClick={handleBack} disabled={activeStep === 0 || saving}>
+							Voltar
+						</BotaoDesign>
+						{(() => {
+							const ultima = activeStep === getEtapasValidas().length - 1;
+							const finalizar =
+								ultima && (trabalhoConclusao?.fase !== 2 || (trabalhoConclusao?.fase === 2 && trabalhoConclusao?.aprovado_projeto));
+							return (
+								<BotaoDesign onClick={handleNext} disabled={saving || !validarEtapaAtual()} icon={finalizar ? "check" : undefined}>
+									{saving ? "Salvando…" : finalizar ? "Finalizar" : "Continuar"}
+								</BotaoDesign>
+							);
+						})()}
+					</div>
+				)}
+
 			</Paper>
 
-			<Snackbar
-				open={openMessage}
-				autoHideDuration={6000}
-				onClose={handleCloseMessage}
-			>
-				<Alert severity={messageSeverity} onClose={handleCloseMessage}>
-					{messageText}
-				</Alert>
-			</Snackbar>
 
 			{/* Modal de Convite para Orientador */}
 			{trabalhoConclusao && (

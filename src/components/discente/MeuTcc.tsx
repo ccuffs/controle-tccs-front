@@ -11,22 +11,23 @@ interface Passo {
 	etapas: number[];
 	/** Passo "Aguardar aceite": mesma etapa 0, ativo enquanto o convite estiver pendente. */
 	aguardandoAceite?: boolean;
+	descricao: string;
 }
 
 const PASSOS: Record<number, Passo[]> = {
 	1: [
-		{ rotulo: "Escolher orientador e tema", etapa: 0, etapas: [0] },
-		{ rotulo: "Aguardar aceite", etapa: 0, etapas: [0], aguardandoAceite: true },
-		{ rotulo: "Tema, título e resumo", etapa: 1, etapas: [1, 2, 3] },
-		{ rotulo: "Banca do projeto", etapa: 4, etapas: [4] },
-		{ rotulo: "Agendar defesa", etapa: 5, etapas: [5] },
-		{ rotulo: "Defesa e resultado", etapa: 6, etapas: [6] },
+		{ rotulo: "Escolher orientador e tema", etapa: 0, etapas: [0], descricao: "Explore os temas ofertados e envie um convite de orientação." },
+		{ rotulo: "Aguardar aceite", etapa: 0, etapas: [0], aguardandoAceite: true, descricao: "Seu convite foi enviado. Acompanhe aqui a resposta do docente." },
+		{ rotulo: "Tema, título e resumo", etapa: 1, etapas: [1, 2, 3], descricao: "Conte-nos sobre seu projeto. Você pode preencher cada campo em momentos diferentes." },
+		{ rotulo: "Banca do projeto", etapa: 4, etapas: [4], descricao: "Convide dois membros para a banca e acompanhe cada resposta." },
+		{ rotulo: "Agendar defesa", etapa: 5, etapas: [5], descricao: "Escolha um horário em comum entre o orientador e a banca." },
+		{ rotulo: "Defesa e resultado", etapa: 6, etapas: [6], descricao: "Acompanhe a defesa agendada e o resultado da avaliação." },
 	],
 	2: [
-		{ rotulo: "Seminário de andamento", etapa: 6, etapas: [6] },
-		{ rotulo: "Banca final", etapa: 7, etapas: [7] },
-		{ rotulo: "Agendar defesa final", etapa: 8, etapas: [8] },
-		{ rotulo: "Defesa e resultado", etapa: 9, etapas: [9] },
+		{ rotulo: "Seminário de andamento", etapa: 6, etapas: [6], descricao: "Registre o andamento do trabalho apresentado no seminário." },
+		{ rotulo: "Banca final", etapa: 7, etapas: [7], descricao: "Convide dois membros para a banca de avaliação final." },
+		{ rotulo: "Agendar defesa final", etapa: 8, etapas: [8], descricao: "Escolha um horário em comum para a defesa final." },
+		{ rotulo: "Defesa e resultado", etapa: 9, etapas: [9], descricao: "Acompanhe a defesa final e o resultado da avaliação." },
 	],
 };
 
@@ -44,6 +45,7 @@ export default function MeuTcc() {
 		);
 		return i >= 0 ? i : passos.findIndex((p) => p.etapas.includes(etapaAtual));
 	})();
+	const passoAtivo = indiceAtivo >= 0 ? passos[indiceAtivo] : undefined;
 	const liberado = (p: Passo) => p.etapa <= Math.max(etapaSalva, etapaAtual);
 	const progresso = progressoEtapa(fase, etapaSalva, contexto?.aprovado ?? false);
 
@@ -96,6 +98,15 @@ export default function MeuTcc() {
 					})}
 				</Surface>
 				<Surface component="section" className="card journey-content">
+					{passoAtivo && (
+						<>
+							<span className="eyebrow">
+								ETAPA {indiceAtivo + 1} DE {passos.length}
+							</span>
+							<h2>{passoAtivo.rotulo}</h2>
+							<p>{passoAtivo.descricao}</p>
+						</>
+					)}
 					{loading ? (
 						<p>Carregando…</p>
 					) : (

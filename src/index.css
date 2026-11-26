@@ -173,3 +173,10 @@
 /* Correção sobre o design: o rótulo .sr-only (position:absolute) da coluna de ações
    escapava da rolagem horizontal da tabela e alargava a página no celular. */
 .table-scroll{position:relative}
+
+/* Extensão do design: barra Voltar/Continuar da jornada do discente. No computador fica
+   abaixo do conteúdo da etapa; no celular, fixa acima da navegação inferior (como
+   .mobile-journey-actions do protótipo). */
+.journey-content>h2+p{margin-bottom:20px}
+.jornada-acoes{display:flex;justify-content:space-between;gap:8px;margin-top:24px;border-top:1px solid var(--border);padding-top:18px}
+@media(max-width:520px){.jornada-acoes{position:fixed;bottom:64px;left:0;right:0;margin:0;background:var(--surface);border-top:1px solid var(--border);padding:10px 14px;z-index:18}.jornada-acoes .button{flex:1}}
