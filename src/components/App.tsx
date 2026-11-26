@@ -12,10 +12,6 @@ import { ExigirItem, ExigirPerfil, RedirecionarInicio, RedirecionarInicioPerfil 
 import type { Perfil } from "./layout/navegacao";
 import { NoticeProvider } from "./ui";
 
-import AvaliarDefesasOrientador from "./modulo-orientador/AvaliarDefesasOrientador";
-import EmitirDeclaracoes from "./modulo-orientador/EmitirDeclaracoes";
-import MembrosExternos from "./modulo-orientador/MembrosExternos";
-import PerfilOrientador from "./modulo-orientador/PerfilOrientador";
 import PerfilDiscente from "./modulo-dicente/PerfilDiscente";
 import DesignSystem from "./paginas/DesignSystem";
 import Disponibilidade from "./paginas/Disponibilidade";
@@ -33,6 +29,10 @@ import InicioOrientador from "./orientador/Inicio";
 import ConvitesOrientador from "./orientador/Convites";
 import MeusOrientandos from "./orientador/MeusOrientandos";
 import MeusTemas from "./orientador/MeusTemas";
+import PerfilDocente from "./orientador/Perfil";
+import DeclaracoesDocente from "./orientador/Declaracoes";
+import MembrosExternosDocente from "./orientador/MembrosExternos";
+import AvaliacoesDocente from "./orientador/Avaliacoes";
 
 /** Página de um item do menu: só abre se o item for permitido ao usuário. */
 function pagina(perfil: Perfil, id: string, elemento: ReactNode) {
@@ -82,10 +82,10 @@ function App() {
 							<Route path="temas" element={pagina("orientador", "temas", <MeusTemas />)} />
 							<Route path="convites" element={pagina("orientador", "convites", <ConvitesOrientador />)} />
 							<Route path="disponibilidade" element={pagina("orientador", "disponibilidade", <Disponibilidade />)} />
-							<Route path="avaliacoes" element={pagina("orientador", "avaliacoes", <AvaliarDefesasOrientador />)} />
-							<Route path="externos" element={pagina("orientador", "externos", <MembrosExternos />)} />
-							<Route path="declaracoes" element={pagina("orientador", "declaracoes", <EmitirDeclaracoes />)} />
-							<Route path="perfil" element={pagina("orientador", "perfil", <PerfilOrientador />)} />
+							<Route path="avaliacoes" element={pagina("orientador", "avaliacoes", <AvaliacoesDocente />)} />
+							<Route path="externos" element={pagina("orientador", "externos", <MembrosExternosDocente />)} />
+							<Route path="declaracoes" element={pagina("orientador", "declaracoes", <DeclaracoesDocente />)} />
+							<Route path="perfil" element={pagina("orientador", "perfil", <PerfilDocente />)} />
 						</Route>
 
 						<Route path="discente" element={<ExigirPerfil perfil="discente" />}>
