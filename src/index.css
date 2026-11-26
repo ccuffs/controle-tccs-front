@@ -169,3 +169,7 @@
 /* Correção sobre o design: os passos da jornada do discente são alinhados à esquerda
    (o botão do MUI centraliza o conteúdo por padrão). */
 .journey-steps button{justify-content:flex-start}
+
+/* Correção sobre o design: o rótulo .sr-only (position:absolute) da coluna de ações
+   escapava da rolagem horizontal da tabela e alargava a página no celular. */
+.table-scroll{position:relative}
