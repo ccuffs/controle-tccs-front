@@ -1,52 +1,33 @@
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, useEffect, type ReactNode } from "react";
 import { ThemeProvider, CssBaseline } from "@mui/material";
 import { useTheme as useCustomTheme } from "../../hooks/useTheme";
-import { useMuiTheme, type CustomColors } from "../../hooks/useMuiTheme";
+import { useMuiTheme } from "../../hooks/useMuiTheme";
+import type { ThemeMode } from "../../services/theme-service";
 
-/**
- * CustomThemeProvider - Componente responsável apenas pela definição da tela (UI)
- * A lógica de negócio e chamadas de API estão no hook useTheme
- */
 interface ThemeContextValue {
+	mode: ThemeMode;
 	toggleTheme: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
+	mode: "light",
 	toggleTheme: () => {},
 });
 
 export const useThemeContext = () => useContext(ThemeContext);
 
-// Cores customizadas
-export const customColors: CustomColors = {
-	darkGray: "#454646",
-	orange: "#fdae16",
-	teal: "#20707c",
-	gunmetal: "333a3f",
-	tiffanyBlue: "#70C8B7",
-	outerSpace: "#4B5555",
-	goldenBrown: "#886727",
-	whiteSmoke: "#f5f4f6",
-	glaucous: "#5984c3",
-	platinum: "#e4e4e5",
-	jet: "#373535",
-	frenchGray: "#b5b6be",
-	veronica: "#a147d8",
-	eerieBlack: "#1d1b1b",
-	trueBlue: "#3365b3",
-	raisinBlack: "#272829",
-	taupe: "#4a4342",
-};
-
 export default function CustomThemeProvider({ children }: { children: ReactNode }) {
-	// Usar o hook customizado para gerenciar o tema
 	const { mode, toggleTheme } = useCustomTheme();
+	const theme = useMuiTheme(mode);
 
-	// Memorizando o tema para evitar re-renderizações desnecessárias
-	const theme = useMuiTheme(mode, customColors);
+	// Os tokens escuros de index.css dependem da classe `.dark`; ela fica no <html>
+	// para valer também nos portais do MUI (Drawer, Dialog, Menu).
+	useEffect(() => {
+		document.documentElement.classList.toggle("dark", mode === "dark");
+	}, [mode]);
 
 	return (
-		<ThemeContext.Provider value={{ toggleTheme }}>
+		<ThemeContext.Provider value={{ mode, toggleTheme }}>
 			<ThemeProvider theme={theme}>
 				<CssBaseline />
 				{children}

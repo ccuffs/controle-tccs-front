@@ -2,281 +2,39 @@ import { useMemo } from "react";
 import { createTheme, type Theme } from "@mui/material";
 import type { ThemeMode } from "../services/theme-service";
 
-export interface CustomColors {
-	darkGray: string;
-	orange: string;
-	teal: string;
-	gunmetal: string;
-	tiffanyBlue: string;
-	outerSpace: string;
-	goldenBrown: string;
-	whiteSmoke: string;
-	glaucous: string;
-	platinum: string;
-	jet: string;
-	frenchGray: string;
-	veronica: string;
-	eerieBlack: string;
-	trueBlue: string;
-	raisinBlack: string;
-	taupe: string;
-}
-
-export function useMuiTheme(mode: ThemeMode, customColors: CustomColors): Theme {
-	return useMemo(
-		() =>
-			createTheme({
-				palette: {
-					mode: mode,
-					primary: {
-						main: customColors.teal,
-						light: customColors.tiffanyBlue,
-						dark: customColors.darkGray,
-					},
-					secondary: {
-						main: customColors.orange,
-						light: "#ffe082",
-						dark: "#f57c00",
-					},
-					info: {
-						main: customColors.glaucous,
-						light: customColors.frenchGray,
-						dark: customColors.trueBlue,
-					},
-					warning: {
-						main: customColors.orange,
-						light: "#ffe082",
-						dark: "#e69500",
-					},
-					error: {
-						main: "#d32f2f",
-						light: "#ef5350",
-						dark: "#c62828",
-					},
-					success: {
-						main: customColors.tiffanyBlue,
-						light: "#81c784",
-						dark: customColors.teal,
-					},
-					background: {
-						default:
-							mode === "light"
-								? customColors.whiteSmoke
-								: customColors.raisinBlack,
-						paper: mode === "light" ? "#ffffff" : customColors.jet,
-					},
-					text: {
-						primary:
-							mode === "light"
-								? customColors.eerieBlack
-								: customColors.whiteSmoke,
-						secondary:
-							mode === "light"
-								? customColors.taupe
-								: customColors.platinum,
-					},
-					divider:
-						mode === "light"
-							? customColors.platinum
-							: customColors.frenchGray,
-					// Cores customizadas adicionais acessíveis via theme.palette
-					custom: {
-						veronica: customColors.veronica,
-						glaucous: customColors.glaucous,
-						trueBlue: customColors.trueBlue,
-						frenchGray: customColors.frenchGray,
-						raisinBlack: customColors.raisinBlack,
-						taupe: customColors.taupe,
-					},
+/** Tema MUI do novo design (design/App.tsx). As cores finas ficam nos tokens CSS de index.css. */
+export function useMuiTheme(mode: ThemeMode): Theme {
+	return useMemo(() => {
+		const dark = mode === "dark";
+		return createTheme({
+			palette: {
+				mode,
+				primary: { main: "#20707C", light: "#70C8B7", dark: "#185B68", contrastText: "#FFFFFF" },
+				secondary: { main: "#FDAE16", contrastText: "#302106" },
+				success: { main: "#23845C" },
+				warning: { main: "#C27608" },
+				error: { main: "#B9363F" },
+				info: { main: "#3478B8" },
+				background: { default: dark ? "#101617" : "#F5F4F6", paper: dark ? "#182123" : "#FFFFFF" },
+				text: { primary: dark ? "#F4F5F4" : "#1D1B1B", secondary: dark ? "#AEB7B7" : "#686565" },
+				divider: dark ? "#2D3A3C" : "#E5E1E2",
+			},
+			shape: { borderRadius: 8 },
+			typography: {
+				fontFamily: "'Inter Variable', Inter, system-ui, sans-serif",
+				button: { textTransform: "none", fontWeight: 600, fontSize: "0.8125rem" },
+			},
+			components: {
+				MuiButton: {
+					defaultProps: { disableRipple: false },
+					styleOverrides: { root: { minHeight: 40, borderRadius: 8, boxShadow: "none" } },
 				},
-				typography: {
-					fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-					h1: {
-						color:
-							mode === "light"
-								? customColors.darkGray
-								: "#ffffff",
-					},
-					h2: {
-						color:
-							mode === "light"
-								? customColors.darkGray
-								: "#ffffff",
-					},
-					h3: {
-						color:
-							mode === "light"
-								? customColors.teal
-								: customColors.tiffanyBlue,
-					},
-					h4: {
-						color:
-							mode === "light"
-								? customColors.teal
-								: customColors.tiffanyBlue,
-					},
+				MuiChip: {
+					styleOverrides: { root: { borderRadius: 999, fontWeight: 700 }, label: { paddingLeft: 8, paddingRight: 8 } },
 				},
-				components: {
-					MuiAppBar: {
-						styleOverrides: {
-							root: {
-								backgroundColor: customColors.teal,
-							},
-						},
-					},
-					MuiButton: {
-						styleOverrides: {
-							root: {
-								borderRadius: 8,
-								textTransform: "none",
-								fontWeight: 600,
-							},
-							containedPrimary: {
-								backgroundColor: customColors.teal,
-								"&:hover": {
-									backgroundColor: customColors.darkGray,
-								},
-							},
-							containedSecondary: {
-								backgroundColor: customColors.orange,
-								color: "#ffffff",
-								"&:hover": {
-									backgroundColor: "#e69500",
-								},
-							},
-						},
-					},
-					MuiCard: {
-						styleOverrides: {
-							root: {
-								borderRadius: 12,
-								boxShadow:
-									mode === "light"
-										? "0 2px 8px rgba(0,0,0,0.1)"
-										: "0 2px 8px rgba(0,0,0,0.3)",
-							},
-						},
-					},
-					MuiTextField: {
-						styleOverrides: {
-							root: {
-								"& .MuiOutlinedInput-root": {
-									"&.Mui-focused fieldset": {
-										borderColor: customColors.teal,
-									},
-								},
-								"& .MuiInputLabel-root.Mui-focused": {
-									color: customColors.teal,
-								},
-							},
-						},
-					},
-					MuiChip: {
-						styleOverrides: {
-							root: {
-								backgroundColor: customColors.tiffanyBlue,
-								color: customColors.darkGray,
-								"&:hover": {
-									backgroundColor: customColors.teal,
-									color: "#ffffff",
-								},
-							},
-						},
-					},
-					MuiPaper: {
-						styleOverrides: {
-							root: {
-								borderRadius: 8,
-								border: `1px solid ${
-									mode === "light"
-										? customColors.platinum
-										: customColors.frenchGray
-								}`,
-							},
-						},
-					},
-					MuiTableHead: {
-						styleOverrides: {
-							root: {
-								backgroundColor:
-									mode === "light"
-										? customColors.glaucous
-										: customColors.trueBlue,
-								"& .MuiTableCell-head": {
-									color: "#ffffff",
-									fontWeight: 600,
-								},
-							},
-						},
-					},
-					MuiTableRow: {
-						styleOverrides: {
-							root: {
-								"&:nth-of-type(odd)": {
-									backgroundColor:
-										mode === "light"
-											? customColors.whiteSmoke
-											: customColors.raisinBlack,
-								},
-								"&:hover": {
-									backgroundColor:
-										mode === "light"
-											? customColors.platinum
-											: customColors.taupe,
-								},
-							},
-						},
-					},
-					MuiAlert: {
-						styleOverrides: {
-							standardInfo: {
-								backgroundColor: customColors.glaucous,
-								color: "#ffffff",
-							},
-							standardWarning: {
-								backgroundColor: customColors.orange,
-								color: "#ffffff",
-							},
-						},
-					},
-					MuiTab: {
-						styleOverrides: {
-							root: {
-								textTransform: "none",
-								fontWeight: 500,
-								"&.Mui-selected": {
-									color: customColors.veronica,
-								},
-							},
-						},
-					},
-					MuiTabs: {
-						styleOverrides: {
-							indicator: {
-								backgroundColor: customColors.veronica,
-								height: 3,
-							},
-						},
-					},
-					MuiIconButton: {
-						styleOverrides: {
-							root: {
-								color:
-									mode === "light"
-										? customColors.platinum
-										: customColors.frenchGray,
-								"&:hover": {
-									backgroundColor:
-										mode === "light"
-											? customColors.platinum
-											: customColors.taupe,
-									color: customColors.veronica,
-								},
-							},
-						},
-					},
-				},
-			}),
-		[mode, customColors],
-	);
+				MuiDialog: { styleOverrides: { paper: { borderRadius: 14 } } },
+				MuiDrawer: { styleOverrides: { paper: { backgroundImage: "none" } } },
+			},
+		});
+	}, [mode]);
 }

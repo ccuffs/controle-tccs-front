@@ -10,10 +10,15 @@ import disponibilidadeBancaController from "../controllers/disponibilidade-banca
 import { Permissoes } from "../enums/permissoes";
 import type { GradeDisponibilidade } from "../types/defesa";
 import type { BancaCurso, OrientadorCurso } from "../types/curso";
-import type { GerenciarDisponibilidadeHandle } from "./useModuloOrientador";
 
 type MapaDisponibilidades = Record<string, boolean>;
 type MapaBloqueios = Map<string, { tipo: "banca" | "indisp"; nomeDiscente: string | null }>;
+
+/** Controle exposto pela tela de disponibilidade para bloquear a saída com alterações não salvas. */
+export interface GerenciarDisponibilidadeHandle {
+	hasUnsavedChanges: () => boolean;
+	confirmNavigation: () => boolean;
+}
 
 export function useGerenciarDisponibilidadeBanca(
 	ref: Ref<GerenciarDisponibilidadeHandle>,

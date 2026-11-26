@@ -22,7 +22,7 @@ import CustomDataGrid from "../customs/CustomDataGrid";
 import FiltrosPesquisa from "../utils/FiltrosPesquisa";
 import { useGerenciarDisponibilidadeBanca } from "../../hooks/useGerenciarDisponibilidadeBanca";
 import disponibilidadeBancaController from "../../controllers/disponibilidade-banca-controller";
-import type { GerenciarDisponibilidadeHandle } from "../../hooks/useModuloOrientador";
+import type { GerenciarDisponibilidadeHandle } from "../../hooks/useGerenciarDisponibilidadeBanca";
 
 type RowDataGrid = ReturnType<
 	typeof disponibilidadeBancaController.gerarRowsDataGrid

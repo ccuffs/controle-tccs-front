@@ -1,185 +1,146 @@
-import { createContext, useState, type Dispatch, type SetStateAction } from "react";
-import { Route, Routes } from "react-router";
-import { Container, Box, Toolbar } from "@mui/material";
+import type { ReactNode } from "react";
+import { Navigate, Route, Routes } from "react-router";
 
-import { AuthProvider, useAuth } from "../contexts/AuthContext";
+import { AuthProvider } from "../contexts/AuthContext";
+import { PeriodoProvider } from "../contexts/PeriodoContext";
 import ProtectedRoute from "../contexts/ProtectedRoute";
-import { Permissoes } from "../enums/permissoes";
 
 import CustomThemeProvider from "./customs/CustomThemeProvider";
-import Dashboard from "./Dashboard";
-import Navbar from "./Navbar";
-import Login from "./utils/Login";
+import AppLayout from "./layout/AppLayout";
+import EmMigracao from "./layout/EmMigracao";
+import { ExigirItem, ExigirPerfil, RedirecionarInicio, RedirecionarInicioPerfil } from "./layout/guardas";
+import type { Perfil } from "./layout/navegacao";
+import { NoticeProvider } from "./ui";
+
 import Cursos from "./Cursos";
-import Orientadores from "./Orientadores";
+import Dashboard from "./Dashboard";
 import Dicentes from "./Dicentes";
-import ModuloOrientador from "./ModuloOrientador";
-import ModuloDiscente from "./ModuloDiscente";
+import Orientadores from "./Orientadores";
+import AvaliarDefesasOrientador from "./modulo-orientador/AvaliarDefesasOrientador";
+import ConvitesRecebidosOrientador from "./modulo-orientador/ConvitesRecebidosOrientador";
+import EmitirDeclaracoes from "./modulo-orientador/EmitirDeclaracoes";
+import MembrosExternos from "./modulo-orientador/MembrosExternos";
 import Orientacao from "./modulo-orientador/Orientacao";
+import PerfilOrientador from "./modulo-orientador/PerfilOrientador";
 import TemasTcc from "./modulo-orientador/TemasTcc";
+import PerfilDiscente from "./modulo-dicente/PerfilDiscente";
+import DesignSystem from "./paginas/DesignSystem";
+import Disponibilidade from "./paginas/Disponibilidade";
+import MeuTcc from "./paginas/MeuTcc";
+import Login from "./utils/Login";
 
-interface DrawerContextValue {
-	desktopOpen: boolean;
-	setDesktopOpen: Dispatch<SetStateAction<boolean>>;
-}
-
-// Contexto para gerenciar o estado do drawer
-export const DrawerContext = createContext<DrawerContextValue>({
-	desktopOpen: false,
-	setDesktopOpen: () => {},
-});
-
-// Componente para roteamento condicional baseado no grupo do usuário
-function ConditionalRoute() {
-	const { gruposUsuario, loading } = useAuth();
-
-	// Aguarda o carregamento dos dados
-	if (loading) {
-		return null; // O ProtectedRoute já mostra loading
-	}
-
-	// Verifica se o usuário pertence aos grupos específicos
-	const isAdmin = gruposUsuario.some(
-		(grupo) => grupo.id === Permissoes.GRUPOS.ADMIN,
+/** Página de um item do menu: só abre se o item for permitido ao usuário. */
+function pagina(perfil: Perfil, id: string, elemento: ReactNode) {
+	return (
+		<ExigirItem perfil={perfil} id={id}>
+			{elemento}
+		</ExigirItem>
 	);
-	// Coordenadores (PROFESSOR_CCR) — veem todos os dados no Dashboard principal
-	const isProfessor = gruposUsuario.some(
-		(grupo) => grupo.id === Permissoes.GRUPOS.PROFESSOR_CCR,
-	);
-	// Orientadores e professores regulares (PROFESSOR) — roteados para o ModuloOrientador
-	const isOrientador = gruposUsuario.some(
-		(grupo) =>
-			grupo.id === Permissoes.GRUPOS.ORIENTADOR ||
-			grupo.id === Permissoes.GRUPOS.PROFESSOR,
-	);
-	const isEstudante = gruposUsuario.some(
-		(grupo) => grupo.id === Permissoes.GRUPOS.ESTUDANTE,
-	);
-	const isBanca = gruposUsuario.some(
-		(grupo) => grupo.id === Permissoes.GRUPOS.BANCA,
-	);
-
-	// Lógica de roteamento baseada nas regras especificadas
-	if (isAdmin) {
-		return <Dashboard />;
-	} else if (isProfessor) {
-		return <Dashboard />;
-	} else if (isOrientador) {
-		return <ModuloOrientador />;
-	} else if (isBanca) {
-		return <ModuloOrientador />;
-	} else if (isEstudante) {
-		return <ModuloDiscente />;
-	}
-
-	// Fallback para Dashboard caso não se encaixe em nenhuma regra
-	console.log("Redirecionando para Dashboard (fallback)");
-	return <Dashboard />;
 }
 
 function App() {
-	const [desktopOpen, setDesktopOpen] = useState(false);
-
 	return (
 		<AuthProvider>
 			<CustomThemeProvider>
-				<DrawerContext.Provider value={{ desktopOpen, setDesktopOpen }}>
-					<AppContent />
-				</DrawerContext.Provider>
+				<Routes>
+					<Route path="/login" element={<Login />} />
+					<Route
+						element={
+							<ProtectedRoute>
+								<PeriodoProvider>
+									<NoticeProvider>
+										<AppLayout />
+									</NoticeProvider>
+								</PeriodoProvider>
+							</ProtectedRoute>
+						}
+					>
+						<Route index element={<RedirecionarInicio />} />
+
+						<Route path="coordenacao" element={<ExigirPerfil perfil="coordenacao" />}>
+							<Route index element={<RedirecionarInicioPerfil perfil="coordenacao" />} />
+							<Route path="visao-geral" element={pagina("coordenacao", "visao-geral", <Dashboard />)} />
+							<Route path="orientacoes" element={pagina("coordenacao", "orientacoes", <Orientacao />)} />
+							<Route
+								path="defesas"
+								element={pagina("coordenacao", "defesas", <EmMigracao titulo="Defesas" fase="Fase 3" />)}
+							/>
+							<Route path="discentes" element={pagina("coordenacao", "discentes", <Dicentes />)} />
+							<Route path="docentes" element={pagina("coordenacao", "docentes", <Orientadores />)} />
+							<Route path="temas" element={pagina("coordenacao", "temas", <TemasTcc />)} />
+							<Route path="cursos" element={pagina("coordenacao", "cursos", <Cursos />)} />
+							<Route
+								path="importar"
+								element={pagina(
+									"coordenacao",
+									"importar",
+									<EmMigracao
+										titulo="Importar lista de discentes"
+										fase="Fase 3"
+										observacao="Enquanto isso, a importação continua disponível em Orientações."
+									/>,
+								)}
+							/>
+							<Route path="design-system" element={pagina("coordenacao", "design-system", <DesignSystem />)} />
+						</Route>
+
+						<Route path="orientador" element={<ExigirPerfil perfil="orientador" />}>
+							<Route index element={<RedirecionarInicioPerfil perfil="orientador" />} />
+							<Route path="inicio" element={pagina("orientador", "inicio", <Dashboard forceOrientador />)} />
+							<Route path="orientandos" element={pagina("orientador", "orientandos", <Orientacao isOrientadorView />)} />
+							<Route path="temas" element={pagina("orientador", "temas", <TemasTcc isOrientadorView />)} />
+							<Route path="convites" element={pagina("orientador", "convites", <ConvitesRecebidosOrientador />)} />
+							<Route path="disponibilidade" element={pagina("orientador", "disponibilidade", <Disponibilidade />)} />
+							<Route path="avaliacoes" element={pagina("orientador", "avaliacoes", <AvaliarDefesasOrientador />)} />
+							<Route path="externos" element={pagina("orientador", "externos", <MembrosExternos />)} />
+							<Route path="declaracoes" element={pagina("orientador", "declaracoes", <EmitirDeclaracoes />)} />
+							<Route path="perfil" element={pagina("orientador", "perfil", <PerfilOrientador />)} />
+						</Route>
+
+						<Route path="discente" element={<ExigirPerfil perfil="discente" />}>
+							<Route index element={<RedirecionarInicioPerfil perfil="discente" />} />
+							<Route path="meu-tcc" element={pagina("discente", "meu-tcc", <MeuTcc />)} />
+							<Route
+								path="temas"
+								element={pagina(
+									"discente",
+									"temas",
+									<EmMigracao
+										titulo="Temas disponíveis"
+										fase="Fase 5"
+										observacao="Enquanto isso, os temas aparecem na primeira etapa de Meu TCC."
+									/>,
+								)}
+							/>
+							<Route
+								path="convites"
+								element={pagina(
+									"discente",
+									"convites",
+									<EmMigracao
+										titulo="Meus convites"
+										fase="Fase 5"
+										observacao="Enquanto isso, os convites são acompanhados nas etapas de Meu TCC."
+									/>,
+								)}
+							/>
+							<Route path="perfil" element={pagina("discente", "perfil", <PerfilDiscente />)} />
+						</Route>
+
+						{/* Endereços antigos */}
+						<Route path="cursos" element={<Navigate to="/coordenacao/cursos" replace />} />
+						<Route path="orientadores" element={<Navigate to="/coordenacao/docentes" replace />} />
+						<Route path="dicentes" element={<Navigate to="/coordenacao/discentes" replace />} />
+						<Route path="orientacoes" element={<Navigate to="/coordenacao/orientacoes" replace />} />
+						<Route path="temas-tcc" element={<Navigate to="/coordenacao/temas" replace />} />
+						<Route path="modulo-orientador" element={<Navigate to="/orientador" replace />} />
+						<Route path="modulo-discente" element={<Navigate to="/discente/meu-tcc" replace />} />
+
+						<Route path="*" element={<RedirecionarInicio />} />
+					</Route>
+				</Routes>
 			</CustomThemeProvider>
 		</AuthProvider>
-	);
-}
-
-function AppContent() {
-	return (
-		<Box sx={{ display: "flex" }}>
-			<Navbar />
-			<Box
-				component="main"
-				sx={{
-					flexGrow: 1,
-					p: 3,
-					width: "100%",
-					transition: (theme) =>
-						theme.transitions.create(["width", "margin"], {
-							easing: theme.transitions.easing.sharp,
-							duration: theme.transitions.duration.leavingScreen,
-						}),
-				}}
-			>
-				<Toolbar /> {/* Spacing for AppBar */}
-				<Container maxWidth="xl" sx={{ mt: 2 }}>
-					<Routes>
-						<Route path="/login" element={<Login />} />
-						<Route
-							path="/"
-							element={
-								<ProtectedRoute>
-									<ConditionalRoute />
-								</ProtectedRoute>
-							}
-						/>
-						<Route
-							path="cursos"
-							element={
-								<ProtectedRoute>
-									<Cursos />
-								</ProtectedRoute>
-							}
-						/>
-						<Route
-							path="orientadores"
-							element={
-								<ProtectedRoute>
-									<Orientadores />
-								</ProtectedRoute>
-							}
-						/>
-						<Route
-							path="dicentes"
-							element={
-								<ProtectedRoute>
-									<Dicentes />
-								</ProtectedRoute>
-							}
-						/>
-						<Route
-							path="orientacoes"
-							element={
-								<ProtectedRoute>
-									<Orientacao />
-								</ProtectedRoute>
-							}
-						/>
-						<Route
-							path="temas-tcc"
-							element={
-								<ProtectedRoute>
-									<TemasTcc />
-								</ProtectedRoute>
-							}
-						/>
-						<Route
-							path="modulo-orientador"
-							element={
-								<ProtectedRoute>
-									<ModuloOrientador />
-								</ProtectedRoute>
-							}
-						/>
-						<Route
-							path="modulo-discente"
-							element={
-								<ProtectedRoute>
-									<ModuloDiscente />
-								</ProtectedRoute>
-							}
-						/>
-					</Routes>
-				</Container>
-			</Box>
-		</Box>
 	);
 }
 
