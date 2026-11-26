@@ -25,7 +25,15 @@ export function ModalDialog({ open, onClose, icon, header, title, description, c
 			)}
 			{header}
 			<h2>{title}</h2>
-			{description && <p>{description}</p>}
+			{description &&
+				(typeof description === "string" ? (
+					<p>{description}</p>
+				) : (
+					// Conteúdo com elementos (ex.: chips) não pode ficar dentro de <p>.
+					<div style={{ color: "var(--muted)", fontSize: 12, marginTop: 5, display: "flex", alignItems: "center", gap: 6 }}>
+						{description}
+					</div>
+				))}
 			{children}
 			{actions && <div className="modal-actions">{actions}</div>}
 		</Dialog>

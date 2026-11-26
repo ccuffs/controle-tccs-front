@@ -12,14 +12,10 @@ import { ExigirItem, ExigirPerfil, RedirecionarInicio, RedirecionarInicioPerfil 
 import type { Perfil } from "./layout/navegacao";
 import { NoticeProvider } from "./ui";
 
-import Dashboard from "./Dashboard";
 import AvaliarDefesasOrientador from "./modulo-orientador/AvaliarDefesasOrientador";
-import ConvitesRecebidosOrientador from "./modulo-orientador/ConvitesRecebidosOrientador";
 import EmitirDeclaracoes from "./modulo-orientador/EmitirDeclaracoes";
 import MembrosExternos from "./modulo-orientador/MembrosExternos";
-import Orientacao from "./modulo-orientador/Orientacao";
 import PerfilOrientador from "./modulo-orientador/PerfilOrientador";
-import TemasTcc from "./modulo-orientador/TemasTcc";
 import PerfilDiscente from "./modulo-dicente/PerfilDiscente";
 import DesignSystem from "./paginas/DesignSystem";
 import Disponibilidade from "./paginas/Disponibilidade";
@@ -33,6 +29,10 @@ import Orientacoes from "./orientacoes/Orientacoes";
 import Defesas from "./defesas/Defesas";
 import ImportarLista from "./importar/ImportarLista";
 import VisaoGeral from "./visao-geral/VisaoGeral";
+import InicioOrientador from "./orientador/Inicio";
+import ConvitesOrientador from "./orientador/Convites";
+import MeusOrientandos from "./orientador/MeusOrientandos";
+import MeusTemas from "./orientador/MeusTemas";
 
 /** Página de um item do menu: só abre se o item for permitido ao usuário. */
 function pagina(perfil: Perfil, id: string, elemento: ReactNode) {
@@ -77,10 +77,10 @@ function App() {
 
 						<Route path="orientador" element={<ExigirPerfil perfil="orientador" />}>
 							<Route index element={<RedirecionarInicioPerfil perfil="orientador" />} />
-							<Route path="inicio" element={pagina("orientador", "inicio", <Dashboard forceOrientador />)} />
-							<Route path="orientandos" element={pagina("orientador", "orientandos", <Orientacao isOrientadorView />)} />
-							<Route path="temas" element={pagina("orientador", "temas", <TemasTcc isOrientadorView />)} />
-							<Route path="convites" element={pagina("orientador", "convites", <ConvitesRecebidosOrientador />)} />
+							<Route path="inicio" element={pagina("orientador", "inicio", <InicioOrientador />)} />
+							<Route path="orientandos" element={pagina("orientador", "orientandos", <MeusOrientandos />)} />
+							<Route path="temas" element={pagina("orientador", "temas", <MeusTemas />)} />
+							<Route path="convites" element={pagina("orientador", "convites", <ConvitesOrientador />)} />
 							<Route path="disponibilidade" element={pagina("orientador", "disponibilidade", <Disponibilidade />)} />
 							<Route path="avaliacoes" element={pagina("orientador", "avaliacoes", <AvaliarDefesasOrientador />)} />
 							<Route path="externos" element={pagina("orientador", "externos", <MembrosExternos />)} />
