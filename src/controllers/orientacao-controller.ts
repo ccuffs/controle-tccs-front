@@ -1,5 +1,6 @@
 import type { Dicente } from "../types/dicente";
 import type { OfertaTcc } from "../types/tema-tcc";
+import { dataDefesaParaApi, dataDefesaParaLocal } from "../utils/dataDefesa";
 
 interface CursoLegado {
 	id?: number;
@@ -693,7 +694,8 @@ export function extrairMembrosBanca(defesas: DefesaLegado[]): MembrosBanca {
 	if (defesas.length > 0) {
 		membros.membroBanca1 = defesas[0]?.membro_banca || "";
 		if (defesas[0]?.data_defesa) {
-			membros.dataHoraDefesa = new Date(defesas[0].data_defesa);
+			// Mantém o horário gravado (convenção "horário local como UTC"); antes era exibido 3h antes.
+			membros.dataHoraDefesa = dataDefesaParaLocal(defesas[0].data_defesa);
 		}
 	}
 
@@ -761,7 +763,8 @@ export function prepararPayloadGerenciarBanca(
 		convites_banca_existentes: convites,
 		alteracoes: alteracoes,
 		orientador_codigo: orientadorCodigo,
-		data_hora_defesa: dataHoraDefesa,
+		// Grava no mesmo formato do agendamento do discente; antes o Date era enviado em UTC real (+3h).
+		data_hora_defesa: dataHoraDefesa instanceof Date ? dataDefesaParaApi(dataHoraDefesa) : dataHoraDefesa,
 	};
 }
 
