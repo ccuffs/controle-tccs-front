@@ -6,7 +6,6 @@ import {
 	StepLabel,
 	Button,
 	Typography,
-	TextField,
 	Paper,
 	Alert,
 	CircularProgress,
@@ -27,6 +26,7 @@ import EtapaTemaTituloResumo from "../discente/etapas/EtapaTemaTituloResumo";
 import EtapaEscolherOrientador from "../discente/etapas/EtapaEscolherOrientador";
 import EtapaConviteBanca from "../discente/etapas/EtapaConviteBanca";
 import EtapaAgendarDefesa from "../discente/etapas/EtapaAgendarDefesa";
+import EtapaSeminario from "../discente/etapas/EtapaSeminario";
 import { useJornadaTcc, steps, type ConviteLocal } from "./useJornadaTcc";
 import type { ContextoTcc } from "./useJornadaTcc";
 
@@ -87,6 +87,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange, modoJornad
 		handleImportData,
 		handleCloseMessage,
 		salvarTemaTituloResumo,
+		salvarRascunho,
 	} = useJornadaTcc({ etapaInicial, onEtapaChange, onContexto });
 
 	// Docente escolhido no catálogo da etapa 0 (pré-seleciona o diálogo de convite).
@@ -286,52 +287,15 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange, modoJornad
 				);
 			}
 			case 6:
-				// Etapa 7: Seminário de Andamento (Fase 2)
-				if (trabalhoConclusao && trabalhoConclusao.fase === 2) {
-					return (
-						<Box sx={{ mt: 2 }}>
-							<Typography variant="h6" gutterBottom>
-								Etapa 7: Seminário de Andamento
-							</Typography>
-							<Alert severity="info" sx={{ mb: 2 }}>
-								<Typography variant="body2">
-									Descreva as atividades, progresso e
-									resultados do seminário de andamento.
-								</Typography>
-							</Alert>
-							<TextField
-								fullWidth
-								label="Seminário de Andamento *"
-								value={formData.seminario_andamento}
-								onChange={(e) =>
-									handleInputChange(
-										"seminario_andamento",
-										e.target.value,
-									)
-								}
-								multiline
-								rows={6}
-								placeholder="Descreva as atividades, progresso e resultados do seminário de andamento..."
-								helperText="Apresente o desenvolvimento do trabalho, metodologia aplicada, resultados parciais e próximos passos"
-							/>
-						</Box>
-					);
-				} else {
-					// Para fase 1, esta etapa não existe
-					return (
-						<Box sx={{ mt: 2 }}>
-							<Alert severity="info" sx={{ mb: 2 }}>
-								<Typography variant="h6" gutterBottom>
-									Etapa Não Aplicável
-								</Typography>
-								<Typography variant="body2">
-									Esta etapa é específica para estudantes na
-									fase TCC II.
-								</Typography>
-							</Alert>
-						</Box>
-					);
-				}
+				// Seminário de andamento: só existe no TCC II.
+				if (trabalhoConclusao?.fase !== 2) return null;
+				return (
+					<EtapaSeminario
+						texto={formData.seminario_andamento ?? ""}
+						onChange={(valor) => handleInputChange("seminario_andamento", valor)}
+						projetoAprovado={Boolean(trabalhoConclusao.aprovado_projeto)}
+					/>
+				);
 			case 7:
 				// Banca final: só existe no TCC II.
 				if (trabalhoConclusao?.fase !== 2) return null;
@@ -1014,7 +978,8 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange, modoJornad
 									if (onEtapaChange) onEtapaChange(0);
 								} else handleBack();
 							}}
-							disabled={activeStep === 0 || saving}
+							// Primeiro passo de cada fase: etapa 0 (TCC I) ou seminário, etapa 6 (TCC II).
+							disabled={activeStep === 0 || (modoJornada && trabalhoConclusao?.fase === 2 && activeStep === 6) || saving}
 						>
 							Voltar
 						</BotaoDesign>
@@ -1038,7 +1003,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange, modoJornad
 							const faseAtual = trabalhoConclusao?.fase === 2 ? 2 : 1;
 							const agendar =
 								finalizar && activeStep === (faseAtual === 2 ? 8 : 5) && !temDefesaAgendada(faseAtual);
-							return (
+							const avancar = (
 								<BotaoDesign
 									onClick={handleNext}
 									disabled={saving || !validarEtapaAtual()}
@@ -1047,6 +1012,18 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange, modoJornad
 									{saving ? "Salvando…" : agendar ? "Agendar defesa" : finalizar ? "Finalizar" : "Continuar"}
 								</BotaoDesign>
 							);
+							// Seminário de andamento (TCC II): pode ser salvo como rascunho antes de continuar.
+							if (activeStep === 6 && faseAtual === 2) {
+								return (
+									<div style={{ display: "flex", gap: 8 }}>
+										<BotaoDesign variant="secondary" icon="save" onClick={() => void salvarRascunho()} disabled={saving}>
+											Salvar
+										</BotaoDesign>
+										{avancar}
+									</div>
+								);
+							}
+							return avancar;
 						})()}
 					</div>
 				)}

@@ -766,6 +766,35 @@ export function useJornadaTcc({ etapaInicial = 0, onEtapaChange, onContexto }: P
 		}
 	};
 
+	/** Grava os campos de texto sem mudar a etapa (rascunho do seminário de andamento). */
+	const salvarRascunho = async (): Promise<boolean> => {
+		if (!trabalhoConclusao || !trabalhoConclusao.id) {
+			setMessageText("Erro: Trabalho de conclusão não encontrado. Recarregue a página.");
+			setMessageSeverity("error");
+			setOpenMessage(true);
+			return false;
+		}
+		if (bloquearAtualizacaoEtapa) return true; // mesmo comportamento das demais gravações
+		try {
+			setSaving(true);
+			const dadosAtualizados: TrabalhoLocal = { ...trabalhoConclusao, ...formData, etapa: trabalhoConclusao.etapa };
+			await axiosInstance.put(`/trabalho-conclusao/${trabalhoConclusao.id}`, dadosAtualizados);
+			setTrabalhoConclusao(dadosAtualizados);
+			setMessageText("Rascunho salvo.");
+			setMessageSeverity("success");
+			setOpenMessage(true);
+			return true;
+		} catch (error) {
+			console.error("Erro ao salvar rascunho:", error);
+			setMessageText("Erro ao salvar o rascunho!");
+			setMessageSeverity("error");
+			setOpenMessage(true);
+			return false;
+		} finally {
+			setSaving(false);
+		}
+	};
+
 	const salvarTrabalhoConclusao = async (): Promise<boolean> => {
 		if (!trabalhoConclusao || !trabalhoConclusao.id) {
 			setMessageText(
@@ -1165,6 +1194,7 @@ export function useJornadaTcc({ etapaInicial = 0, onEtapaChange, onContexto }: P
 
 	return {
 		salvarTemaTituloResumo,
+		salvarRascunho,
 		theme,
 		activeStep,
 		setActiveStep,
