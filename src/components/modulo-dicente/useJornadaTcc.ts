@@ -713,6 +713,59 @@ export function useJornadaTcc({ etapaInicial = 0, onEtapaChange, onContexto }: P
 		}
 	};
 
+	/**
+	 * Tema, título e resumo em uma tela (redesenho, passo 2). A etapa gravada segue o
+	 * preenchimento — sem tema: 1; sem título: 2; sem resumo: 3; tudo e "Continuar": 4 —
+	 * e nunca volta para trás em relação à etapa já gravada.
+	 */
+	const salvarTemaTituloResumo = async (avancar: boolean): Promise<boolean> => {
+		if (!trabalhoConclusao || !trabalhoConclusao.id) {
+			setMessageText("Erro: Trabalho de conclusão não encontrado. Recarregue a página.");
+			setMessageSeverity("error");
+			setOpenMessage(true);
+			return false;
+		}
+		const preenchido = (v?: string | null) => Boolean(v && v.trim());
+		const etapaPorCampos = !preenchido(formData.tema) ? 1 : !preenchido(formData.titulo) ? 2 : !preenchido(formData.resumo) ? 3 : 4;
+		if (avancar && etapaPorCampos < 4) {
+			setMessageText("Preencha tema, título e resumo para continuar.");
+			setMessageSeverity("warning");
+			setOpenMessage(true);
+			return false;
+		}
+		const etapaAlvo = avancar ? 4 : Math.min(etapaPorCampos, 3);
+		const etapaGravada = Math.max(Number(trabalhoConclusao.etapa ?? 0), etapaAlvo);
+		const irPara = (etapa: number) => {
+			setActiveStep(etapa);
+			if (onEtapaChange) onEtapaChange(etapa);
+		};
+		if (bloquearAtualizacaoEtapa) {
+			// Mesmo comportamento de salvarEtapaAtual: nada é persistido quando bloqueado.
+			if (avancar) irPara(4);
+			return true;
+		}
+		try {
+			setSaving(true);
+			const dadosAtualizados: TrabalhoLocal = { ...trabalhoConclusao, ...formData, etapa: etapaGravada };
+			await axiosInstance.put(`/trabalho-conclusao/${trabalhoConclusao.id}`, dadosAtualizados);
+			setTrabalhoConclusao(dadosAtualizados);
+			setBloquearAtualizacaoEtapa(isEtapaFinalBloqueada(dadosAtualizados));
+			setMessageText(avancar ? "Dados do projeto salvos." : "Rascunho salvo.");
+			setMessageSeverity("success");
+			setOpenMessage(true);
+			irPara(avancar ? 4 : Math.min(etapaGravada, 3));
+			return true;
+		} catch (error) {
+			console.error("Erro ao salvar tema, título e resumo:", error);
+			setMessageText("Erro ao salvar os dados do projeto!");
+			setMessageSeverity("error");
+			setOpenMessage(true);
+			return false;
+		} finally {
+			setSaving(false);
+		}
+	};
+
 	const salvarTrabalhoConclusao = async (): Promise<boolean> => {
 		if (!trabalhoConclusao || !trabalhoConclusao.id) {
 			setMessageText(
@@ -1111,6 +1164,7 @@ export function useJornadaTcc({ etapaInicial = 0, onEtapaChange, onContexto }: P
 
 
 	return {
+		salvarTemaTituloResumo,
 		theme,
 		activeStep,
 		setActiveStep,

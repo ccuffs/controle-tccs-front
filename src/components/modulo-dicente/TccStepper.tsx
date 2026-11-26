@@ -25,6 +25,7 @@ import ConviteOrientadorModal from "./ConviteOrientadorModal";
 import ConviteBancaModal from "./ConviteBancaModal";
 import SelecionarHorarioBanca from "./SelecionarHorarioBanca";
 import { Button as BotaoDesign, useNotice } from "../ui";
+import EtapaTemaTituloResumo from "../discente/etapas/EtapaTemaTituloResumo";
 import { useJornadaTcc, steps, type ConviteLocal } from "./useJornadaTcc";
 import type { ContextoTcc } from "./useJornadaTcc";
 
@@ -84,6 +85,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange, modoJornad
 		handleImportModalClose,
 		handleImportData,
 		handleCloseMessage,
+		salvarTemaTituloResumo,
 	} = useJornadaTcc({ etapaInicial, onEtapaChange, onContexto });
 
 	// Avisos no Snackbar único do app (useNotice), como nas demais telas do novo design.
@@ -212,62 +214,13 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange, modoJornad
 					</Box>
 				);
 			case 1:
-				return (
-					<Box sx={{ mt: 2 }}>
-						<Typography variant="h6" gutterBottom>
-							Etapa 2: Tema do TCC
-						</Typography>
-						<TextField
-							fullWidth
-							label="Tema do TCC *"
-							value={formData.tema}
-							onChange={(e) =>
-								handleInputChange("tema", e.target.value)
-							}
-							multiline
-							rows={3}
-							placeholder="Descreva o tema do seu trabalho de conclusão de curso..."
-							helperText="Descreva de forma clara e objetiva o tema que será abordado no seu TCC"
-						/>
-					</Box>
-				);
 			case 2:
-				return (
-					<Box sx={{ mt: 2 }}>
-						<Typography variant="h6" gutterBottom>
-							Etapa 3: Título do TCC
-						</Typography>
-						<TextField
-							fullWidth
-							label="Título do TCC *"
-							value={formData.titulo}
-							onChange={(e) =>
-								handleInputChange("titulo", e.target.value)
-							}
-							placeholder="Digite o título do seu trabalho de conclusão de curso..."
-							helperText="O título deve ser claro, conciso e representativo do conteúdo do trabalho"
-						/>
-					</Box>
-				);
 			case 3:
 				return (
-					<Box sx={{ mt: 2 }}>
-						<Typography variant="h6" gutterBottom>
-							Etapa 4: Resumo do TCC
-						</Typography>
-						<TextField
-							fullWidth
-							label="Resumo do TCC *"
-							value={formData.resumo}
-							onChange={(e) =>
-								handleInputChange("resumo", e.target.value)
-							}
-							multiline
-							rows={6}
-							placeholder="Escreva um resumo do seu trabalho de conclusão de curso..."
-							helperText="O resumo deve apresentar os objetivos, metodologia, resultados e conclusões principais do trabalho"
-						/>
-					</Box>
+					<EtapaTemaTituloResumo
+						dados={{ tema: formData.tema ?? "", titulo: formData.titulo ?? "", resumo: formData.resumo ?? "" }}
+						onChange={(campo, valor) => handleInputChange(campo, valor)}
+					/>
 				);
 			case 4:
 				return (
@@ -1961,10 +1914,32 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange, modoJornad
 				{/* Navegação da jornada: abaixo do conteúdo; no celular, fixa acima da navegação inferior. */}
 				{activeStep !== getEtapasValidas().length && (
 					<div className="jornada-acoes">
-						<BotaoDesign variant="secondary" onClick={handleBack} disabled={activeStep === 0 || saving}>
+						<BotaoDesign
+							variant="secondary"
+							onClick={() => {
+								if (activeStep >= 1 && activeStep <= 3) {
+									// Tema, título e resumo é uma tela só: voltar leva à etapa anterior a ela.
+									setActiveStep(0);
+									if (onEtapaChange) onEtapaChange(0);
+								} else handleBack();
+							}}
+							disabled={activeStep === 0 || saving}
+						>
 							Voltar
 						</BotaoDesign>
-						{(() => {
+						{activeStep >= 1 && activeStep <= 3 ? (
+							<div style={{ display: "flex", gap: 8 }}>
+								<BotaoDesign variant="secondary" icon="save" onClick={() => void salvarTemaTituloResumo(false)} disabled={saving}>
+									Salvar
+								</BotaoDesign>
+								<BotaoDesign
+									onClick={() => void salvarTemaTituloResumo(true)}
+									disabled={saving || ![formData.tema, formData.titulo, formData.resumo].every((v) => v && v.trim())}
+								>
+									{saving ? "Salvando…" : "Continuar"}
+								</BotaoDesign>
+							</div>
+						) : (() => {
 							const ultima = activeStep === getEtapasValidas().length - 1;
 							const finalizar =
 								ultima && (trabalhoConclusao?.fase !== 2 || (trabalhoConclusao?.fase === 2 && trabalhoConclusao?.aprovado_projeto));
