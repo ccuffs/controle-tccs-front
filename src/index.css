@@ -185,3 +185,13 @@
 .journey-layout>*,.theme-grid>*{min-width:0}
 .journey-content .theme-grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
 .journey-content .catalog-tools{flex-wrap:wrap}.journey-content .catalog-tools .search{flex:1 1 220px}
+/* Convite de banca do discente (etapas 4 e 7): membros convidados e seleção de docentes no diálogo. */
+.banca-membros{margin-top:0}.banca-membros-head{display:flex;justify-content:space-between;align-items:center;gap:8px}.banca-membros-head h3{font-size:13px}.banca-membros-head span{font-size:10px;color:var(--muted)}
+.banca-membros .defense-person small{font-size:10px;color:var(--muted);font-style:italic;margin-top:3px}
+.docente-lista{display:flex;flex-direction:column;max-height:290px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;margin-top:10px}
+.docente-opcao{display:flex;align-items:center;gap:10px;padding:9px 12px;border-top:1px solid var(--border);cursor:pointer}.docente-opcao:first-child{border-top:0}
+.docente-opcao.selected{background:var(--teal-50)}.dark .docente-opcao.selected{background:#193537}.docente-opcao.disabled{opacity:.5;cursor:default}
+.docente-opcao>span{display:flex;flex-direction:column;flex:1;min-width:0}.docente-opcao strong{font-size:11px}.docente-opcao small{font-size:9px;color:var(--muted)}
+.docente-opcao input{accent-color:var(--teal-600);width:16px;height:16px;flex:none}
+.docente-lista-vazia{padding:16px;font-size:11px;color:var(--muted);text-align:center}
+.readonly-box>.material-symbols-rounded{flex:none}

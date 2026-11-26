@@ -1,27 +1,8 @@
-import {
-	Dialog,
-	DialogTitle,
-	DialogContent,
-	DialogActions,
-	Button,
-	FormControl,
-	InputLabel,
-	Select,
-	MenuItem,
-	TextField,
-	Typography,
-	Box,
-	Alert,
-	CircularProgress,
-	Chip,
-	OutlinedInput,
-	ListItemText,
-	Checkbox,
-	type SelectChangeEvent,
-} from "@mui/material";
+import { useMemo, useState } from "react";
 
 import { useConviteBanca } from "../../hooks/useConviteBanca";
 import type { Convite } from "../../types/convite";
+import { Avatar, Button, Icon, Input, ModalDialog, Textarea } from "../ui";
 
 interface ConviteBancaModalProps {
 	open: boolean;
@@ -35,6 +16,15 @@ interface ConviteBancaModalProps {
 	docentesPreSelecionados?: string[];
 }
 
+/** convite.mensagem_envio é varchar(255) na API. */
+const LIMITE_MENSAGEM = 255;
+const semAcento = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+/**
+ * Diálogo de convite de banca no padrão do design. As regras (limite de 2 convites
+ * simultâneos, pré-seleção da banca do projeto na banca final, docentes indisponíveis)
+ * continuam no hook useConviteBanca.
+ */
 export default function ConviteBancaModal({
 	open,
 	onClose,
@@ -47,35 +37,21 @@ export default function ConviteBancaModal({
 	docentesPreSelecionados = [],
 }: ConviteBancaModalProps) {
 	const {
-		// Estados de dados
 		docentesBanca,
 		orientadoresSelecionados,
 		mensagem,
 		setMensagem,
 		convitesPendentes,
 		convitesAceitos,
-		convitesDisponiveis,
-
-		// Estados de UI
 		loading,
 		loadingDocentesBanca,
 		error,
-		deveBotaoDesabilitado,
 		podeEnviarMaisConvites,
-
-		// Handlers
 		handleEnviarConvites,
 		handleClose,
 		handleChangeOrientadores,
-
-		// Funções auxiliares
-		getDocenteBancaNome,
 		isDocenteDisabled,
 		getDocenteSecondaryText,
-
-		// Textos processados
-		textoBotao,
-		mensagemStatus,
 		mensagemNaoPodeEnviar,
 	} = useConviteBanca({
 		open,
@@ -89,223 +65,123 @@ export default function ConviteBancaModal({
 		onClose,
 	});
 
+	const [busca, setBusca] = useState("");
+	const limite = 2 - convitesAceitos.length - convitesPendentes.length;
+
+	const docentes = useMemo(() => {
+		const termo = semAcento(busca.trim());
+		return (Array.isArray(docentesBanca) ? docentesBanca : [])
+			.filter((d) => !termo || semAcento(`${d.nome ?? ""} ${d.codigo}`).includes(termo))
+			.sort((a, b) => (a.nome ?? a.codigo).localeCompare(b.nome ?? b.codigo, "pt-BR"));
+	}, [docentesBanca, busca]);
+
+	const alternar = (codigo: string) => {
+		const atual = orientadoresSelecionados;
+		handleChangeOrientadores({
+			target: { value: atual.includes(codigo) ? atual.filter((c) => c !== codigo) : [...atual, codigo] },
+		});
+	};
+
+	const fechar = () => {
+		setBusca("");
+		handleClose();
+	};
+
+	const final = tipoConvite !== "banca_projeto";
+
 	return (
-		<Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-			<DialogTitle>
-				{tipoConvite === "banca_projeto"
-					? "Convite para Banca de Avaliação do Projeto"
-					: "Convite para Banca de Avaliação do Trabalho Final"}
-			</DialogTitle>
-			<DialogContent>
-				<Box sx={{ mt: 2 }}>
-					{!idCurso && (
-						<Alert severity="warning" sx={{ mb: 2 }}>
-							Não foi possível identificar o curso. Entre em
-							contato com o suporte.
-						</Alert>
+		<ModalDialog
+			open={open}
+			onClose={fechar}
+			icon="groups"
+			title={final ? "Convidar banca final" : "Convidar banca do projeto"}
+			description={
+				podeEnviarMaisConvites
+					? `Selecione ${limite === 1 ? "1 docente" : `até ${limite} docentes`}. ${
+							final && docentesPreSelecionados.length > 0 && convitesExistentes.length === 0
+								? "Os membros da banca do projeto vêm sugeridos."
+								: "Cada docente recebe o convite e responde separadamente."
+						}`
+					: undefined
+			}
+			actions={
+				<>
+					<Button variant="secondary" onClick={fechar} disabled={loading}>
+						{podeEnviarMaisConvites ? "Cancelar" : "Fechar"}
+					</Button>
+					{podeEnviarMaisConvites && (
+						<Button icon="send" onClick={() => void handleEnviarConvites()} disabled={loading || orientadoresSelecionados.length === 0}>
+							{loading
+								? "Enviando…"
+								: orientadoresSelecionados.length > 1
+									? `Enviar ${orientadoresSelecionados.length} convites`
+									: "Enviar convite"}
+						</Button>
 					)}
+				</>
+			}
+		>
+			{!idCurso && (
+				<div className="readonly-box warning-box">
+					<Icon name="warning" />
+					<span>Não foi possível identificar o curso. Entre em contato com a coordenação.</span>
+				</div>
+			)}
+			{error && (
+				<div className="readonly-box warning-box">
+					<Icon name="error" />
+					<span>{error}</span>
+				</div>
+			)}
 
-					{error && (
-						<Alert severity="error" sx={{ mb: 2 }}>
-							{error}
-						</Alert>
-					)}
-
-					{/* Informações sobre convites existentes */}
-					{convitesExistentes.length > 0 && (
-						<Alert severity="info" sx={{ mb: 2 }}>
-							<Typography variant="subtitle2" gutterBottom>
-								Status dos Convites de Banca:
-							</Typography>
-
-							{convitesPendentes.length > 0 && (
-								<Box sx={{ mb: 1 }}>
-									<Typography variant="body2">
-										<strong>
-											Pendentes (
-											{convitesPendentes.length}):
-										</strong>
-									</Typography>
-									{convitesPendentes.map((convite, index) => (
-										<Chip
-											key={index}
-											label={`${getDocenteBancaNome(
-												convite.codigo_docente,
-											)} - Aguardando resposta`}
-											color="warning"
-											size="small"
-											sx={{ mr: 1, mb: 0.5 }}
-										/>
-									))}
-								</Box>
-							)}
-
-							{convitesAceitos.length > 0 && (
-								<Box sx={{ mb: 1 }}>
-									<Typography variant="body2">
-										<strong>
-											Aceitos ({convitesAceitos.length}):
-										</strong>
-									</Typography>
-									{convitesAceitos.map((convite, index) => (
-										<Chip
-											key={index}
-											label={`${getDocenteBancaNome(
-												convite.codigo_docente,
-											)} - Aceito`}
-											color="success"
-											size="small"
-											sx={{ mr: 1, mb: 0.5 }}
-										/>
-									))}
-								</Box>
-							)}
-
-							<Typography variant="body2" sx={{ mt: 1 }}>
-								{mensagemStatus}
-							</Typography>
-						</Alert>
-					)}
-
-					{podeEnviarMaisConvites ? (
-						<>
-							<FormControl fullWidth sx={{ mb: 2 }}>
-								<InputLabel>
-									Selecione os Docentes para a Banca
-								</InputLabel>
-								<Select
-									multiple
-									value={orientadoresSelecionados}
-									onChange={handleChangeOrientadores as (
-										event: SelectChangeEvent<string[]>,
-									) => void}
-									input={
-										<OutlinedInput label="Selecione os Docentes para a Banca" />
-									}
-									renderValue={(selected) => (
-										<Box
-											sx={{
-												display: "flex",
-												flexWrap: "wrap",
-												gap: 0.5,
-											}}
-										>
-											{selected.map((codigo) => (
-												<Chip
-													key={codigo}
-													label={getDocenteBancaNome(
-														codigo,
-													)}
-													size="small"
-												/>
-											))}
-										</Box>
-									)}
-									disabled={
-										loadingDocentesBanca ||
-										!idCurso ||
-										convitesAceitos.length +
-											convitesPendentes.length >=
-											2
-									}
-								>
-									{loadingDocentesBanca ? (
-										<MenuItem disabled>
-											<CircularProgress
-												size={20}
-												sx={{ mr: 1 }}
-											/>
-											Carregando docentes de banca...
-										</MenuItem>
-									) : (
-										(Array.isArray(docentesBanca)
-											? docentesBanca
-											: []
-										).map((docente) => {
-											const isDisabled =
-												isDocenteDisabled(docente);
-											const secondaryText =
-												getDocenteSecondaryText(
-													docente,
-												);
-
-											return (
-												<MenuItem
-													key={docente.codigo}
-													value={docente.codigo}
-													disabled={isDisabled}
-												>
-													<Checkbox
-														checked={
-															orientadoresSelecionados.indexOf(
-																docente.codigo,
-															) > -1
-														}
-													/>
-													<ListItemText
-														primary={`${docente.nome} - ${docente.codigo}`}
-														secondary={
-															secondaryText
-														}
-													/>
-												</MenuItem>
-											);
-										})
-									)}
-								</Select>
-							</FormControl>
-
-							<TextField
-								fullWidth
-								multiline
-								rows={4}
-								label="Mensagem do Convite"
-								value={mensagem}
-								onChange={(e) => setMensagem(e.target.value)}
-								placeholder="Escreva uma mensagem personalizada para os membros da banca..."
-								sx={{ mb: 2 }}
-								helperText={`Você pode selecionar até ${
-									2 -
-									convitesAceitos.length -
-									convitesPendentes.length
-								} docente(s) para enviar convites simultaneamente.`}
-							/>
-						</>
-					) : (
-						<Alert severity="info">
-							<Typography variant="body2">
-								{mensagemNaoPodeEnviar}
-							</Typography>
-						</Alert>
-					)}
-
-					{convitesAceitos.length === 2 && (
-						<Alert severity="success" sx={{ mt: 2 }}>
-							<Typography variant="body2">
-								<strong>Excelente!</strong> Você já tem 2
-								membros confirmados para sua banca de avaliação.
-								Agora você pode prosseguir para a próxima etapa.
-							</Typography>
-						</Alert>
-					)}
-				</Box>
-			</DialogContent>
-			<DialogActions>
-				<Button onClick={handleClose} disabled={loading}>
-					Fechar
-				</Button>
-				<Button
-					onClick={handleEnviarConvites}
-					variant="contained"
-					disabled={
-						loading ||
-						deveBotaoDesabilitado ||
-						orientadoresSelecionados.length === 0
-					}
-				>
-					{loading ? <CircularProgress size={20} /> : textoBotao}
-				</Button>
-			</DialogActions>
-		</Dialog>
+			{podeEnviarMaisConvites ? (
+				<div className="dialog-form">
+					<div className="search">
+						<Icon name="search" />
+						<Input placeholder="Buscar docente" value={busca} onChange={(e) => setBusca(e.target.value)} aria-label="Buscar docente" />
+					</div>
+					<div className="docente-lista" role="group" aria-label="Docentes">
+						{loadingDocentesBanca && <p className="docente-lista-vazia">Carregando docentes…</p>}
+						{!loadingDocentesBanca && docentes.length === 0 && <p className="docente-lista-vazia">Nenhum docente encontrado.</p>}
+						{!loadingDocentesBanca &&
+							docentes.map((d) => {
+								const marcado = orientadoresSelecionados.includes(d.codigo);
+								const indisponivel = isDocenteDisabled(d) || (!marcado && orientadoresSelecionados.length >= limite);
+								const obs = getDocenteSecondaryText(d);
+								return (
+									<label
+										key={d.codigo}
+										className={`docente-opcao ${marcado ? "selected" : ""} ${indisponivel ? "disabled" : ""}`}
+									>
+										<input type="checkbox" checked={marcado} disabled={indisponivel} onChange={() => alternar(d.codigo)} />
+										<Avatar nome={d.nome ?? d.codigo} size="small" />
+										<span>
+											<strong>{d.nome ?? d.codigo}</strong>
+											<small>{obs || (d.externo ? `Externo${d.instituicao ? ` · ${d.instituicao}` : ""}` : d.codigo)}</small>
+										</span>
+									</label>
+								);
+							})}
+					</div>
+					<label className="textarea-label">
+						<span>Mensagem (opcional)</span>
+						<Textarea
+							rows={3}
+							value={mensagem}
+							placeholder="Escreva uma mensagem para os membros da banca…"
+							onChange={(e) => setMensagem(e.target.value.slice(0, LIMITE_MENSAGEM))}
+						/>
+						<small>
+							{mensagem.length} / {LIMITE_MENSAGEM}
+						</small>
+					</label>
+				</div>
+			) : (
+				<div className="readonly-box">
+					<Icon name="info" />
+					<span>{mensagemNaoPodeEnviar}</span>
+				</div>
+			)}
+		</ModalDialog>
 	);
 }
