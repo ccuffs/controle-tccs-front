@@ -12,6 +12,8 @@ interface UseConviteOrientadorParams {
 	fase?: number;
 	onConviteEnviado?: () => void;
 	onClose: () => void;
+	/** Docente já escolhido ao abrir (ex.: a partir do catálogo de temas). */
+	orientadorInicial?: string;
 }
 
 /**
@@ -25,6 +27,7 @@ export function useConviteOrientador({
 	fase = 1,
 	onConviteEnviado,
 	onClose,
+	orientadorInicial,
 }: UseConviteOrientadorParams) {
 	// Estados de dados
 	const [orientadores, setOrientadores] = useState<Docente[]>([]);
@@ -51,6 +54,8 @@ export function useConviteOrientador({
 			if (conviteExistente) {
 				setOrientadorSelecionado(conviteExistente.codigo_docente);
 				setMensagem(conviteExistente.mensagem_envio || "");
+			} else if (orientadorInicial) {
+				setOrientadorSelecionado(orientadorInicial);
 			}
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps

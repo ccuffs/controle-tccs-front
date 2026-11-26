@@ -27,3 +27,13 @@ export function opcoesEtapa(fase: number): { valor: number; rotulo: string }[] {
 	const maximo = fase === 2 ? 9 : 6;
 	return Array.from({ length: maximo + 1 }, (_, valor) => ({ valor, rotulo: `${valor} · ${rotuloEtapa(valor, fase)}` }));
 }
+
+/** Progresso (0–100) dentro da fase, igual ao calculado pela API (common/etapas-tcc.ts). */
+export function progressoEtapa(fase: number, etapa: number, aprovado: boolean): number {
+	if (aprovado) return 100;
+	const inicio = fase === 2 ? 6 : 0;
+	const fim = FIM_DA_FASE[fase] ?? 5;
+	const passos = fim - inicio + 2;
+	const posicao = Math.min(Math.max(etapa - inicio, 0), passos - 1);
+	return Math.round((posicao / passos) * 100);
+}

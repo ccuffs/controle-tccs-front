@@ -165,3 +165,7 @@
 /* Correção sobre o design: com o menu recolhido, a regra que esconde os rótulos (<span>)
    também escondia os ícones, que são <span class="material-symbols-rounded">. */
 .sidebar.collapsed nav button span.material-symbols-rounded,.sidebar.collapsed .sidebar-bottom span.material-symbols-rounded{display:inline-flex}
+
+/* Correção sobre o design: os passos da jornada do discente são alinhados à esquerda
+   (o botão do MUI centraliza o conteúdo por padrão). */
+.journey-steps button{justify-content:flex-start}

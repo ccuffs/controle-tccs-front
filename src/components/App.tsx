@@ -7,15 +7,16 @@ import ProtectedRoute from "../contexts/ProtectedRoute";
 
 import CustomThemeProvider from "./customs/CustomThemeProvider";
 import AppLayout from "./layout/AppLayout";
-import EmMigracao from "./layout/EmMigracao";
 import { ExigirItem, ExigirPerfil, RedirecionarInicio, RedirecionarInicioPerfil } from "./layout/guardas";
 import type { Perfil } from "./layout/navegacao";
 import { NoticeProvider } from "./ui";
 
-import PerfilDiscente from "./modulo-dicente/PerfilDiscente";
 import DesignSystem from "./paginas/DesignSystem";
 import Disponibilidade from "./paginas/Disponibilidade";
-import MeuTcc from "./paginas/MeuTcc";
+import MeuTcc from "./discente/MeuTcc";
+import TemasDisponiveis from "./discente/Temas";
+import ConvitesDiscente from "./discente/Convites";
+import PerfilDiscenteNovo from "./discente/Perfil";
 import Login from "./utils/Login";
 import Discentes from "./cadastros/Discentes";
 import Docentes from "./cadastros/Docentes";
@@ -91,31 +92,9 @@ function App() {
 						<Route path="discente" element={<ExigirPerfil perfil="discente" />}>
 							<Route index element={<RedirecionarInicioPerfil perfil="discente" />} />
 							<Route path="meu-tcc" element={pagina("discente", "meu-tcc", <MeuTcc />)} />
-							<Route
-								path="temas"
-								element={pagina(
-									"discente",
-									"temas",
-									<EmMigracao
-										titulo="Temas disponíveis"
-										fase="Fase 5"
-										observacao="Enquanto isso, os temas aparecem na primeira etapa de Meu TCC."
-									/>,
-								)}
-							/>
-							<Route
-								path="convites"
-								element={pagina(
-									"discente",
-									"convites",
-									<EmMigracao
-										titulo="Meus convites"
-										fase="Fase 5"
-										observacao="Enquanto isso, os convites são acompanhados nas etapas de Meu TCC."
-									/>,
-								)}
-							/>
-							<Route path="perfil" element={pagina("discente", "perfil", <PerfilDiscente />)} />
+							<Route path="temas" element={pagina("discente", "temas", <TemasDisponiveis />)} />
+							<Route path="convites" element={pagina("discente", "convites", <ConvitesDiscente />)} />
+							<Route path="perfil" element={pagina("discente", "perfil", <PerfilDiscenteNovo />)} />
 						</Route>
 
 						{/* Endereços antigos */}

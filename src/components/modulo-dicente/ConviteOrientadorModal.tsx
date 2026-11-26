@@ -26,6 +26,7 @@ interface ConviteOrientadorModalProps {
 	onConviteEnviado?: () => void;
 	conviteExistente?: Convite | null;
 	fase?: number;
+	orientadorInicial?: string;
 }
 
 export default function ConviteOrientadorModal({
@@ -36,6 +37,7 @@ export default function ConviteOrientadorModal({
 	onConviteEnviado,
 	conviteExistente = null,
 	fase = 1,
+	orientadorInicial,
 }: ConviteOrientadorModalProps) {
 	const {
 		// Estados de dados
@@ -66,6 +68,7 @@ export default function ConviteOrientadorModal({
 		fase,
 		onConviteEnviado,
 		onClose,
+		orientadorInicial,
 	});
 
 	return (

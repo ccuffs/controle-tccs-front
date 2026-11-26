@@ -92,12 +92,31 @@ interface HorarioSelecionado {
 	hora: string;
 }
 
+/** Informações do TCC expostas para a tela "Meu TCC" do novo design. */
+export interface ContextoTcc {
+	fase: number;
+	ano: number | null;
+	semestre: number | null;
+	curso: string | null;
+	idTcc: number | null;
+	idCurso: number | null;
+	/** Etapa gravada no banco (até onde o discente já chegou). */
+	etapaSalva: number;
+	/** Quantidade de etapas da fase no stepper (6 no TCC I, 9 no TCC II). */
+	totalEtapas: number;
+	aprovado: boolean;
+	convitePendente: boolean;
+}
+
 interface TccStepperProps {
 	etapaInicial?: number;
 	onEtapaChange?: (etapa: number) => void;
+	/** Novo design: esconde título, cartão da oferta e o indicador de etapas (a tela "Meu TCC" os exibe). */
+	modoJornada?: boolean;
+	onContexto?: (contexto: ContextoTcc) => void;
 }
 
-export default function TccStepper({ etapaInicial = 0, onEtapaChange }: TccStepperProps) {
+export default function TccStepper({ etapaInicial = 0, onEtapaChange, modoJornada = false, onContexto }: TccStepperProps) {
 	const theme = useTheme();
 	const { usuario } = useContext(AuthContext) ?? {};
 	const [activeStep, setActiveStep] = useState(etapaInicial);
@@ -145,6 +164,25 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }: TccStepp
 	useEffect(() => {
 		setActiveStep(etapaInicial);
 	}, [etapaInicial]);
+
+	// Novo design: informa à página "Meu TCC" a fase, a oferta e o andamento.
+	useEffect(() => {
+		if (!onContexto) return;
+		const fase = Number(trabalhoConclusao?.fase || ofertaAtual?.fase || 1);
+		onContexto({
+			fase,
+			ano: trabalhoConclusao?.ano ?? ofertaAtual?.ano ?? null,
+			semestre: trabalhoConclusao?.semestre ?? ofertaAtual?.semestre ?? null,
+			curso: ofertaAtual?.curso?.nome ?? null,
+			idTcc: trabalhoConclusao?.id ?? null,
+			idCurso: trabalhoConclusao?.id_curso ?? ofertaAtual?.id_curso ?? null,
+			etapaSalva: Number(trabalhoConclusao?.etapa ?? 0),
+			totalEtapas: getEtapasValidas().length,
+			aprovado: Boolean(fase === 2 ? trabalhoConclusao?.aprovado_tcc : trabalhoConclusao?.aprovado_projeto),
+			convitePendente: Boolean(conviteExistente && conviteExistente.data_feedback === null),
+		});
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [trabalhoConclusao, ofertaAtual, conviteExistente]);
 
 	const isEtapaFinalBloqueada = (tcc: TrabalhoLocal | null) => {
 		if (!tcc) return false;
@@ -2416,12 +2454,14 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }: TccStepp
 	if (!trabalhoConclusao && activeStep === 0) {
 		return (
 			<Box sx={{ width: "100%" }}>
-				<Typography variant="h5" component="h2" gutterBottom>
-					Processo do TCC
-				</Typography>
+				{!modoJornada && (
+					<Typography variant="h5" component="h2" gutterBottom>
+						Processo do TCC
+					</Typography>
+				)}
 
 				<Paper sx={{ p: 3, mb: 3 }}>
-					<Stepper activeStep={activeStep} sx={{ mb: 4 }}>
+					<Stepper activeStep={activeStep} sx={{ mb: 4, display: modoJornada ? "none" : undefined }}>
 						{steps.map((label) => {
 							return (
 								<Step key={label}>
@@ -2466,11 +2506,13 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }: TccStepp
 
 	return (
 		<Box sx={{ width: "100%" }}>
-			<Typography variant="h5" component="h2" gutterBottom>
-				Processo do TCC
-			</Typography>
+			{!modoJornada && (
+				<Typography variant="h5" component="h2" gutterBottom>
+					Processo do TCC
+				</Typography>
+			)}
 
-		{ofertaAtual && (
+		{ofertaAtual && !modoJornada && (
 			<Paper
 				sx={{
 					p: 2,
@@ -2499,7 +2541,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }: TccStepp
 					backgroundColor: theme.palette.background.default,
 				}}
 			>
-				<Stepper activeStep={activeStep} sx={{ mb: 4 }}>
+				<Stepper activeStep={activeStep} sx={{ mb: 4, display: modoJornada ? "none" : undefined }}>
 					{getEtapasValidas().map((label, index) => {
 						// Verificar se a etapa está completa
 						const isStepComplete = (() => {
