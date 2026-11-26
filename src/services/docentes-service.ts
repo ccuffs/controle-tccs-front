@@ -40,8 +40,19 @@ export async function createDocente(
 	}
 }
 
+// PUT - Atualizar docente (codigo identifica o registro)
+export async function updateDocente(data: Partial<DocentePayload> & { codigo: string }): Promise<unknown> {
+	try {
+		return await axiosInstance.put("/docentes", { formData: data });
+	} catch (error) {
+		console.error("Erro ao atualizar docente:", error);
+		throw error;
+	}
+}
+
 // Exportação padrão para manter compatibilidade
 const docentesService = {
+	updateDocente,
 	getDocentes,
 	createDocente,
 };

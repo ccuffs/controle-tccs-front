@@ -37,6 +37,31 @@ export async function getDicentes(): Promise<Dicente[]> {
 }
 
 // POST - Criar novo dicente
+/** Discente com os TCCs que atendem aos filtros (quando há filtros de período/curso). */
+export interface DicenteComTccs extends Dicente {
+	trabalhosConclusao?: { id: number; ano: number; semestre: number; id_curso: number; fase: number }[];
+}
+
+// GET - Discentes com TCC no período/curso informados (sem filtros: todos os discentes)
+export async function getDicentesFiltrados(filtros: {
+	ano?: number;
+	semestre?: number;
+	id_curso?: string;
+}): Promise<DicenteComTccs[]> {
+	const params = new URLSearchParams();
+	if (filtros.ano) params.set("ano", String(filtros.ano));
+	if (filtros.semestre) params.set("semestre", String(filtros.semestre));
+	if (filtros.id_curso) params.set("id_curso", filtros.id_curso);
+	const query = params.toString();
+	try {
+		const response = await axiosInstance.get<{ dicentes: DicenteComTccs[] }>(`/dicentes${query ? `?${query}` : ""}`);
+		return response.dicentes || [];
+	} catch (error) {
+		console.error("Erro ao buscar dicentes:", error);
+		throw new Error(getErrorMessage(error, "Erro ao buscar discentes"));
+	}
+}
+
 export async function createDicente(
 	data: DicentePayload,
 ): Promise<unknown> {
@@ -84,6 +109,7 @@ export async function deleteDicente(matricula: string): Promise<unknown> {
 
 // Exportação padrão para manter compatibilidade
 const dicentesService = {
+	getDicentesFiltrados,
 	getDicenteByUsuario,
 	getDicentes,
 	createDicente,

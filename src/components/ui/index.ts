@@ -17,3 +17,4 @@ export { SideDrawer } from "./SideDrawer";
 export { ModalDialog } from "./ModalDialog";
 export { SaveBar } from "./SaveBar";
 export { NoticeProvider, useNotice } from "./Notice";
+export { ConfirmDialog } from "./ConfirmDialog";

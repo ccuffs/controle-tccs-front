@@ -14,8 +14,6 @@ import { NoticeProvider } from "./ui";
 
 import Cursos from "./Cursos";
 import Dashboard from "./Dashboard";
-import Dicentes from "./Dicentes";
-import Orientadores from "./Orientadores";
 import AvaliarDefesasOrientador from "./modulo-orientador/AvaliarDefesasOrientador";
 import ConvitesRecebidosOrientador from "./modulo-orientador/ConvitesRecebidosOrientador";
 import EmitirDeclaracoes from "./modulo-orientador/EmitirDeclaracoes";
@@ -28,6 +26,10 @@ import DesignSystem from "./paginas/DesignSystem";
 import Disponibilidade from "./paginas/Disponibilidade";
 import MeuTcc from "./paginas/MeuTcc";
 import Login from "./utils/Login";
+import Discentes from "./cadastros/Discentes";
+import Docentes from "./cadastros/Docentes";
+import Temas from "./cadastros/Temas";
+import VisaoGeral from "./visao-geral/VisaoGeral";
 
 /** Página de um item do menu: só abre se o item for permitido ao usuário. */
 function pagina(perfil: Perfil, id: string, elemento: ReactNode) {
@@ -59,15 +61,15 @@ function App() {
 
 						<Route path="coordenacao" element={<ExigirPerfil perfil="coordenacao" />}>
 							<Route index element={<RedirecionarInicioPerfil perfil="coordenacao" />} />
-							<Route path="visao-geral" element={pagina("coordenacao", "visao-geral", <Dashboard />)} />
+							<Route path="visao-geral" element={pagina("coordenacao", "visao-geral", <VisaoGeral />)} />
 							<Route path="orientacoes" element={pagina("coordenacao", "orientacoes", <Orientacao />)} />
 							<Route
 								path="defesas"
 								element={pagina("coordenacao", "defesas", <EmMigracao titulo="Defesas" fase="Fase 3" />)}
 							/>
-							<Route path="discentes" element={pagina("coordenacao", "discentes", <Dicentes />)} />
-							<Route path="docentes" element={pagina("coordenacao", "docentes", <Orientadores />)} />
-							<Route path="temas" element={pagina("coordenacao", "temas", <TemasTcc />)} />
+							<Route path="discentes" element={pagina("coordenacao", "discentes", <Discentes />)} />
+							<Route path="docentes" element={pagina("coordenacao", "docentes", <Docentes />)} />
+							<Route path="temas" element={pagina("coordenacao", "temas", <Temas />)} />
 							<Route path="cursos" element={pagina("coordenacao", "cursos", <Cursos />)} />
 							<Route
 								path="importar"

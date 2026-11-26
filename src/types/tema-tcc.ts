@@ -23,4 +23,6 @@ export interface TemaTcc {
 	areaTcc?: AreaTcc;
 	docente?: Docente;
 	vagasOferta?: number;
+	vagasOcupadas?: number;
+	updatedAt?: string;
 }

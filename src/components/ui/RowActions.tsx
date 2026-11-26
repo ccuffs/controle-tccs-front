@@ -7,10 +7,11 @@ interface RowActionsProps {
 	onEdit?: () => void;
 	onRemove?: () => void;
 	label?: string;
+	removeLabel?: string;
 }
 
 /** Menu "…" de linha/cartão com Editar e Remover. */
-export function RowActions({ onEdit, onRemove, label = "Abrir ações" }: RowActionsProps) {
+export function RowActions({ onEdit, onRemove, label = "Abrir ações", removeLabel = "Remover" }: RowActionsProps) {
 	const [anchor, setAnchor] = useState<HTMLElement | null>(null);
 	const fechar = () => setAnchor(null);
 	return (
@@ -41,7 +42,7 @@ export function RowActions({ onEdit, onRemove, label = "Abrir ações" }: RowAct
 							onRemove();
 						}}
 					>
-						<Icon name="delete" size={18} /> Remover
+						<Icon name="delete" size={18} /> {removeLabel}
 					</MenuItem>
 				)}
 			</Menu>

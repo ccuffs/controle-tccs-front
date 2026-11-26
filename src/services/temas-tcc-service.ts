@@ -183,8 +183,47 @@ export async function deletarTemaTcc(id: number): Promise<unknown> {
 	}
 }
 
+export interface TemaTccCompleto {
+	descricao: string;
+	id_area_tcc: number;
+	codigo_docente: string;
+	ativo: boolean;
+}
+
+// POST - Criar tema já com status (retorna o tema criado)
+export async function criarTemaCompleto(data: TemaTccCompleto): Promise<TemaTcc> {
+	try {
+		return await axiosInstance.post<TemaTcc>("/temas-tcc", data);
+	} catch (error) {
+		throw new Error(getErrorMessage(error, "Erro ao criar tema TCC"));
+	}
+}
+
+// PUT - Atualizar todos os campos do tema
+export async function editarTemaCompleto(id: number, data: TemaTccCompleto): Promise<void> {
+	try {
+		await axiosInstance.put("/temas-tcc", { id, ...data });
+	} catch (error) {
+		throw new Error(getErrorMessage(error, "Erro ao atualizar tema TCC"));
+	}
+}
+
+/** Cria a área para o docente e devolve o id (a API não retorna o registro criado). */
+export async function criarAreaERetornarId(descricao: string, codigoDocente: string): Promise<number> {
+	await criarAreaTcc({ descricao, codigo_docente: codigoDocente });
+	const areas = await getAreasTccPorDocente(codigoDocente);
+	const criada = areas
+		.filter((a) => a.descricao.trim().toLocaleLowerCase("pt-BR") === descricao.trim().toLocaleLowerCase("pt-BR"))
+		.sort((a, b) => b.id - a.id)[0];
+	if (!criada) throw new Error("A área foi criada, mas não foi encontrada. Recarregue a página.");
+	return criada.id;
+}
+
 // Exportação padrão
 const temasTccService = {
+	criarTemaCompleto,
+	editarTemaCompleto,
+	criarAreaERetornarId,
 	getCursos,
 	getCursosOrientador,
 	getDocentesOrientadoresPorCurso,
