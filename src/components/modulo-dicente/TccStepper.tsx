@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
 	Box,
 	Stepper,
@@ -20,12 +20,12 @@ import {
 } from "@mui/material";
 import { formatarDataDefesaUTC, formatarData, formatarHora } from "../../controllers/disponibilidade-banca-controller";
 import type { Convite } from "../../types/convite";
-import VisualizarTemasTCC from "./VisualizarTemasTCC";
 import ConviteOrientadorModal from "./ConviteOrientadorModal";
 import ConviteBancaModal from "./ConviteBancaModal";
 import SelecionarHorarioBanca from "./SelecionarHorarioBanca";
 import { Button as BotaoDesign, useNotice } from "../ui";
 import EtapaTemaTituloResumo from "../discente/etapas/EtapaTemaTituloResumo";
+import EtapaEscolherOrientador from "../discente/etapas/EtapaEscolherOrientador";
 import { useJornadaTcc, steps, type ConviteLocal } from "./useJornadaTcc";
 import type { ContextoTcc } from "./useJornadaTcc";
 
@@ -88,6 +88,9 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange, modoJornad
 		salvarTemaTituloResumo,
 	} = useJornadaTcc({ etapaInicial, onEtapaChange, onContexto });
 
+	// Docente escolhido no catálogo da etapa 0 (pré-seleciona o diálogo de convite).
+	const [orientadorSugerido, setOrientadorSugerido] = useState<string | undefined>(undefined);
+
 	// Avisos no Snackbar único do app (useNotice), como nas demais telas do novo design.
 	const notificar = useNotice();
 	useEffect(() => {
@@ -101,117 +104,18 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange, modoJornad
 		switch (step) {
 			case 0:
 				return (
-					<Box sx={{ mt: 2 }}>
-						{/* Seção de Convite para Orientador - Posicionada acima do VisualizarTemasTCC */}
-						{trabalhoConclusao && (
-							<Paper
-								sx={{
-									p: 3,
-									mb: 3,
-									backgroundColor:
-										theme.palette.background.default,
-								}}
-							>
-								<Typography variant="h6" gutterBottom>
-									Convite para Orientador
-								</Typography>
-
-								{conviteExistente ? (
-									<Box>
-										<Alert
-											severity={
-												conviteExistente.aceito
-													? "success"
-													: "warning"
-											}
-											sx={{ mb: 2 }}
-										>
-											<Typography variant="body2">
-												<strong>
-													Status do Convite:
-												</strong>{" "}
-												{conviteExistente.aceito
-													? "Aceito"
-													: "Pendente"}
-											</Typography>
-											{conviteExistente.data_envio && (
-												<Typography variant="body2">
-													<strong>Enviado em:</strong>{" "}
-													{new Date(
-														conviteExistente.data_envio,
-													).toLocaleDateString(
-														"pt-BR",
-													)}
-												</Typography>
-											)}
-											{conviteExistente.docente && (
-												<Typography variant="body2">
-													<strong>Orientador:</strong>{" "}
-													{
-														conviteExistente.docente
-															.nome
-													}
-												</Typography>
-											)}
-										</Alert>
-
-										<Button
-											variant="outlined"
-											onClick={handleOpenConviteModal}
-											disabled={conviteExistente.aceito}
-										>
-											{conviteExistente.aceito
-												? "Convite Aceito"
-												: "Ver Detalhes do Convite"}
-										</Button>
-									</Box>
-								) : (
-									<Box>
-										{conviteExistente &&
-										!(conviteExistente as ConviteLocal).aceito ? (
-											<Alert
-												severity="info"
-												sx={{ mb: 2 }}
-											>
-												<Typography variant="body2">
-													Você já possui um convite
-													pendente para um orientador.
-													Aguarde a resposta antes de
-													prosseguir com o TCC.
-												</Typography>
-											</Alert>
-										) : (
-											<Typography
-												variant="body2"
-												color="text.secondary"
-												sx={{ mb: 2 }}
-											>
-												Para prosseguir com o TCC, você
-												precisa enviar um convite para
-												um orientador.
-											</Typography>
-										)}
-
-										<Button
-											variant="contained"
-											onClick={handleOpenConviteModal}
-											disabled={Boolean(
-												conviteExistente &&
-												!(conviteExistente as ConviteLocal).aceito,
-											)}
-										>
-											{conviteExistente &&
-											!(conviteExistente as ConviteLocal).aceito
-												? "Convite Pendente"
-												: "Enviar Convite para Orientador"}
-										</Button>
-									</Box>
-								)}
-							</Paper>
-						)}
-
-						<VisualizarTemasTCC />
-					</Box>
+					<EtapaEscolherOrientador
+						convite={conviteExistente}
+						idCurso={trabalhoConclusao?.id_curso ?? ofertaAtual?.id_curso ?? null}
+						onConvidar={(codigo) => {
+							setOrientadorSugerido(codigo);
+							handleOpenConviteModal();
+						}}
+						onVerConvite={() => {
+							setOrientadorSugerido(undefined);
+							handleOpenConviteModal();
+						}}
+					/>
 				);
 			case 1:
 			case 2:
@@ -1819,7 +1723,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange, modoJornad
 						{renderStepContent(activeStep)}
 
 						{/* Mensagem de ajuda para etapa 0 */}
-						{activeStep === 0 && !validarEtapaAtual() && (
+						{activeStep === 0 && !modoJornada && !validarEtapaAtual() && (
 							<Alert severity="info" sx={{ mt: 2 }}>
 								<Typography variant="body2">
 									Para prosseguir, você precisa ter um convite
@@ -1963,8 +1867,9 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange, modoJornad
 					idTcc={trabalhoConclusao.id}
 					idCurso={trabalhoConclusao.id_curso}
 					onConviteEnviado={handleConviteEnviado}
-					conviteExistente={conviteExistente}
+					conviteExistente={conviteExistente && (conviteExistente.data_feedback === null || conviteExistente.aceito) ? conviteExistente : null}
 					fase={trabalhoConclusao.fase || 1}
+					orientadorInicial={orientadorSugerido}
 				/>
 			)}
 

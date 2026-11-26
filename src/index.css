@@ -180,3 +180,8 @@
 .journey-content>h2+p{margin-bottom:20px}
 .jornada-acoes{display:flex;justify-content:space-between;gap:8px;margin-top:24px;border-top:1px solid var(--border);padding-top:18px}
 @media(max-width:520px){.jornada-acoes{position:fixed;bottom:64px;left:0;right:0;margin:0;background:var(--surface);border-top:1px solid var(--border);padding:10px 14px;z-index:18}.jornada-acoes .button{flex:1}}
+/* Catálogo de temas dentro da etapa 1 da jornada: a coluna de conteúdo não pode crescer
+   além da tela por causa da grade de cards. */
+.journey-layout>*,.theme-grid>*{min-width:0}
+.journey-content .theme-grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+.journey-content .catalog-tools{flex-wrap:wrap}.journey-content .catalog-tools .search{flex:1 1 220px}
