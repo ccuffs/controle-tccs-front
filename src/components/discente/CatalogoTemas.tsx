@@ -3,7 +3,7 @@ import { contemBusca } from "../../hooks/useListaLocal";
 import temasTccService from "../../services/temas-tcc-service";
 import type { TemaTcc } from "../../types/tema-tcc";
 import { getErrorMessage } from "../../utils/apiError";
-import { Avatar, Button, Card, EmptyState, Icon, Input, Select, StatusChip, Surface, useNotice } from "../ui";
+import { Avatar, Button, Card, EmptyState, Icon, Input, Select, StatusChip, Surface, useNotice, Realce } from "../ui";
 
 const TODOS = "__todos__";
 
@@ -87,7 +87,9 @@ export default function CatalogoTemas({ idCurso, bloqueado = false, onConvidar }
 							<div className="person-line">
 								<Avatar nome={t.docente?.nome ?? t.codigo_docente} />
 								<div>
-									<strong>{t.docente?.nome ?? t.codigo_docente}</strong>
+									<strong>
+										<Realce texto={t.docente?.nome ?? t.codigo_docente} busca={busca} />
+									</strong>
 									<span>
 										<Icon name="school" size={14} /> Docente UFFS
 									</span>
@@ -95,9 +97,13 @@ export default function CatalogoTemas({ idCurso, bloqueado = false, onConvidar }
 							</div>
 							<div className="theme-area">
 								<span>ÁREA DO TCC</span>
-								<StatusChip type="info">{t.areaTcc?.descricao ?? "—"}</StatusChip>
+								<StatusChip type="info">
+									<Realce texto={t.areaTcc?.descricao ?? "—"} busca={busca} />
+								</StatusChip>
 							</div>
-							<h2>{t.descricao}</h2>
+							<h2>
+								<Realce texto={t.descricao} busca={busca} />
+							</h2>
 							<div className="vacancy">
 								<span>
 									<Icon name="group" size={17} />

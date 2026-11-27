@@ -20,6 +20,7 @@ import {
 	TableToolbar,
 	useNotice,
 	type DataTableColumn,
+	Realce,
 } from "../ui";
 import OrientacaoDrawer from "./OrientacaoDrawer";
 
@@ -110,8 +111,12 @@ export default function Orientacoes() {
 			header: "Matrícula / Discente",
 			render: (i) => (
 				<>
-					<strong>{i.nome}</strong>
-					<small className="cell-subtitle mono">{i.matricula}</small>
+					<strong>
+						<Realce texto={i.nome} busca={buscaAplicada} />
+					</strong>
+					<small className="cell-subtitle mono">
+						<Realce texto={i.matricula} busca={buscaAplicada} />
+					</small>
 				</>
 			),
 		},
@@ -135,7 +140,7 @@ export default function Orientacoes() {
 				</div>
 			),
 		},
-		{ key: "orientador", header: "Orientador", render: (i) => i.orientador?.nome ?? "—" },
+		{ key: "orientador", header: "Orientador", render: (i) => <Realce texto={i.orientador?.nome ?? "—"} busca={buscaAplicada} /> },
 		{ key: "nota", header: "Nota média", className: "grade-cell", render: (i) => formatarNota(i.nota_media) },
 		{
 			key: "acoes",

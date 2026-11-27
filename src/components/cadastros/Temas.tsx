@@ -21,6 +21,7 @@ import {
 	Textarea,
 	useNotice,
 	type DataTableColumn,
+	Realce,
 } from "../ui";
 
 const NOVA_AREA = "__nova__";
@@ -192,9 +193,22 @@ export default function Temas() {
 	const opcoesArea = areaAtual && !areas.some((a) => a.id === areaAtual.id) ? [areaAtual, ...areas] : areas;
 
 	const colunas: DataTableColumn<TemaTcc>[] = [
-		{ key: "docente", header: "Docente", render: (t) => <strong>{t.docente?.nome ?? t.codigo_docente}</strong> },
-		{ key: "area", header: "Área do TCC", render: (t) => <StatusChip type="info">{t.areaTcc?.descricao ?? "—"}</StatusChip> },
-		{ key: "descricao", header: "Descrição", className: "description-cell", render: (t) => t.descricao },
+		{
+			key: "docente",
+			header: "Docente",
+			render: (t) => (
+				<strong>
+					<Realce texto={t.docente?.nome ?? t.codigo_docente} busca={busca} />
+				</strong>
+			),
+		},
+		{ key: "area", header: "Área do TCC", render: (t) => (
+				<StatusChip type="info">
+					<Realce texto={t.areaTcc?.descricao ?? "—"} busca={busca} />
+				</StatusChip>
+			),
+		},
+		{ key: "descricao", header: "Descrição", className: "description-cell", render: (t) => <Realce texto={t.descricao} busca={busca} /> },
 		{
 			key: "status",
 			header: "Status",

@@ -34,6 +34,7 @@ import {
 	StatusChip,
 	Surface,
 	useNotice,
+	Realce,
 } from "../ui";
 
 interface Formulario {
@@ -318,7 +319,10 @@ export default function MembrosExternos() {
 													})
 												}
 											>
-												{`${s.nome ?? s.codigo}${s.instituicao ? ` · ${s.instituicao}` : ""}`}
+												<span>
+													<Realce texto={s.nome ?? s.codigo} busca={nomeBusca} />
+													{s.instituicao ? ` · ${s.instituicao}` : ""}
+												</span>
 											</Button>
 										))}
 									</div>

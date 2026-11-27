@@ -18,3 +18,4 @@ export { ModalDialog } from "./ModalDialog";
 export { SaveBar } from "./SaveBar";
 export { NoticeProvider, useNotice } from "./Notice";
 export { ConfirmDialog } from "./ConfirmDialog";
+export { Realce, trechosEncontrados } from "./Realce";

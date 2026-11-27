@@ -20,6 +20,7 @@ import {
 	TableToolbar,
 	useNotice,
 	type DataTableColumn,
+	Realce,
 } from "../ui";
 
 const TODOS = "__todos__";
@@ -138,9 +139,17 @@ export default function Discentes() {
 	};
 
 	const colunas: DataTableColumn<DicenteComTccs>[] = [
-		{ key: "matricula", header: "Matrícula", className: "mono", render: (d) => d.matricula },
-		{ key: "nome", header: "Nome", render: (d) => <strong>{d.nome}</strong> },
-		{ key: "email", header: "E-mail", render: (d) => d.email || "—" },
+		{ key: "matricula", header: "Matrícula", className: "mono", render: (d) => <Realce texto={d.matricula} busca={busca} /> },
+		{
+			key: "nome",
+			header: "Nome",
+			render: (d) => (
+				<strong>
+					<Realce texto={d.nome} busca={busca} />
+				</strong>
+			),
+		},
+		{ key: "email", header: "E-mail", render: (d) => <Realce texto={d.email || "—"} busca={busca} /> },
 		{
 			key: "fase",
 			header: "Fase atual",

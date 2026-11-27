@@ -19,6 +19,7 @@ import {
 	Textarea,
 	useNotice,
 	type DataTableColumn,
+	Realce,
 } from "../ui";
 
 const TODOS = "__todos__";
@@ -107,8 +108,12 @@ export default function MeusOrientandos() {
 			header: "Discente",
 			render: (i) => (
 				<>
-					<strong>{i.nome}</strong>
-					<small className="cell-subtitle mono">{i.matricula}</small>
+					<strong>
+						<Realce texto={i.nome} busca={buscaAplicada} />
+					</strong>
+					<small className="cell-subtitle mono">
+						<Realce texto={i.matricula} busca={buscaAplicada} />
+					</small>
 				</>
 			),
 		},

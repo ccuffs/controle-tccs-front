@@ -13,6 +13,7 @@ import {
 	DataTable,
 	Input,
 	PageHeader,
+	Realce,
 	RowActions,
 	Select,
 	SideDrawer,
@@ -225,19 +226,21 @@ export default function Docentes() {
 	};
 
 	const colunas: DataTableColumn<Docente>[] = [
-		{ key: "codigo", header: "Código", className: "mono", render: (d) => d.codigo },
+		{ key: "codigo", header: "Código", className: "mono", render: (d) => <Realce texto={d.codigo} busca={busca} /> },
 		{
 			key: "nome",
 			header: "Nome",
 			render: (d) => (
 				<div className="table-person">
 					<Avatar nome={d.nome ?? d.codigo} size="small" />
-					<strong>{d.nome ?? d.codigo}</strong>
+					<strong>
+						<Realce texto={d.nome ?? d.codigo} busca={busca} />
+					</strong>
 				</div>
 			),
 		},
-		{ key: "siape", header: "SIAPE", className: "mono", render: (d) => d.siape ?? "—" },
-		{ key: "email", header: "E-mail", render: (d) => d.email },
+		{ key: "siape", header: "SIAPE", className: "mono", render: (d) => <Realce texto={d.siape ?? "—"} busca={busca} /> },
+		{ key: "email", header: "E-mail", render: (d) => <Realce texto={d.email} busca={busca} /> },
 		{
 			key: "acoes",
 			header: "Ações",

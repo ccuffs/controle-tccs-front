@@ -15,6 +15,7 @@ import {
 	TableToolbar,
 	useNotice,
 	type DataTableColumn,
+	Realce,
 } from "../ui";
 
 const TURNOS = ["Matutino", "Vespertino", "Integral", "Noturno"];
@@ -93,9 +94,17 @@ export default function CursosPagina() {
 	};
 
 	const colunas: DataTableColumn<Curso>[] = [
-		{ key: "codigo", header: "Código", className: "mono", render: (c) => c.codigo ?? "—" },
-		{ key: "nome", header: "Nome", render: (c) => <strong>{c.nome ?? "—"}</strong> },
-		{ key: "turno", header: "Turno", render: (c) => c.turno ?? "—" },
+		{ key: "codigo", header: "Código", className: "mono", render: (c) => <Realce texto={c.codigo ?? "—"} busca={busca} /> },
+		{
+			key: "nome",
+			header: "Nome",
+			render: (c) => (
+				<strong>
+					<Realce texto={c.nome ?? "—"} busca={busca} />
+				</strong>
+			),
+		},
+		{ key: "turno", header: "Turno", render: (c) => <Realce texto={c.turno ?? "—"} busca={busca} /> },
 		{
 			key: "acoes",
 			header: "Ações",
