@@ -12,14 +12,18 @@ export default function Login() {
 	return (
 		<main className="login-page">
 			<section className="login-brand">
-				<div className="brand-mark large">
-					<span>UFFS</span>
-					<i />
-				</div>
-				<div>
-					<span className="eyebrow light">UNIVERSIDADE FEDERAL DA FRONTEIRA SUL</span>
-					<h1>Projetos que transformam conhecimento em futuro.</h1>
-					<p>Uma jornada mais simples para discentes, docentes e coordenações.</p>
+				<img
+					className="login-logo-cc"
+					src="/cc-logo-bg-transparent.svg"
+					alt="Ciência da Computação"
+				/>
+				<div className="login-brand-center">
+					<span className="eyebrow light">SISTEMA DE CONTROLES DE TCCs</span>
+					<img
+						className="login-logo-uffs"
+						src="/uffs_logo.png"
+						alt="Universidade Federal da Fronteira Sul"
+					/>
 				</div>
 				<div className="academic-art">
 					<i />

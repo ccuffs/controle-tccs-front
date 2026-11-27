@@ -10,7 +10,7 @@ export function Layout({ children }: { children: ReactNode }) {
 					name="viewport"
 					content="width=device-width, initial-scale=1.0"
 				/>
-				<link rel="icon" href="/coordenacao.png" />
+				<link rel="icon" href="/favicon.ico" />
 				<title>Sistema de Controle de TCCs</title>
 				<Meta />
 				<Links />
