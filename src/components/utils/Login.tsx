@@ -91,7 +91,7 @@ export default function Login() {
 						{loading ? "Entrando…" : "Entrar"} <Icon name="arrow_forward" />
 					</Button>
 				</form>
-				<footer>© {new Date().getFullYear()} UFFS · Gestão de TCCs</footer>
+				<footer>© {new Date().getFullYear()} UFFS · Sistema de Controles de TCCs</footer>
 			</section>
 		</main>
 	);
