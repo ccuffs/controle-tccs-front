@@ -34,10 +34,11 @@ export default function Login() {
 			</section>
 			<section className="login-form">
 				<div className="mobile-brand">
-					<div className="brand-mark">
-						<span>UFFS</span>
-						<i />
-					</div>
+					<img
+						className="mobile-logo-cc"
+						src="/cc-logo-bg-transparent.svg"
+						alt="Ciência da Computação"
+					/>
 					<strong>Gestão de TCCs</strong>
 				</div>
 				<form className="login-box" onSubmit={handleSubmit} noValidate>
