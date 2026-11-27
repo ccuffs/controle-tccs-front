@@ -32,6 +32,22 @@ export function useMuiTheme(mode: ThemeMode): Theme {
 				MuiChip: {
 					styleOverrides: { root: { borderRadius: 999, fontWeight: 700 }, label: { paddingLeft: 8, paddingRight: 8 } },
 				},
+				// Campos (busca, select, texto, área de texto) no corpo do texto do sistema (14px),
+				// em vez dos 16px padrão do MUI. No celular ficam em 16px: abaixo disso o Safari
+				// do iPhone aumenta o zoom da página ao tocar no campo.
+				MuiInputBase: {
+					styleOverrides: {
+						root: {
+							fontSize: 14,
+							"@media (max-width:520px)": { fontSize: 16 },
+							// O MUI calcula a altura pela fonte (1.4375em); fixa os 23px de antes para manter os campos com 40px.
+							"& input.MuiInputBase-input": { height: 23 },
+							"& .MuiSelect-select.MuiInputBase-input": { minHeight: 23, lineHeight: "23px" },
+						},
+					},
+				},
+				// Opções dos selects e dos menus no mesmo tamanho dos campos.
+				MuiMenuItem: { styleOverrides: { root: { fontSize: 14 } } },
 				MuiDialog: { styleOverrides: { paper: { borderRadius: 14 } } },
 				MuiDrawer: { styleOverrides: { paper: { backgroundImage: "none" } } },
 			},
