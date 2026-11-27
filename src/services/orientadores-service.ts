@@ -4,7 +4,8 @@ import type { OrientadorCurso } from "../types/curso";
 
 export interface OrientadorPayload {
 	codigo_docente: string;
-	id_curso: number | string;
+	/** A API valida como inteiro (IsInt); texto como "1" é recusado. */
+	id_curso: number;
 }
 
 // GET - Buscar orientadores por curso

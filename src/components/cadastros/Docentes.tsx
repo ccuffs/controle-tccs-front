@@ -175,7 +175,7 @@ export default function Docentes() {
 		setSalvando(true);
 		try {
 			if (modo === "vincular") {
-				await orientadoresService.createOrientacao({ codigo_docente: dados.docenteVincular, id_curso: dados.curso });
+				await orientadoresService.createOrientacao({ codigo_docente: dados.docenteVincular, id_curso: Number(dados.curso) });
 				notificar("Orientador vinculado ao curso.");
 			} else {
 				const payload = {
@@ -188,7 +188,7 @@ export default function Docentes() {
 				if (modo === "novo") {
 					await docentesService.createDocente(payload);
 					try {
-						await orientadoresService.createOrientacao({ codigo_docente: payload.codigo, id_curso: dados.curso });
+						await orientadoresService.createOrientacao({ codigo_docente: payload.codigo, id_curso: Number(dados.curso) });
 						notificar("Docente cadastrado e vinculado como orientador.");
 					} catch (e) {
 						notificar(getErrorMessage(e, "Docente cadastrado, mas o vínculo com o curso falhou. Use Vincular orientador."), "error");
