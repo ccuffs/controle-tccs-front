@@ -219,3 +219,14 @@
 
 /* Tema escuro: controles nativos (ícones de data/hora, seletor de data, barras de rolagem) no esquema escuro. */
 html.dark{color-scheme:dark}
+
+/* Indicador de passos (Importar lista) como na imagem do design, que mostra o Stepper do MUI:
+   círculos de 24px preenchidos (cinza nos passos seguintes, verde-azulado no atual e nos
+   concluídos), rótulos de 14px e linhas de mesmo comprimento entre os passos. */
+.stepper.horizontal{padding:0 8px}
+.stepper>div{flex:1 1 auto;color:var(--muted)}.stepper>div:last-child{flex:0 0 auto}
+.stepper>div:not(:last-child):after{background:#bdbdbd;margin:0 8px}.dark .stepper>div:not(:last-child):after{background:var(--border-strong)}
+.stepper>div>span{width:24px;height:24px;border:0;background:var(--subtle);color:#fff;font-size:12px}
+.stepper strong{font-size:14px;font-weight:400}
+.stepper .active,.stepper .done{color:var(--text)}.stepper .active strong,.stepper .done strong{font-weight:500}
+.stepper .done>span{background:var(--teal-600);color:#fff}
