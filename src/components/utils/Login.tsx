@@ -39,7 +39,7 @@ export default function Login() {
 						src="/cc-logo-bg-transparent.svg"
 						alt="Ciência da Computação"
 					/>
-					<strong>Gestão de TCCs</strong>
+					<span className="eyebrow">SISTEMA DE CONTROLES DE TCCs</span>
 				</div>
 				<form className="login-box" onSubmit={handleSubmit} noValidate>
 					<span className="eyebrow">BEM-VINDO DE VOLTA</span>
