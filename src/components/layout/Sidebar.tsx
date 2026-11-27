@@ -29,13 +29,10 @@ export function Sidebar({
 	return (
 		<aside className={`sidebar ${recolhido ? "collapsed" : ""} ${abertoMobile ? "mobile-open" : ""}`}>
 			<div className="sidebar-brand">
-				<div className="brand-mark">
-					<span>UFFS</span>
-					<i />
-				</div>
+				<img className="sidebar-logo" src="/cc-logo-icon-bg-transparent.svg" alt="Ciência da Computação" />
 				<div>
 					<strong>Gestão de TCCs</strong>
-					<small>Campus Chapecó</small>
+					<small>Ciência da Computação</small>
 				</div>
 				<PlainButton className="icon-button close-mobile" onClick={onFecharMobile} aria-label="Fechar menu">
 					<Icon name="close" />
