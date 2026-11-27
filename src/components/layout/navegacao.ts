@@ -1,7 +1,7 @@
 import { Permissoes } from "../../enums/permissoes";
 import type { Grupo } from "../../types/usuario";
 
-export type Perfil = "coordenacao" | "orientador" | "discente";
+export type Perfil = "coordenacao" | "orientador" | "discente" | "administracao";
 
 export interface ItemNavegacao {
 	id: string;
@@ -23,10 +23,14 @@ export const PERFIS: Record<Perfil, { rotulo: string; grupos: number[] }> = {
 	coordenacao: { rotulo: "Coordenador", grupos: [ADMIN, PROFESSOR_CCR] },
 	orientador: { rotulo: "Orientador", grupos: [ORIENTADOR, PROFESSOR, BANCA] },
 	discente: { rotulo: "Discente", grupos: [ESTUDANTE] },
+	administracao: { rotulo: "Administrador", grupos: [ADMIN] },
 };
 
-/** Ordem de prioridade para a página inicial (mesma regra do roteamento anterior). */
-const ORDEM_PERFIS: Perfil[] = ["coordenacao", "orientador", "discente"];
+/**
+ * Ordem de prioridade para a página inicial (mesma regra do roteamento anterior).
+ * Administração por último: o ADMIN continua entrando pela coordenação.
+ */
+const ORDEM_PERFIS: Perfil[] = ["coordenacao", "orientador", "discente", "administracao"];
 
 export const NAVEGACAO: Record<Perfil, ItemNavegacao[]> = {
 	coordenacao: [
@@ -36,9 +40,7 @@ export const NAVEGACAO: Record<Perfil, ItemNavegacao[]> = {
 		{ id: "discentes", rotulo: "Discentes", icone: "school", caminho: "discentes", grupoMenu: "CADASTROS" },
 		{ id: "docentes", rotulo: "Docentes", icone: "group", caminho: "docentes", grupoMenu: "CADASTROS" },
 		{ id: "temas", rotulo: "Temas", icone: "menu_book", caminho: "temas", grupoMenu: "CADASTROS" },
-		{ id: "cursos", rotulo: "Cursos", icone: "account_balance", caminho: "cursos", grupoMenu: "CADASTROS", grupos: [ADMIN] },
 		{ id: "importar", rotulo: "Importar lista", icone: "upload_file", caminho: "importar", grupoMenu: "FERRAMENTAS" },
-		{ id: "design-system", rotulo: "Design System", icone: "palette", caminho: "design-system", grupoMenu: "FERRAMENTAS", grupos: [ADMIN] },
 	],
 	orientador: [
 		{ id: "inicio", rotulo: "Início", icone: "home", caminho: "inicio", grupoMenu: "VISÃO GERAL", ocultarParaBanca: true },
@@ -56,6 +58,10 @@ export const NAVEGACAO: Record<Perfil, ItemNavegacao[]> = {
 		{ id: "temas", rotulo: "Temas disponíveis", icone: "menu_book", caminho: "temas" },
 		{ id: "convites", rotulo: "Convites", icone: "mail", caminho: "convites" },
 		{ id: "perfil", rotulo: "Perfil", icone: "person", caminho: "perfil" },
+	],
+	administracao: [
+		{ id: "cursos", rotulo: "Cursos", icone: "account_balance", caminho: "cursos", grupoMenu: "CADASTROS" },
+		{ id: "design-system", rotulo: "Design System", icone: "palette", caminho: "design-system", grupoMenu: "FERRAMENTAS" },
 	],
 };
 
@@ -99,8 +105,8 @@ export function inicioDoUsuario(grupos: Grupo[]): string | null {
 	return null;
 }
 
-/** Perfil ativo a partir da URL (/coordenacao/..., /orientador/..., /discente/...). */
+/** Perfil ativo a partir da URL (/coordenacao/..., /orientador/..., /discente/..., /administracao/...). */
 export function perfilDaUrl(pathname: string): Perfil | null {
 	const segmento = pathname.split("/")[1];
-	return segmento === "coordenacao" || segmento === "orientador" || segmento === "discente" ? segmento : null;
+	return segmento && Object.hasOwn(PERFIS, segmento) ? (segmento as Perfil) : null;
 }

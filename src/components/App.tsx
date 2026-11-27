@@ -71,9 +71,9 @@ function App() {
 							<Route path="discentes" element={pagina("coordenacao", "discentes", <Discentes />)} />
 							<Route path="docentes" element={pagina("coordenacao", "docentes", <Docentes />)} />
 							<Route path="temas" element={pagina("coordenacao", "temas", <Temas />)} />
-							<Route path="cursos" element={pagina("coordenacao", "cursos", <CursosPagina />)} />
+							<Route path="cursos" element={<Navigate to="/administracao/cursos" replace />} />
 							<Route path="importar" element={pagina("coordenacao", "importar", <ImportarLista />)} />
-							<Route path="design-system" element={pagina("coordenacao", "design-system", <DesignSystem />)} />
+							<Route path="design-system" element={<Navigate to="/administracao/design-system" replace />} />
 						</Route>
 
 						<Route path="orientador" element={<ExigirPerfil perfil="orientador" />}>
@@ -97,8 +97,14 @@ function App() {
 							<Route path="perfil" element={pagina("discente", "perfil", <PerfilDiscenteNovo />)} />
 						</Route>
 
+						<Route path="administracao" element={<ExigirPerfil perfil="administracao" />}>
+							<Route index element={<RedirecionarInicioPerfil perfil="administracao" />} />
+							<Route path="cursos" element={pagina("administracao", "cursos", <CursosPagina />)} />
+							<Route path="design-system" element={pagina("administracao", "design-system", <DesignSystem />)} />
+						</Route>
+
 						{/* Endereços antigos */}
-						<Route path="cursos" element={<Navigate to="/coordenacao/cursos" replace />} />
+						<Route path="cursos" element={<Navigate to="/administracao/cursos" replace />} />
 						<Route path="orientadores" element={<Navigate to="/coordenacao/docentes" replace />} />
 						<Route path="dicentes" element={<Navigate to="/coordenacao/discentes" replace />} />
 						<Route path="orientacoes" element={<Navigate to="/coordenacao/orientacoes" replace />} />
