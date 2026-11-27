@@ -87,7 +87,6 @@ export function useConvitesRecebidosOrientador() {
 				convitesRecebidosController.extrairCursos(cursosOrientador);
 			setCursos(cursosExtraidos);
 		} catch (error) {
-			console.log("Erro ao buscar cursos do orientador:", error);
 			setCursos([]);
 			setMessageText(
 				error instanceof Error
@@ -141,10 +140,6 @@ export function useConvitesRecebidosOrientador() {
 
 			setConvites(convitesFiltrados);
 		} catch (error) {
-			console.log(
-				"Não foi possível retornar a lista de convites: ",
-				error,
-			);
 			setConvites([]);
 			setMessageText(
 				error instanceof Error ? error.message : "Erro ao carregar convites.",
@@ -191,7 +186,6 @@ export function useConvitesRecebidosOrientador() {
 			);
 			setMessageSeverity("success");
 		} catch (error) {
-			console.log("Não foi possível responder ao convite: ", error);
 			setMessageText(
 				error instanceof Error ? error.message : "Falha ao responder ao convite!",
 			);

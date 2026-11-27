@@ -344,14 +344,12 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }: TccStepp
 
 	const carregarConvites = async (idTcc: number) => {
 		try {
-			console.log("Carregando convites para TCC ID:", idTcc);
 			const params = new URLSearchParams();
 			params.append("id_tcc", String(idTcc));
 			const response = await axiosInstance.get<{ convites?: ConviteLocal[] }>(
 				`/convites?${params.toString()}`,
 			);
 
-			console.log("Resposta da API ao carregar convites:", response);
 
 			const convites = response.convites || [];
 
@@ -368,10 +366,6 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }: TccStepp
 			}
 			setConvitesBanca(convitesBancaArray);
 
-			console.log("Convites carregados:", {
-				conviteOrientacao,
-				convitesBancaArray,
-			});
 		} catch (error) {
 			console.error("Erro ao carregar convites:", error);
 			// Não re-throw o erro para não interromper o fluxo principal
@@ -437,22 +431,12 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }: TccStepp
 				fase: ofertaAtual.fase,
 			};
 
-			console.log("Criando novo TCC com dados:", novoTcc);
 			const tccCriado = await axiosInstance.post<TrabalhoLocal>(
 				"/trabalho-conclusao",
 				novoTcc,
 			);
 
-			console.log("Resposta da API ao criar TCC:", tccCriado);
-			console.log("Tipo da resposta:", typeof tccCriado);
-			console.log("Estrutura da resposta:", Object.keys(tccCriado ?? {}));
 
-			console.log("TCC criado extraído:", tccCriado);
-			console.log("Tipo do TCC criado:", typeof tccCriado);
-			console.log(
-				"Estrutura do TCC criado:",
-				tccCriado ? Object.keys(tccCriado) : "null",
-			);
 
 			if (!tccCriado || !tccCriado.id) {
 				console.error("Resposta inválida da API:", tccCriado);
@@ -485,7 +469,6 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }: TccStepp
 				const verificacao = await axiosInstance.get(
 					`/trabalho-conclusao/${tccCriado.id}`,
 				);
-				console.log("Verificação da criação do TCC:", verificacao);
 			} catch (verifError) {
 				console.error("Erro ao verificar TCC criado:", verifError);
 			}
@@ -858,10 +841,6 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }: TccStepp
 				`/dicentes/usuario/${usuario?.id}`,
 			);
 
-			console.log(
-				"Resposta da API do discente na importação:",
-				discente,
-			);
 
 			if (!discente || !discente.matricula) {
 				throw new Error(
@@ -869,7 +848,6 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }: TccStepp
 				);
 			}
 
-			console.log("Discente extraído na importação:", discente);
 
 			if (modalType === "next_phase") {
 				// 1.1 Projeto aprovado - pergunta sobre próxima fase
@@ -993,7 +971,6 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange }: TccStepp
 					const tccImportado: TrabalhoLocal =
 						response?.trabalho || (response as unknown as TrabalhoLocal) || dadosAtualizados;
 
-					console.log("Resposta da API ao importar TCC:", tccImportado);
 
 					if (!tccImportado || !tccImportado.id) {
 						console.error("Resposta inválida da API:", tccImportado);

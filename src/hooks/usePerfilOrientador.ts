@@ -32,10 +32,6 @@ export function usePerfilOrientador() {
 			setSiape(dadosExtraidos.siape);
 			setSala(dadosExtraidos.sala);
 		} catch (error) {
-			console.log(
-				"Não foi possível retornar os dados do docente: ",
-				error,
-			);
 			setMessageText(
 				(error instanceof Error ? error.message : undefined) ||
 					perfilOrientadorController.formatarMensagemErroCarregamento(),
@@ -79,7 +75,6 @@ export function usePerfilOrientador() {
 			setEdit(false);
 			await getData();
 		} catch (error) {
-			console.log("Não foi possível atualizar o SIAPE e Sala", error);
 			setMessageText(
 				(error instanceof Error ? error.message : undefined) ||
 					perfilOrientadorController.formatarMensagemErroAtualizacao(),

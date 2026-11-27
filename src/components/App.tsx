@@ -73,7 +73,6 @@ function ConditionalRoute() {
 	}
 
 	// Fallback para Dashboard caso não se encaixe em nenhuma regra
-	console.log("Redirecionando para Dashboard (fallback)");
 	return <Dashboard />;
 }
 

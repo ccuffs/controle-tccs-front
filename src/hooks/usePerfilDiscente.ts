@@ -37,10 +37,6 @@ export function usePerfilDiscente() {
 			setDicente(response);
 			setEmail(dadosProcessados?.email || "");
 		} catch (error) {
-			console.log(
-				"Não foi possível retornar os dados do dicente: ",
-				error,
-			);
 			setMessageText(perfilDicenteController.obterMensagemErro(error));
 			setMessageSeverity("error");
 			setOpenMessage(true);
@@ -75,7 +71,6 @@ export function usePerfilDiscente() {
 			setEdit(false);
 			await getData();
 		} catch (error) {
-			console.log("Não foi possível atualizar o email");
 			setMessageText(
 				error instanceof Error ? error.message : "Falha ao atualizar email!",
 			);

@@ -28,7 +28,6 @@ export function useCursos() {
 			const cursosData = await cursosService.getCursos();
 			setCursos(cursosData);
 		} catch (error) {
-			console.log("Não foi possível retornar a lista de cursos: ", error);
 			setCursos([]);
 		}
 	}, []);

@@ -32,7 +32,6 @@ export function useDicentes() {
 			const cursosData = await cursosService.getCursos();
 			setCursos(cursosData || []);
 		} catch (error) {
-			console.log("Não foi possível retornar a lista de cursos: ", error);
 			setCursos([]);
 		} finally {
 			setLoadingCursos(false);
@@ -45,10 +44,6 @@ export function useDicentes() {
 			const dicentesData = await dicentesService.getDicentes();
 			setDicentes(dicentesData || []);
 		} catch (error) {
-			console.log(
-				"Não foi possível retornar a lista de dicentes: ",
-				error,
-			);
 			setDicentes([]);
 		} finally {
 			setLoadingDicentes(false);

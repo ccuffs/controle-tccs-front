@@ -40,7 +40,6 @@ export function useOrientadores() {
 			const cursosData = await cursosService.getCursos();
 			setCursos(cursosData || []);
 		} catch (error) {
-			console.log("Não foi possível retornar a lista de cursos: ", error);
 			setCursos([]);
 		}
 	}, []);
@@ -50,10 +49,6 @@ export function useOrientadores() {
 			const docentesData = await docentesService.getDocentes();
 			setDocentes(docentesData || []);
 		} catch (error) {
-			console.log(
-				"Não foi possível retornar a lista de docentes: ",
-				error,
-			);
 			setDocentes([]);
 		}
 	}, []);
@@ -64,10 +59,6 @@ export function useOrientadores() {
 				await orientadoresService.getOrientadoresPorCurso(Number(idCurso));
 			setOrientadores(orientadoresData || []);
 		} catch (error) {
-			console.log(
-				"Não foi possível retornar a lista de orientadores: ",
-				error,
-			);
 			setOrientadores([]);
 		}
 	}, []);

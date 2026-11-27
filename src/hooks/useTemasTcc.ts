@@ -81,7 +81,6 @@ export function useTemasTcc(isOrientadorView = false) {
 			const cursosData = await temasTccService.getCursos();
 			setCursos(cursosData);
 		} catch (error) {
-			console.log("Não foi possível retornar a lista de cursos: ", error);
 			setCursos([]);
 		}
 	}
@@ -105,10 +104,6 @@ export function useTemasTcc(isOrientadorView = false) {
 				setCursoSelecionado(cursoUnico);
 			}
 		} catch (error) {
-			console.log(
-				"Não foi possível retornar a lista de cursos do orientador: ",
-				error,
-			);
 			setCursos([]);
 		}
 	}
@@ -121,10 +116,6 @@ export function useTemasTcc(isOrientadorView = false) {
 				);
 			setDocentesOrientadores(orientadores);
 		} catch (error) {
-			console.log(
-				"Não foi possível retornar a lista de docentes orientadores: ",
-				error,
-			);
 			setDocentesOrientadores([]);
 		}
 	}
@@ -135,10 +126,6 @@ export function useTemasTcc(isOrientadorView = false) {
 				await temasTccService.getAreasTccPorDocente(codigoDocente);
 			setAreasTcc(areas);
 		} catch (error) {
-			console.log(
-				"Não foi possível retornar a lista de áreas TCC: ",
-				error,
-			);
 			setAreasTcc([]);
 		}
 	}
@@ -149,10 +136,6 @@ export function useTemasTcc(isOrientadorView = false) {
 				await temasTccService.getTemasPorCurso(Number(cursoSelecionado));
 			setTemas(temasData);
 		} catch (error) {
-			console.log(
-				"Não foi possível retornar a lista de temas TCC: ",
-				error,
-			);
 			setTemas([]);
 		}
 	}
@@ -168,10 +151,6 @@ export function useTemasTcc(isOrientadorView = false) {
 			);
 			setTemas(temasData);
 		} catch (error) {
-			console.log(
-				"Não foi possível retornar a lista de temas TCC do orientador: ",
-				error,
-			);
 			setTemas([]);
 		}
 	}
@@ -185,10 +164,6 @@ export function useTemasTcc(isOrientadorView = false) {
 				await temasTccService.getAreasTccPorDocente(codigoDocente);
 			setAreasTcc(areas);
 		} catch (error) {
-			console.log(
-				"Não foi possível retornar a lista de áreas TCC do orientador: ",
-				error,
-			);
 			setAreasTcc([]);
 		}
 	}
@@ -240,7 +215,6 @@ export function useTemasTcc(isOrientadorView = false) {
 
 			handleCloseVagasModal();
 		} catch (error) {
-			console.log("Não foi possível atualizar as vagas da oferta", error);
 			setMessageText(
 				error instanceof Error ? error.message : "Falha ao atualizar vagas da oferta!",
 			);
@@ -320,10 +294,6 @@ export function useTemasTcc(isOrientadorView = false) {
 				await getAreasTccPorDocente(formData.codigo_docente);
 			}
 		} catch (error) {
-			console.log(
-				"Não foi possível criar a área TCC no banco de dados",
-				error,
-			);
 			setMessageText(
 				error instanceof Error ? error.message : "Falha ao criar área TCC!",
 			);
@@ -368,10 +338,6 @@ export function useTemasTcc(isOrientadorView = false) {
 				await getTemasPorCurso();
 			}
 		} catch (error) {
-			console.log(
-				"Não foi possível inserir o tema TCC no banco de dados",
-				error,
-			);
 			setMessageText(
 				error instanceof Error ? error.message : "Falha ao gravar tema TCC!",
 			);
@@ -416,10 +382,6 @@ export function useTemasTcc(isOrientadorView = false) {
 				}
 			}
 		} catch (error) {
-			console.log(
-				"Não foi possível remover o tema TCC no banco de dados",
-				error,
-			);
 			setMessageText(
 				error instanceof Error ? error.message : "Falha ao remover tema TCC!",
 			);
@@ -456,7 +418,6 @@ export function useTemasTcc(isOrientadorView = false) {
 				}
 			}
 		} catch (error) {
-			console.log("Não foi possível alterar o status do tema", error);
 			setMessageText(
 				error instanceof Error ? error.message : "Falha ao alterar status do tema!",
 			);

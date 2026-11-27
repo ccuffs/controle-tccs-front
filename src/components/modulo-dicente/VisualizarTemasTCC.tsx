@@ -72,7 +72,6 @@ export default function VisualizarTemasTCC({ onAvancarEtapa }: VisualizarTemasTC
 				setOpenMessage(true);
 			}
 		} catch (error) {
-			console.log("Não foi possível obter o curso do discente: ", error);
 			setMessageText("Erro ao carregar dados do curso!");
 			setMessageSeverity("error");
 			setOpenMessage(true);
@@ -89,10 +88,6 @@ export default function VisualizarTemasTCC({ onAvancarEtapa }: VisualizarTemasTC
 			);
 			setTemas(response || []);
 		} catch (error) {
-			console.log(
-				"Não foi possível retornar a lista de temas TCC: ",
-				error,
-			);
 			setTemas([]);
 			setMessageText("Erro ao carregar temas TCC!");
 			setMessageSeverity("error");

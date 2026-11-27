@@ -218,7 +218,6 @@ export function useOrientacao(isOrientadorView = false) {
 				setCursos(cursosList);
 			}
 		} catch (error) {
-			console.log("Não foi possível retornar a lista de cursos: ", error);
 			setCursos([]);
 		} finally {
 			setLoadingCursos(false);
@@ -231,10 +230,6 @@ export function useOrientacao(isOrientadorView = false) {
 				await orientacaoService.getOrientadoresCurso(Number(idCurso));
 			setOrientadoresCurso(orientadores);
 		} catch (error) {
-			console.log(
-				"Não foi possível retornar a lista de orientadores do curso: ",
-				error,
-			);
 			setOrientadoresCurso([]);
 		}
 	}
@@ -245,10 +240,6 @@ export function useOrientacao(isOrientadorView = false) {
 				await orientacaoService.getDocentesBancaCurso(Number(idCurso));
 			setDocentesBanca(docentes);
 		} catch (error) {
-			console.log(
-				"Não foi possível retornar a lista de docentes de banca do curso: ",
-				error,
-			);
 			setDocentesBanca([]);
 		}
 	}
@@ -259,10 +250,6 @@ export function useOrientacao(isOrientadorView = false) {
 			const ofertas = await orientacaoService.getOfertasTcc();
 			setOfertasTcc(ofertas);
 		} catch (error) {
-			console.log(
-				"Não foi possível retornar a lista de ofertas TCC: ",
-				error,
-			);
 			setOfertasTcc([]);
 		} finally {
 			setLoadingOfertasTcc(false);
@@ -330,10 +317,6 @@ export function useOrientacao(isOrientadorView = false) {
 			setDicentes(dicentesUnicos);
 			}
 		} catch (error) {
-			console.log(
-				"Não foi possível retornar a lista de dicentes: ",
-				error,
-			);
 			setDicentes([]);
 		} finally {
 			setLoadingDicentes(false);
@@ -345,10 +328,6 @@ export function useOrientacao(isOrientadorView = false) {
 			const orientacoesData = await orientacaoService.getOrientacoes({});
 			setOrientacoes(orientacoesData);
 		} catch (error) {
-			console.log(
-				"Não foi possível retornar a lista de orientações: ",
-				error,
-			);
 			setOrientacoes([]);
 		}
 	}
@@ -395,7 +374,6 @@ export function useOrientacao(isOrientadorView = false) {
 				orientacaoController.criarMapaConvitesPorTcc(resultados);
 			setConvitesPorTcc(mapaConvites as Record<number, Convite[]>);
 		} catch (error) {
-			console.log("Não foi possível carregar TCCs:", error);
 			setTrabalhosPorMatricula({});
 			setTrabalhosLista([]);
 			setConvitesPorTcc({});
@@ -410,10 +388,6 @@ export function useOrientacao(isOrientadorView = false) {
 			const areas = await orientacaoService.getAreasTcc();
 			setAreasTcc(areas);
 		} catch (error) {
-			console.log(
-				"Não foi possível retornar a lista de áreas TCC: ",
-				error,
-			);
 			setAreasTcc([]);
 		} finally {
 			setLoadingAreas(false);
@@ -540,7 +514,6 @@ export function useOrientacao(isOrientadorView = false) {
 			setMessageSeverity("success");
 			await getDicentes();
 		} catch (error) {
-			console.log("Erro ao fazer upload do PDF:", error);
 			setMessageText(
 				error instanceof Error ? error.message : "Falha ao processar PDF!",
 			);
@@ -655,7 +628,6 @@ export function useOrientacao(isOrientadorView = false) {
 						defesasFaseAtual,
 					);
 				} catch (error) {
-					console.log("Erro ao carregar defesas ou convites:", error);
 					setDefesasAtual([]);
 					setConvitesBancaAtual([]);
 					setConvitesBancaFase1([]);
@@ -675,7 +647,6 @@ export function useOrientacao(isOrientadorView = false) {
 			setSelectedHorarioBanca(null);
 			setMostrarSeletorHorario(false);
 		} catch (error) {
-			console.log("Erro ao carregar dados do TCC:", error);
 		} finally {
 			setLoadingEdit(false);
 		}
