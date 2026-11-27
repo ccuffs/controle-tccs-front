@@ -13,12 +13,18 @@ export function contemBusca(busca: string, ...valores: unknown[]): boolean {
 	return !termo || valores.some((v) => normalizar(v).includes(termo));
 }
 
-/** Filtro e paginação no cliente; volta para a página 1 quando o filtro muda. */
-export function useListaLocal<T>(itens: T[], filtro: (item: T) => boolean, chaveFiltro: unknown, porPagina = 10) {
+/**
+ * Filtro e paginação no cliente; volta para a página 1 quando o filtro muda.
+ * `dependencias` são os valores dos quais o filtro depende, comparados item a item
+ * (como as dependências de um hook) — a lista deve ter sempre o mesmo tamanho.
+ */
+export function useListaLocal<T>(itens: T[], filtro: (item: T) => boolean, dependencias: readonly unknown[], porPagina = 10) {
 	const [pagina, setPagina] = useState(1);
-	const filtrados = useMemo(() => itens.filter(filtro), [itens, chaveFiltro]); // eslint-disable-line react-hooks/exhaustive-deps
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	const filtrados = useMemo(() => itens.filter(filtro), [itens, ...dependencias]);
 
-	useEffect(() => setPagina(1), [chaveFiltro]);
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	useEffect(() => setPagina(1), dependencias);
 
 	const totalPaginas = Math.max(1, Math.ceil(filtrados.length / porPagina));
 	const paginaAtual = Math.min(pagina, totalPaginas);
