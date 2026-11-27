@@ -192,7 +192,7 @@
 .docente-opcao{display:flex;align-items:center;gap:10px;padding:9px 12px;border-top:1px solid var(--border);cursor:pointer}.docente-opcao:first-child{border-top:0}
 .docente-opcao.selected{background:var(--teal-50)}.dark .docente-opcao.selected{background:#193537}.docente-opcao.disabled{opacity:.5;cursor:default}
 .docente-opcao>span{display:flex;flex-direction:column;flex:1;min-width:0}.docente-opcao strong{font-size:11px}.docente-opcao small{font-size:9px;color:var(--muted)}
-.docente-opcao input{accent-color:var(--teal-600);width:16px;height:16px;flex:none}
+.docente-opcao input{accent-color:var(--teal-600);width:15px;height:15px;flex:none}
 .docente-lista-vazia{padding:16px;font-size:11px;color:var(--muted);text-align:center}
 .readonly-box>.material-symbols-rounded{flex:none}
 /* Agendamento da defesa do discente (etapas 5 e 8): horários em comum por data e defesa agendada. */
