@@ -30,7 +30,7 @@ export default function Inicio() {
 	const notificar = useNotice();
 	const { usuario } = useAuth();
 	const { selecionado } = usePeriodo();
-	const { codigo } = useDocenteAtual();
+	const { docente, codigo } = useDocenteAtual();
 
 	const [orientandos, setOrientandos] = useState<ItemAcompanhamento[]>([]);
 	const [convites, setConvites] = useState<Convite[]>([]);
@@ -272,6 +272,7 @@ export default function Inicio() {
 				open={Boolean(agendar)}
 				defesa={agendar?.defesa ?? null}
 				trabalhos={orientandos}
+				orientadorFixo={codigo ? { codigo, nome: docente?.nome ?? undefined } : undefined}
 				onClose={() => setAgendar(null)}
 				onSalvo={() => {
 					setAgendar(null);
