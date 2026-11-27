@@ -39,15 +39,19 @@ export default function MeuTcc() {
 	const fase = contexto?.fase ?? 1;
 	const passos = PASSOS[fase] ?? PASSOS[1] ?? [];
 	const etapaSalva = contexto?.etapaSalva ?? etapaAtual;
+	// O TCC II começa no seminário (etapa 6): etapas gravadas abaixo disso (projeto ainda não aprovado) caem nele.
+	const etapaVista = fase === 2 ? Math.max(etapaAtual, 6) : etapaAtual;
 	const indiceAtivo = (() => {
 		const i = passos.findIndex((p) =>
-			p.etapas.includes(etapaAtual) && (p.etapas[0] !== 0 || Boolean(p.aguardandoAceite) === Boolean(contexto?.convitePendente)),
+			p.etapas.includes(etapaVista) && (p.etapas[0] !== 0 || Boolean(p.aguardandoAceite) === Boolean(contexto?.convitePendente)),
 		);
-		return i >= 0 ? i : passos.findIndex((p) => p.etapas.includes(etapaAtual));
+		return i >= 0 ? i : passos.findIndex((p) => p.etapas.includes(etapaVista));
 	})();
 	const passoAtivo = indiceAtivo >= 0 ? passos[indiceAtivo] : undefined;
 	const liberado = (p: Passo) => p.etapa <= Math.max(etapaSalva, etapaAtual);
-	const progresso = progressoEtapa(fase, etapaSalva, contexto?.aprovado ?? false);
+	// TCC concluído em período anterior ou TCC antigo aguardando escolha: sem passos nem cabeçalho de etapa.
+	const semJornada = Boolean(contexto && contexto.situacao !== "jornada");
+	const progresso = contexto?.situacao === "concluido" ? 100 : progressoEtapa(fase, etapaSalva, contexto?.aprovado ?? false);
 
 	return (
 		<>
@@ -70,35 +74,38 @@ export default function MeuTcc() {
 					</div>
 				</div>
 			</Surface>
-			<div className="journey-layout">
-				<Surface component="aside" className="card journey-steps">
-					{passos.map((p, i) => {
-						const estado = i < indiceAtivo ? "done" : i === indiceAtivo ? "active" : liberado(p) ? "" : "locked";
-						return (
-							<PlainButton
-								key={p.rotulo}
-								className={estado}
-								onClick={() => liberado(p) && setEtapaAtual(p.etapa)}
-								disabled={!liberado(p)}
-								aria-current={i === indiceAtivo ? "step" : undefined}
-							>
-								<span>{i < indiceAtivo ? <Icon name="check" size={16} /> : i + 1}</span>
-								<div>
-									<small>ETAPA {i + 1}</small>
-									<strong>{p.rotulo}</strong>
-									{estado === "locked" && (
-										<em>
-											<Icon name="lock" size={13} />
-											Conclua a etapa anterior
-										</em>
-									)}
-								</div>
-							</PlainButton>
-						);
-					})}
-				</Surface>
+			<div className={`journey-layout ${semJornada ? "sem-passos" : ""}`}>
+				{/* O conteúdo mantém a mesma posição na árvore com ou sem a lista de passos (o stepper não é remontado). */}
+				{!semJornada && (
+					<Surface component="aside" className="card journey-steps">
+						{passos.map((p, i) => {
+							const estado = i < indiceAtivo ? "done" : i === indiceAtivo ? "active" : liberado(p) ? "" : "locked";
+							return (
+								<PlainButton
+									key={p.rotulo}
+									className={estado}
+									onClick={() => liberado(p) && setEtapaAtual(p.etapa)}
+									disabled={!liberado(p)}
+									aria-current={i === indiceAtivo ? "step" : undefined}
+								>
+									<span>{i < indiceAtivo ? <Icon name="check" size={16} /> : i + 1}</span>
+									<div>
+										<small>ETAPA {i + 1}</small>
+										<strong>{p.rotulo}</strong>
+										{estado === "locked" && (
+											<em>
+												<Icon name="lock" size={13} />
+												Conclua a etapa anterior
+											</em>
+										)}
+									</div>
+								</PlainButton>
+							);
+						})}
+					</Surface>
+				)}
 				<Surface component="section" className="card journey-content">
-					{passoAtivo && (
+					{passoAtivo && !semJornada && (
 						<>
 							<span className="eyebrow">
 								ETAPA {indiceAtivo + 1} DE {passos.length}
@@ -110,7 +117,7 @@ export default function MeuTcc() {
 					{loading ? (
 						<p>Carregando…</p>
 					) : (
-						<TccStepper etapaInicial={etapaAtual} onEtapaChange={setEtapaAtual} modoJornada onContexto={setContexto} />
+						<TccStepper etapaInicial={etapaAtual} onEtapaChange={setEtapaAtual} onContexto={setContexto} />
 					)}
 				</Surface>
 			</div>

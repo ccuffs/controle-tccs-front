@@ -207,3 +207,12 @@
 .defesa-agendada>div:nth-child(2)>strong{font-size:13px}.defesa-agendada>div:nth-child(2)>span{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px}
 .defesa-agendada>.chip{position:static}
 .banca-membros:not(.status-card){margin-top:18px}
+.journey-layout.sem-passos{grid-template-columns:1fr}
+/* Telas sem jornada (TCC concluído, TCC anterior) e resultado da defesa. */
+.tcc-concluido{display:flex;flex-direction:column;align-items:flex-start;gap:6px;max-width:640px}.tcc-concluido>h2{font-size:24px;margin-top:6px}.tcc-concluido>p{color:var(--muted)}.tcc-concluido>.chip{margin-top:0}
+.tcc-concluido .orientation-content-preview{width:100%}.tcc-concluido .jornada-acoes{width:100%}
+.journey-icon:not(.waiting){background:var(--teal-50);color:var(--teal-600)}.dark .journey-icon:not(.waiting){background:#193537}
+.journey-icon.concluido{background:var(--success-bg);color:var(--success)}
+.resultado-defesa{margin-top:14px}.resultado-defesa span{font-size:10px;color:var(--muted)}.resultado-defesa strong{font-size:22px}
+.resultado-defesa .success-text strong{color:var(--success)}.resultado-defesa .danger-text strong{color:var(--danger)}
+@media(max-width:520px){.resultado-defesa strong{font-size:16px}.resultado-defesa span{font-size:9px}}

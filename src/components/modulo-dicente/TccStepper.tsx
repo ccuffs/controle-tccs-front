@@ -1,33 +1,15 @@
 import { useEffect, useState } from "react";
-import {
-	Box,
-	Stepper,
-	Step,
-	StepLabel,
-	Button,
-	Typography,
-	Paper,
-	Alert,
-	CircularProgress,
-	LinearProgress,
-	Dialog,
-	DialogTitle,
-	DialogContent,
-	DialogActions,
-	DialogContentText,
-	Chip,
-} from "@mui/material";
-import { formatarDataDefesaUTC, formatarData, formatarHora } from "../../controllers/disponibilidade-banca-controller";
-import type { Convite } from "../../types/convite";
 import ConviteOrientadorModal from "./ConviteOrientadorModal";
 import ConviteBancaModal from "./ConviteBancaModal";
-import { Button as BotaoDesign, useNotice } from "../ui";
+import { Button as BotaoDesign, EmptyState, useNotice } from "../ui";
 import EtapaTemaTituloResumo from "../discente/etapas/EtapaTemaTituloResumo";
 import EtapaEscolherOrientador from "../discente/etapas/EtapaEscolherOrientador";
 import EtapaConviteBanca from "../discente/etapas/EtapaConviteBanca";
 import EtapaAgendarDefesa from "../discente/etapas/EtapaAgendarDefesa";
 import EtapaSeminario from "../discente/etapas/EtapaSeminario";
-import { useJornadaTcc, steps, type ConviteLocal } from "./useJornadaTcc";
+import EtapaDefesaResultado from "../discente/etapas/EtapaDefesaResultado";
+import { TccAnterior, TccConcluido } from "../discente/etapas/TccAnterior";
+import { useJornadaTcc } from "./useJornadaTcc";
 import type { ContextoTcc } from "./useJornadaTcc";
 
 export type { ContextoTcc };
@@ -35,14 +17,15 @@ export type { ContextoTcc };
 interface TccStepperProps {
 	etapaInicial?: number;
 	onEtapaChange?: (etapa: number) => void;
-	/** Novo design: esconde título, cartão da oferta e o indicador de etapas (a tela "Meu TCC" os exibe). */
-	modoJornada?: boolean;
 	onContexto?: (contexto: ContextoTcc) => void;
 }
 
-export default function TccStepper({ etapaInicial = 0, onEtapaChange, modoJornada = false, onContexto }: TccStepperProps) {
+/**
+ * Conteúdo da jornada do discente (tela "Meu TCC"): cada etapa do stepper é um componente em
+ * components/discente/etapas; as regras ficam em useJornadaTcc. A página exibe oferta, passos e cabeçalho.
+ */
+export default function TccStepper({ etapaInicial = 0, onEtapaChange, onContexto }: TccStepperProps) {
 	const {
-		theme,
 		activeStep,
 		setActiveStep,
 		loading,
@@ -69,7 +52,6 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange, modoJornad
 		defesasFase1,
 		defesasFase2,
 		temDefesaAgendada,
-		obterDadosDefesaAgendada,
 		getEtapasValidas,
 		validarEtapaAtual,
 		handleNext,
@@ -88,6 +70,7 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange, modoJornad
 		handleCloseMessage,
 		salvarTemaTituloResumo,
 		salvarRascunho,
+		reabrirImportacao,
 	} = useJornadaTcc({ etapaInicial, onEtapaChange, onContexto });
 
 	// Docente escolhido no catálogo da etapa 0 (pré-seleciona o diálogo de convite).
@@ -161,130 +144,8 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange, modoJornad
 				// Etapa 6: Selecionar horário da banca do Projeto (Fase 1)
 				if (!trabalhoConclusao) return null;
 				if (trabalhoConclusao.fase === 1) return renderAgendarDefesa(1);
-				// Fase 2: nesta etapa, exibir DADOS DA FASE 1 (banca do projeto)
-				// Preferir o horário selecionado localmente da fase 1; se não houver, usar o registro de defesa agendada da fase 1
-				let dataStr: string | null = null;
-				let horaStr: string | null = null;
-				if (
-					selectedHorarioBancaFase1 &&
-					selectedHorarioBancaFase1.data &&
-					selectedHorarioBancaFase1.hora
-				) {
-					// Slot selecionado localmente: data é "YYYY-MM-DD" (string pura).
-					// NÃO usar new Date() pois ele interpreta como meia-noite UTC e
-					// toLocaleDateString() aplica o offset do fuso, podendo mostrar
-					// o dia anterior para usuários em UTC-3.
-					dataStr = formatarData(selectedHorarioBancaFase1.data);
-					horaStr = formatarHora(selectedHorarioBancaFase1.hora);
-				} else {
-					const defesaAgendada =
-						defesasFase1 && defesasFase1.length > 0
-							? defesasFase1.find((d) => !!d.data_defesa) ||
-								defesasFase1[0]
-							: null;
-					// data_defesa vem do banco como "wall-clock UTC":
-					// 17:00 armazenado = 17:00 para exibir.
-					// formatarDataDefesaUTC usa getters UTC para evitar que
-					// toLocaleTimeString subtraia o offset e mostre 14:00.
-					if (defesaAgendada && defesaAgendada.data_defesa) {
-						const formatted = formatarDataDefesaUTC(defesaAgendada.data_defesa);
-						dataStr = formatted.dataStr;
-						horaStr = formatted.horaStr;
-					}
-				}
-
-				// Notas da banca de FASE 1
-				const notasBanca = defesasFase1 || [];
-
-				// Verificar se o projeto foi aprovado para mostrar status
-				const projetoAprovado = trabalhoConclusao.aprovado_projeto;
-
-				return (
-					<Box sx={{ mt: 2 }}>
-						<Typography variant="h6" gutterBottom>
-							Etapa 6: Resumo da Banca do Projeto (Fase 1)
-						</Typography>
-
-						{/* Status de aprovação do projeto */}
-						{projetoAprovado ? (
-							<Alert severity="success" sx={{ mb: 2 }}>
-								<Typography variant="body2">
-									🎉 <strong>Parabéns!</strong> Seu projeto de
-									TCC foi aprovado pela banca de avaliação!
-								</Typography>
-							</Alert>
-						) : (
-							<Alert severity="warning" sx={{ mb: 2 }}>
-								<Typography variant="body2">
-									⚠️ <strong>Atenção:</strong> Seu projeto de
-									TCC ainda não foi aprovado pela banca de
-									avaliação. Você só poderá prosseguir para a
-									próxima etapa após a aprovação.
-								</Typography>
-							</Alert>
-						)}
-						<Paper sx={{ p: 3 }}>
-							<Typography variant="subtitle1" gutterBottom>
-								Horário Selecionado
-							</Typography>
-							{dataStr && horaStr ? (
-								<Alert severity="success" sx={{ mb: 2 }}>
-									<Typography variant="body2">
-										Defesa agendada para{" "}
-										<strong>{dataStr}</strong> às{" "}
-										<strong>{horaStr}</strong>.
-									</Typography>
-								</Alert>
-							) : (
-								<Alert severity="warning" sx={{ mb: 2 }}>
-									<Typography variant="body2">
-										Nenhum horário de fase 1 encontrado.
-									</Typography>
-								</Alert>
-							)}
-
-							<Typography variant="subtitle1" gutterBottom>
-								Notas da Banca
-							</Typography>
-							{notasBanca.length > 0 ? (
-								<Box>
-									{notasBanca.map((d, idx) => (
-										<Alert
-											key={idx}
-											severity={
-												d.avaliacao != null
-													? "info"
-													: "warning"
-											}
-											sx={{ mb: 1 }}
-										>
-											<Typography variant="body2">
-												<strong>Docente:</strong>{" "}
-												{d.membroBanca?.nome ||
-													d.membro_banca}
-											</Typography>
-											<Typography variant="body2">
-												<strong>Nota:</strong>{" "}
-												{d.avaliacao != null
-													? Number(
-															d.avaliacao,
-														).toFixed(1)
-													: "Sem Nota"}
-											</Typography>
-										</Alert>
-									))}
-								</Box>
-							) : (
-								<Alert severity="info">
-									<Typography variant="body2">
-										Ainda não há registros de notas para a
-										banca.
-									</Typography>
-								</Alert>
-							)}
-						</Paper>
-					</Box>
-				);
+				// TCC II: resultado da defesa do projeto (fase 1).
+				return <EtapaDefesaResultado fase={1} defesas={defesasFase1} aprovado={Boolean(trabalhoConclusao.aprovado_projeto)} />;
 			}
 			case 6:
 				// Seminário de andamento: só existe no TCC II.
@@ -310,923 +171,195 @@ export default function TccStepper({ etapaInicial = 0, onEtapaChange, modoJornad
 			case 8:
 				return trabalhoConclusao?.fase === 2 ? renderAgendarDefesa(2) : null;
 			default:
-				return "Etapa desconhecida";
+				return null;
 		}
 	};
 
 	if (loading) {
-		return (
-			<Box sx={{ width: "100%" }}>
-				<LinearProgress />
-				<Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
-					<CircularProgress />
-				</Box>
-			</Box>
-		);
+		return <EmptyState icon="hourglass_top" title="Carregando seu TCC…" text="Buscando oferta, convites e defesas." />;
 	}
 
-	// Exibir mensagem de TCC concluído
+	// TCC aprovado em período anterior: não há jornada a percorrer.
 	if (showCompletedMessage && tccAnterior) {
+		return <TccConcluido tcc={tccAnterior} />;
+	}
+
+	// TCC de período anterior aguardando a escolha (continuar no TCC II ou importar dados).
+	if (!trabalhoConclusao) {
+		if (tccAnterior && (modalType === "next_phase" || modalType === "import")) {
+			return (
+				<TccAnterior
+					tipo={modalType}
+					tcc={tccAnterior}
+					ofertaAtual={ofertaAtual}
+					aberto={openImportModal}
+					onAbrir={reabrirImportacao}
+					onFechar={handleImportModalClose}
+					onEscolher={(importar) => void handleImportData(importar)}
+				/>
+			);
+		}
 		return (
-			<Box sx={{ width: "100%" }}>
-				<Typography variant="h5" component="h2" gutterBottom>
-					TCC Concluído
-				</Typography>
+			<EmptyState
+				icon="error"
+				title="Não foi possível carregar seu TCC"
+				text="Verifique se há uma oferta de TCC aberta para o seu curso e recarregue a página. Se o problema continuar, procure a coordenação."
+			/>
+		);
+	}
 
-				<Paper sx={{ p: 3, textAlign: "center" }}>
-					<Alert severity="success" sx={{ mb: 3 }}>
-						<Typography variant="h6" gutterBottom>
-							🎉 Parabéns! Seu TCC foi concluído com sucesso!
-						</Typography>
-						<Typography variant="body1">
-							Você já concluiu seu Trabalho de Conclusão de Curso
-							no período de {tccAnterior.ano}/
-							{tccAnterior.semestre}.
-						</Typography>
-					</Alert>
+	const fase = trabalhoConclusao.fase === 2 ? 2 : 1;
+	const totalEtapas = getEtapasValidas().length;
+	// TCC II sem projeto aprovado: só o seminário (rascunho) fica disponível, qualquer que seja a etapa gravada.
+	const aguardandoAprovacao = fase === 2 && !trabalhoConclusao.aprovado_projeto;
+	const noFim = activeStep >= totalEtapas || aguardandoAprovacao;
 
-					<Paper sx={{ p: 2, bgcolor: "grey.50", mb: 3 }}>
-						<Typography variant="subtitle1" gutterBottom>
-							Dados do seu TCC:
-						</Typography>
+	// Conteúdo depois da última etapa válida: resultado da defesa ou, no TCC II sem projeto aprovado, o seminário.
+	const conteudoFinal = () => {
+		if (aguardandoAprovacao) {
+			return (
+				<EtapaSeminario
+					texto={formData.seminario_andamento ?? ""}
+					onChange={(valor) => handleInputChange("seminario_andamento", valor)}
+					projetoAprovado={false}
+				/>
+			);
+		}
+		return (
+			<EtapaDefesaResultado
+				fase={fase}
+				defesas={fase === 2 ? defesasFase2 : defesasFase1}
+				aprovado={Boolean(fase === 2 ? trabalhoConclusao.aprovado_tcc : trabalhoConclusao.aprovado_projeto)}
+			/>
+		);
+	};
 
-						<Box
-							sx={{
-								display: "flex",
-								justifyContent: "center",
-								gap: 1,
-								mb: 2,
-							}}
+	const acoes = () => {
+		const voltar = (
+			<BotaoDesign
+				variant="secondary"
+				onClick={() => {
+					if (activeStep >= 1 && activeStep <= 3) {
+						// Tema, título e resumo é uma tela só: voltar leva à etapa anterior a ela.
+						setActiveStep(0);
+						if (onEtapaChange) onEtapaChange(0);
+					} else handleBack();
+				}}
+				// Primeiro passo de cada fase: etapa 0 (TCC I) ou seminário, etapa 6 (TCC II).
+				disabled={activeStep === 0 || (fase === 2 && activeStep === 6) || saving}
+			>
+				Voltar
+			</BotaoDesign>
+		);
+
+		// Fim da fase: sem avanço. No TCC II sem projeto aprovado, só é possível salvar o seminário.
+		if (noFim) {
+			if (aguardandoAprovacao) {
+				return (
+					<div className="jornada-acoes">
+						<span />
+						<BotaoDesign variant="secondary" icon="save" onClick={() => void salvarRascunho()} disabled={saving}>
+							Salvar
+						</BotaoDesign>
+					</div>
+				);
+			}
+			return (
+				<div className="jornada-acoes">
+					{voltar}
+					<span />
+				</div>
+			);
+		}
+
+		if (activeStep >= 1 && activeStep <= 3) {
+			return (
+				<div className="jornada-acoes">
+					{voltar}
+					<div style={{ display: "flex", gap: 8 }}>
+						<BotaoDesign variant="secondary" icon="save" onClick={() => void salvarTemaTituloResumo(false)} disabled={saving}>
+							Salvar
+						</BotaoDesign>
+						<BotaoDesign
+							onClick={() => void salvarTemaTituloResumo(true)}
+							disabled={saving || ![formData.tema, formData.titulo, formData.resumo].every((v) => v && v.trim())}
 						>
-							<Chip label="TCC Aprovado" color="success" />
-							<Chip
-								label={`${tccAnterior.ano}/${tccAnterior.semestre}`}
-								color="info"
-							/>
-							<Chip
-								label={`Fase ${tccAnterior.fase}`}
-								color="primary"
-							/>
-						</Box>
+							{saving ? "Salvando…" : "Continuar"}
+						</BotaoDesign>
+					</div>
+				</div>
+			);
+		}
 
-						{tccAnterior.titulo && (
-							<Box sx={{ mb: 2 }}>
-								<Typography
-									variant="body2"
-									color="text.secondary"
-								>
-									Título:
-								</Typography>
-								<Typography variant="body1" fontWeight="medium">
-									{tccAnterior.titulo}
-								</Typography>
-							</Box>
-						)}
-
-						{tccAnterior.tema && (
-							<Box sx={{ mb: 2 }}>
-								<Typography
-									variant="body2"
-									color="text.secondary"
-								>
-									Tema:
-								</Typography>
-								<Typography variant="body2">
-									{tccAnterior.tema}
-								</Typography>
-							</Box>
-						)}
-					</Paper>
-
-					<Typography variant="body2" color="text.secondary">
-						Como você já concluiu seu TCC, não é necessário realizar
-						novamente o processo. Entre em contato com a coordenação
-						caso tenha dúvidas.
-					</Typography>
-				</Paper>
-
-			</Box>
+		const finalizar = activeStep === totalEtapas - 1 && (fase !== 2 || Boolean(trabalhoConclusao.aprovado_projeto));
+		// Etapa de horário ainda sem defesa: o botão final é o que agenda (POST /defesas/agendar).
+		const agendar = finalizar && activeStep === (fase === 2 ? 8 : 5) && !temDefesaAgendada(fase);
+		const avancar = (
+			<BotaoDesign
+				onClick={handleNext}
+				disabled={saving || !validarEtapaAtual()}
+				icon={agendar ? "event_available" : finalizar ? "check" : undefined}
+			>
+				{saving ? "Salvando…" : agendar ? "Agendar defesa" : finalizar ? "Finalizar" : "Continuar"}
+			</BotaoDesign>
 		);
-	}
-
-	if (!trabalhoConclusao && activeStep === 0) {
 		return (
-			<Box sx={{ width: "100%" }}>
-				{!modoJornada && (
-					<Typography variant="h5" component="h2" gutterBottom>
-						Processo do TCC
-					</Typography>
+			<div className="jornada-acoes">
+				{voltar}
+				{activeStep === 6 && fase === 2 ? (
+					// Seminário de andamento (TCC II): pode ser salvo como rascunho antes de continuar.
+					<div style={{ display: "flex", gap: 8 }}>
+						<BotaoDesign variant="secondary" icon="save" onClick={() => void salvarRascunho()} disabled={saving}>
+							Salvar
+						</BotaoDesign>
+						{avancar}
+					</div>
+				) : (
+					avancar
 				)}
-
-				<Paper sx={{ p: 3, mb: 3 }}>
-					<Stepper activeStep={activeStep} sx={{ mb: 4, display: modoJornada ? "none" : undefined }}>
-						{steps.map((label) => {
-							return (
-								<Step key={label}>
-									<StepLabel>
-										{label}
-									</StepLabel>
-								</Step>
-							);
-						})}
-					</Stepper>
-
-					<Box>
-						{renderStepContent(activeStep)}
-
-						<div className="jornada-acoes">
-							<span />
-							<BotaoDesign
-								onClick={() => {
-									const novaEtapa = activeStep + 1;
-									setActiveStep(novaEtapa);
-									if (onEtapaChange) {
-										onEtapaChange(novaEtapa);
-									}
-								}}
-							>
-								Continuar
-							</BotaoDesign>
-						</div>
-					</Box>
-				</Paper>
-			</Box>
+			</div>
 		);
-	}
+	};
 
 	return (
-		<Box sx={{ width: "100%" }}>
-			{!modoJornada && (
-				<Typography variant="h5" component="h2" gutterBottom>
-					Processo do TCC
-				</Typography>
-			)}
+		<>
+			{noFim ? conteudoFinal() : renderStepContent(activeStep)}
+			{/* Navegação da jornada: abaixo do conteúdo; no celular, fixa acima da navegação inferior. */}
+			{acoes()}
 
-		{ofertaAtual && !modoJornada && (
-			<Paper
-				sx={{
-					p: 2,
-					mb: 2,
-					bgcolor: "primary.light",
-					color: "primary.contrastText",
-				}}
-			>
-				<Typography variant="h6" gutterBottom>
-					Oferta TCC Atual
-				</Typography>
-				<Typography variant="body2">
-					Ano: {trabalhoConclusao?.ano || ofertaAtual.ano} •
-					Semestre:{" "}
-					{trabalhoConclusao?.semestre || ofertaAtual.semestre} •
-					Curso: {ofertaAtual.curso?.nome} • Fase:{" "}
-					{trabalhoConclusao?.fase || ofertaAtual.fase}
-				</Typography>
-			</Paper>
-		)}
-
-			<Paper
-				elevation={modoJornada ? 0 : 1}
-				sx={
-					modoJornada
-						? { p: 0, mb: 0, backgroundColor: "transparent", backgroundImage: "none" }
-						: { p: 3, mb: 3, backgroundColor: theme.palette.background.default }
-				}
-			>
-				<Stepper activeStep={activeStep} sx={{ mb: 4, display: modoJornada ? "none" : undefined }}>
-					{getEtapasValidas().map((label, index) => {
-						// Verificar se a etapa está completa
-						const isStepComplete = (() => {
-							switch (index) {
-								case 0:
-									return true; // Etapa 0 sempre completa (visualização)
-								case 1:
-									return Boolean(
-										formData.tema &&
-										formData.tema.trim().length > 0,
-									);
-								case 2:
-									return Boolean(
-										formData.titulo &&
-										formData.titulo.trim().length > 0,
-									);
-								case 3:
-									return Boolean(
-										formData.resumo &&
-										formData.resumo.trim().length > 0,
-									);
-								case 4: {
-									// Etapa 4 (convite para banca do projeto - fase 1) - precisa de 2 convites aceitos
-									const convitesAceitosBancaFase1 =
-										convitesBanca.filter(
-											(convite) =>
-												convite.aceito === true &&
-												convite.fase === 1,
-										);
-									return (
-										convitesAceitosBancaFase1.length >= 2
-									);
-								}
-								case 5:
-									// Etapa 6: Fase 1 requer horário selecionado; Fase 2 requer seminário preenchido
-									if (trabalhoConclusao?.fase === 1) {
-										return Boolean(
-											selectedHorarioBancaFase1 &&
-											selectedHorarioBancaFase1.data &&
-											selectedHorarioBancaFase1.hora,
-										);
-									}
-									if (trabalhoConclusao?.fase === 2) {
-										// Para fase 2, verificar se o projeto foi aprovado
-										if (
-											!trabalhoConclusao.aprovado_projeto
-										) {
-											return false; // Não pode completar se o projeto não foi aprovado
-										}
-										return Boolean(
-											formData.seminario_andamento &&
-											formData.seminario_andamento.trim()
-												.length > 0,
-										);
-									}
-									return true;
-								case 6:
-									// Etapa 6 (convite para banca final - fase 2) - só existe na fase 2
-									if (
-										trabalhoConclusao &&
-										trabalhoConclusao.fase === 2
-									) {
-										const convitesAceitosBancaFase2 =
-											convitesBanca.filter(
-												(convite) =>
-													convite.aceito === true &&
-													convite.fase === 2,
-											);
-										return (
-											convitesAceitosBancaFase2.length >=
-											2
-										);
-									}
-									return true; // Para fase 1, não existe
-								case 7:
-									// Etapa 8 (fase 2): requer horário selecionado
-									return Boolean(
-										selectedHorarioBancaFase2 &&
-										selectedHorarioBancaFase2.data &&
-										selectedHorarioBancaFase2.hora,
-									);
-								default:
-									return false;
-							}
-						})();
-
-						return (
-							<Step key={label}>
-								<StepLabel
-									error={
-										activeStep === index && !isStepComplete
-									}
-								>
-									{label}
-								</StepLabel>
-							</Step>
-						);
-					})}
-				</Stepper>
-
-				{activeStep === getEtapasValidas().length ? (
-					<Box>
-						{/* Só mostrar a tela de conclusão se o projeto estiver aprovado na fase 2 */}
-						{trabalhoConclusao?.fase === 2 &&
-						trabalhoConclusao?.aprovado_projeto ? (
-							<>
-								<Typography variant="h6" sx={{ mt: 1, mb: 2 }}>
-									Banca Final Agendada
-								</Typography>
-								<Paper sx={{ p: 3, mb: 2 }}>
-									{(() => {
-										// Mostrar data/hora da defesa final
-										let dataStr: string | null = null;
-										let horaStr: string | null = null;
-										if (
-											selectedHorarioBancaFase2 &&
-											selectedHorarioBancaFase2.data &&
-											selectedHorarioBancaFase2.hora
-										) {
-											// Slot selecionado localmente: data é "YYYY-MM-DD" (string pura).
-											// NÃO usar new Date() pois ele interpreta como meia-noite UTC e
-											// toLocaleDateString() aplica o offset do fuso, podendo mostrar
-											// o dia anterior para usuários em UTC-3.
-											dataStr = formatarData(selectedHorarioBancaFase2.data);
-											horaStr = formatarHora(selectedHorarioBancaFase2.hora);
-										} else {
-											const defesaAgendada =
-												defesasFase2 &&
-												defesasFase2.length > 0
-													? defesasFase2.find(
-															(d) =>
-																!!d.data_defesa,
-														) || defesasFase2[0]
-													: null;
-											// data_defesa vem do banco como "wall-clock UTC":
-											// 17:00 armazenado = 17:00 para exibir.
-											// formatarDataDefesaUTC usa getters UTC para evitar que
-											// toLocaleTimeString subtraia o offset e mostre 14:00.
-											if (defesaAgendada && defesaAgendada.data_defesa) {
-												const formatted = formatarDataDefesaUTC(defesaAgendada.data_defesa);
-												dataStr = formatted.dataStr;
-												horaStr = formatted.horaStr;
-											}
-										}
-
-										return (
-											<>
-												<Typography
-													variant="subtitle1"
-													gutterBottom
-												>
-													Horário Selecionado
-												</Typography>
-												{dataStr && horaStr ? (
-													<Alert
-														severity="success"
-														sx={{ mb: 2 }}
-													>
-														<Typography variant="body2">
-															Defesa agendada para{" "}
-															<strong>
-																{dataStr}
-															</strong>{" "}
-															às{" "}
-															<strong>
-																{horaStr}
-															</strong>
-															.
-														</Typography>
-													</Alert>
-												) : (
-													<Alert
-														severity="warning"
-														sx={{ mb: 2 }}
-													>
-														<Typography variant="body2">
-															Nenhum horário
-															encontrado.
-														</Typography>
-													</Alert>
-												)}
-
-												<Typography
-													variant="subtitle1"
-													gutterBottom
-												>
-													Notas da Banca
-												</Typography>
-												{(defesasFase2 || []).length >
-												0 ? (
-													<Box>
-														{(
-															defesasFase2 || []
-														).map((d, idx) => (
-															<Alert
-																key={idx}
-																severity={
-																	d.avaliacao !=
-																	null
-																		? "info"
-																		: "warning"
-																}
-																sx={{ mb: 1 }}
-															>
-																<Typography variant="body2">
-																	<strong>
-																		Docente:
-																	</strong>{" "}
-																	{d
-																		.membroBanca
-																		?.nome ||
-																		d.membro_banca}
-																</Typography>
-																<Typography variant="body2">
-																	<strong>
-																		Nota:
-																	</strong>{" "}
-																	{d.avaliacao !=
-																	null
-																		? Number(
-																				d.avaliacao,
-																			).toFixed(
-																				1,
-																			)
-																		: "Sem Nota"}
-																</Typography>
-															</Alert>
-														))}
-													</Box>
-												) : (
-													<Alert severity="info">
-														<Typography variant="body2">
-															Ainda não há
-															registros de notas
-															para a banca final.
-														</Typography>
-													</Alert>
-												)}
-											</>
-										);
-									})()}
-								</Paper>
-								<Button onClick={() => setActiveStep(0)}>
-									Reiniciar
-								</Button>
-							</>
-						) : (
-							<>
-								{trabalhoConclusao?.fase === 2 &&
-								!trabalhoConclusao?.aprovado_projeto ? (
-									<>
-										<Typography
-											variant="h6"
-											sx={{ mt: 1, mb: 2 }}
-										>
-											Aguardando Aprovação do Projeto
-										</Typography>
-										<Paper sx={{ p: 3, mb: 2 }}>
-											<Alert
-												severity="warning"
-												sx={{ mb: 2 }}
-											>
-												<Typography variant="body2">
-													<strong>Status:</strong> Seu
-													projeto de TCC ainda não foi
-													aprovado pela banca de
-													avaliação.
-												</Typography>
-											</Alert>
-											<Typography
-												variant="body2"
-												sx={{ mb: 2 }}
-											>
-												Você completou todas as etapas
-												disponíveis até o momento. Para
-												continuar com o processo do TCC,
-												é necessário aguardar a
-												aprovação do seu projeto pela
-												banca de avaliação.
-											</Typography>
-											<Typography
-												variant="body2"
-												color="text.secondary"
-											>
-												Após a aprovação, novas etapas
-												serão disponibilizadas para
-												você.
-											</Typography>
-										</Paper>
-									</>
-								) : (
-									<>
-										<Typography variant="h6" sx={{ mt: 1, mb: 2 }}>
-											Todas as etapas foram concluídas!
-										</Typography>
-										<Alert severity="success" sx={{ mb: 2 }}>
-											<Typography variant="body2">
-												Parabéns! Você concluiu todas as etapas do TCC I. Aguarde a realização da banca de avaliação do projeto.
-											</Typography>
-										</Alert>
-
-										{/* Agenda e composição da banca do projeto (fase 1) */}
-										{(() => {
-											const dadosDefesa = obterDadosDefesaAgendada(1);
-											return dadosDefesa ? (
-												<Paper sx={{ p: 3, mb: 2 }}>
-													<Typography variant="subtitle1" gutterBottom fontWeight="medium">
-														Agenda da Banca do Projeto
-													</Typography>
-													<Alert severity="info" sx={{ mb: 2 }}>
-														<Typography variant="body2">
-															<strong>Data:</strong> {dadosDefesa.dataStr}
-														</Typography>
-														<Typography variant="body2">
-															<strong>Horário:</strong> {dadosDefesa.horaStr}
-														</Typography>
-													</Alert>
-
-													{defesasFase1 && defesasFase1.length > 0 && (
-														<>
-															<Typography variant="subtitle1" gutterBottom fontWeight="medium">
-																Composição da Banca
-															</Typography>
-															{defesasFase1.map((d, idx) => (
-																<Alert
-																	key={idx}
-																	severity="info"
-																	sx={{ mb: 1 }}
-																>
-																	<Typography variant="body2">
-																		<strong>Membro:</strong>{" "}
-																		{d.membroBanca?.nome || d.membro_banca}
-																	</Typography>
-																	{d.avaliacao != null && (
-																		<Typography variant="body2">
-																			<strong>Nota:</strong>{" "}
-																			{Number(d.avaliacao).toFixed(1)}
-																		</Typography>
-																	)}
-																</Alert>
-															))}
-														</>
-													)}
-												</Paper>
-											) : (
-												<Alert severity="info" sx={{ mb: 2 }}>
-													<Typography variant="body2">
-														Nenhum horário de banca agendado encontrado.
-													</Typography>
-												</Alert>
-											);
-										})()}
-									</>
-								)}
-								<Button onClick={() => setActiveStep(0)}>
-									Reiniciar
-								</Button>
-							</>
-						)}
-					</Box>
-				) : (
-					<Box>
-						{saving && (
-							<Box sx={{ mb: 2 }}>
-								<LinearProgress />
-								<Typography
-									variant="body2"
-									color="text.secondary"
-									sx={{ mt: 1 }}
-								>
-									Salvando dados...
-								</Typography>
-							</Box>
-						)}
-
-						{renderStepContent(activeStep)}
-
-						{/* Mensagem de ajuda para etapa 0 */}
-						{activeStep === 0 && !modoJornada && !validarEtapaAtual() && (
-							<Alert severity="info" sx={{ mt: 2 }}>
-								<Typography variant="body2">
-									Para prosseguir, você precisa ter um convite
-									aceito por um orientador.
-								</Typography>
-							</Alert>
-						)}
-
-						{/* Mensagem de ajuda para etapa 4 (banca) */}
-						{activeStep === 4 &&
-							!modoJornada &&
-							!validarEtapaAtual() &&
-							convitesBanca.length > 0 && (
-								<Alert severity="warning" sx={{ mt: 2 }}>
-									<Typography variant="body2">
-										<strong>
-											Aguardando confirmação da banca:
-										</strong>{" "}
-										Para prosseguir, você precisa ter 2
-										convites aceitos.
-										{convitesBanca.filter(
-											(c) => c.aceito === true,
-										).length > 0
-											? ` Você já tem ${
-													convitesBanca.filter(
-														(c) =>
-															c.aceito === true,
-													).length
-												} convite(s) aceito(s), falta(m) ${
-													2 -
-													convitesBanca.filter(
-														(c) =>
-															c.aceito === true,
-													).length
-												}.`
-											: " Ainda não há convites aceitos."}
-									</Typography>
-								</Alert>
-							)}
-
-						{/* Mensagem de ajuda para etapa 6 (fase 1) ou 8 (fase 2) */}
-						{activeStep === 5 &&
-							!modoJornada &&
-							trabalhoConclusao?.fase === 1 &&
-							!validarEtapaAtual() && (
-								<Alert severity="warning" sx={{ mt: 2 }}>
-									<Typography variant="body2">
-										<strong>
-											Seleção de horário obrigatória:
-										</strong>{" "}
-										escolha um horário comum entre
-										orientador e os 2 membros aceitos da
-										banca do projeto.
-									</Typography>
-								</Alert>
-							)}
-
-						{activeStep === 7 &&
-							!modoJornada &&
-							trabalhoConclusao?.fase === 2 &&
-							!validarEtapaAtual() && (
-								<Alert severity="warning" sx={{ mt: 2 }}>
-									<Typography variant="body2">
-										<strong>
-											Aguardando confirmação da banca
-											final:
-										</strong>{" "}
-										Para finalizar seu TCC, você precisa ter
-										2 convites aceitos para a banca de
-										avaliação final.
-										{(() => {
-											const convitesFase2Atuais =
-												convitesBanca.filter(
-													(c) => c.fase === 2,
-												);
-											const convitesAceitosFase2 =
-												convitesFase2Atuais.filter(
-													(c) => c.aceito === true,
-												);
-											return convitesAceitosFase2.length >
-												0
-												? ` Você já tem ${
-														convitesAceitosFase2.length
-													} convite(s) aceito(s) para a banca final, falta(m) ${
-														2 -
-														convitesAceitosFase2.length
-													}.`
-												: " Ainda não há convites aceitos para a banca final.";
-										})()}
-									</Typography>
-								</Alert>
-							)}
-					</Box>
-				)}
-				{/* Navegação da jornada: abaixo do conteúdo; no celular, fixa acima da navegação inferior. */}
-				{activeStep !== getEtapasValidas().length && (
-					<div className="jornada-acoes">
-						<BotaoDesign
-							variant="secondary"
-							onClick={() => {
-								if (activeStep >= 1 && activeStep <= 3) {
-									// Tema, título e resumo é uma tela só: voltar leva à etapa anterior a ela.
-									setActiveStep(0);
-									if (onEtapaChange) onEtapaChange(0);
-								} else handleBack();
-							}}
-							// Primeiro passo de cada fase: etapa 0 (TCC I) ou seminário, etapa 6 (TCC II).
-							disabled={activeStep === 0 || (modoJornada && trabalhoConclusao?.fase === 2 && activeStep === 6) || saving}
-						>
-							Voltar
-						</BotaoDesign>
-						{activeStep >= 1 && activeStep <= 3 ? (
-							<div style={{ display: "flex", gap: 8 }}>
-								<BotaoDesign variant="secondary" icon="save" onClick={() => void salvarTemaTituloResumo(false)} disabled={saving}>
-									Salvar
-								</BotaoDesign>
-								<BotaoDesign
-									onClick={() => void salvarTemaTituloResumo(true)}
-									disabled={saving || ![formData.tema, formData.titulo, formData.resumo].every((v) => v && v.trim())}
-								>
-									{saving ? "Salvando…" : "Continuar"}
-								</BotaoDesign>
-							</div>
-						) : (() => {
-							const ultima = activeStep === getEtapasValidas().length - 1;
-							const finalizar =
-								ultima && (trabalhoConclusao?.fase !== 2 || (trabalhoConclusao?.fase === 2 && trabalhoConclusao?.aprovado_projeto));
-							// Etapa de horário ainda sem defesa: o botão final é o que agenda (POST /defesas/agendar).
-							const faseAtual = trabalhoConclusao?.fase === 2 ? 2 : 1;
-							const agendar =
-								finalizar && activeStep === (faseAtual === 2 ? 8 : 5) && !temDefesaAgendada(faseAtual);
-							const avancar = (
-								<BotaoDesign
-									onClick={handleNext}
-									disabled={saving || !validarEtapaAtual()}
-									icon={agendar ? "event_available" : finalizar ? "check" : undefined}
-								>
-									{saving ? "Salvando…" : agendar ? "Agendar defesa" : finalizar ? "Finalizar" : "Continuar"}
-								</BotaoDesign>
-							);
-							// Seminário de andamento (TCC II): pode ser salvo como rascunho antes de continuar.
-							if (activeStep === 6 && faseAtual === 2) {
-								return (
-									<div style={{ display: "flex", gap: 8 }}>
-										<BotaoDesign variant="secondary" icon="save" onClick={() => void salvarRascunho()} disabled={saving}>
-											Salvar
-										</BotaoDesign>
-										{avancar}
-									</div>
-								);
-							}
-							return avancar;
-						})()}
-					</div>
-				)}
-
-			</Paper>
-
-
-			{/* Modal de Convite para Orientador */}
-			{trabalhoConclusao && (
-				<ConviteOrientadorModal
-					open={openConviteModal}
-					onClose={handleCloseConviteModal}
-					idTcc={trabalhoConclusao.id}
-					idCurso={trabalhoConclusao.id_curso}
-					onConviteEnviado={handleConviteEnviado}
-					conviteExistente={conviteExistente && (conviteExistente.data_feedback === null || conviteExistente.aceito) ? conviteExistente : null}
-					fase={trabalhoConclusao.fase || 1}
-					orientadorInicial={orientadorSugerido}
-				/>
-			)}
-
-			{/* Modal de Convite para Banca */}
-			{trabalhoConclusao && (
-				<ConviteBancaModal
-					open={openConviteBancaModal}
-					onClose={handleCloseConviteBancaModal}
-					idTcc={trabalhoConclusao.id}
-					idCurso={trabalhoConclusao.id_curso}
-					onConviteEnviado={handleConviteBancaEnviado}
-					convitesExistentes={convitesBanca.filter(
-						(c) => c.fase === 1,
-					)} // Apenas convites da fase 1 (banca do projeto)
-					conviteOrientacao={conviteExistente}
-					tipoConvite="banca_projeto"
-					docentesPreSelecionados={[]} // Etapa 5 não tem pré-seleção
-				/>
-			)}
-
-			{/* Modal de Convite para Banca Final */}
-			{trabalhoConclusao && (
-				<ConviteBancaModal
-					open={openConviteBancaFinalModal}
-					onClose={handleCloseConviteBancaFinalModal}
-					idTcc={trabalhoConclusao.id}
-					idCurso={trabalhoConclusao.id_curso}
-					onConviteEnviado={handleConviteBancaEnviado}
-					convitesExistentes={convitesBanca.filter(
-						(c) => c.fase === 2,
-					)} // Apenas convites da fase 2 (banca final)
-					conviteOrientacao={conviteExistente}
-					tipoConvite="banca_trabalho"
-					docentesPreSelecionados={convitesBanca
-						.filter((c) => c.fase === 1 && c.aceito === true)
-						.map((c) => c.codigo_docente)} // Docentes aceitos na fase 1
-				/>
-			)}
-
-			{/* Modal de Importação de Dados */}
-			<Dialog
-				open={openImportModal}
-				onClose={handleImportModalClose}
-				maxWidth="sm"
-				fullWidth
-			>
-				<DialogTitle>
-					{modalType === "next_phase"
-						? "Projeto Aprovado Encontrado"
-						: "TCC Anterior Encontrado"}
-				</DialogTitle>
-				<DialogContent>
-					{tccAnterior && (
-						<Box>
-							<DialogContentText sx={{ mb: 2 }}>
-								{modalType === "next_phase" ? (
-									<>
-										Seu projeto de TCC foi aprovado em{" "}
-										{tccAnterior.ano}/{tccAnterior.semestre}
-										. Deseja continuar para a próxima fase
-										(TCC II) na oferta atual{" "}
-										{ofertaAtual?.ano}/
-										{ofertaAtual?.semestre}?
-									</>
-								) : (
-									<>
-										Encontramos um TCC seu de{" "}
-										{tccAnterior.ano}/{tccAnterior.semestre}
-										. Deseja importar os dados deste TCC
-										para a oferta atual {ofertaAtual?.ano}/
-										{ofertaAtual?.semestre}?
-									</>
-								)}
-							</DialogContentText>
-
-							<Paper sx={{ p: 2, bgcolor: "grey.50" }}>
-								<Typography variant="subtitle2" gutterBottom>
-									Dados do TCC Anterior:
-								</Typography>
-
-								<Box sx={{ mb: 1 }}>
-									<Typography
-										variant="body2"
-										color="text.secondary"
-									>
-										Status:
-									</Typography>
-									<Box
-										sx={{
-											display: "flex",
-											gap: 1,
-											mt: 0.5,
-										}}
-									>
-										<Chip
-											label={
-												tccAnterior.aprovado_projeto
-													? "Projeto Aprovado"
-													: "Projeto Não Aprovado"
-											}
-											color={
-												tccAnterior.aprovado_projeto
-													? "success"
-													: "default"
-											}
-											size="small"
-										/>
-										<Chip
-											label={`Fase ${tccAnterior.fase}`}
-											color="info"
-											size="small"
-										/>
-									</Box>
-								</Box>
-
-								{tccAnterior.tema && (
-									<Box sx={{ mb: 1 }}>
-										<Typography
-											variant="body2"
-											color="text.secondary"
-										>
-											Tema:
-										</Typography>
-										<Typography variant="body2">
-											{tccAnterior.tema}
-										</Typography>
-									</Box>
-								)}
-
-								{tccAnterior.titulo && (
-									<Box sx={{ mb: 1 }}>
-										<Typography
-											variant="body2"
-											color="text.secondary"
-										>
-											Título:
-										</Typography>
-										<Typography variant="body2">
-											{tccAnterior.titulo}
-										</Typography>
-									</Box>
-								)}
-							</Paper>
-
-							{modalType === "next_phase" && (
-								<Alert severity="success" sx={{ mt: 2 }}>
-									<Typography variant="body2">
-										Ao continuar, você será direcionado para
-										a fase TCC II mantendo seus dados
-										anteriores.
-									</Typography>
-								</Alert>
-							)}
-
-							{modalType === "import" && (
-								<Alert severity="info" sx={{ mt: 2 }}>
-									<Typography variant="body2">
-										Ao importar, um novo TCC será criado com
-										os dados do TCC anterior.
-									</Typography>
-								</Alert>
-							)}
-						</Box>
-					)}
-				</DialogContent>
-				<DialogActions>
-					<Button
-						onClick={() => handleImportData(false)}
-						color="inherit"
-					>
-						{modalType === "next_phase"
-							? "Criar Novo TCC"
-							: "Não Importar"}
-					</Button>
-					<Button
-						onClick={() => handleImportData(true)}
-						variant="contained"
-						color="primary"
-					>
-						{modalType === "next_phase"
-							? "Continuar TCC II"
-							: "Importar Dados"}
-					</Button>
-				</DialogActions>
-			</Dialog>
-		</Box>
+			<ConviteOrientadorModal
+				open={openConviteModal}
+				onClose={handleCloseConviteModal}
+				idTcc={trabalhoConclusao.id}
+				idCurso={trabalhoConclusao.id_curso}
+				onConviteEnviado={handleConviteEnviado}
+				conviteExistente={conviteExistente && (conviteExistente.data_feedback === null || conviteExistente.aceito) ? conviteExistente : null}
+				fase={trabalhoConclusao.fase || 1}
+				orientadorInicial={orientadorSugerido}
+			/>
+			<ConviteBancaModal
+				open={openConviteBancaModal}
+				onClose={handleCloseConviteBancaModal}
+				idTcc={trabalhoConclusao.id}
+				idCurso={trabalhoConclusao.id_curso}
+				onConviteEnviado={handleConviteBancaEnviado}
+				convitesExistentes={convitesBanca.filter((c) => c.fase === 1)}
+				conviteOrientacao={conviteExistente}
+				tipoConvite="banca_projeto"
+				docentesPreSelecionados={[]}
+			/>
+			<ConviteBancaModal
+				open={openConviteBancaFinalModal}
+				onClose={handleCloseConviteBancaFinalModal}
+				idTcc={trabalhoConclusao.id}
+				idCurso={trabalhoConclusao.id_curso}
+				onConviteEnviado={handleConviteBancaEnviado}
+				convitesExistentes={convitesBanca.filter((c) => c.fase === 2)}
+				conviteOrientacao={conviteExistente}
+				tipoConvite="banca_trabalho"
+				// Banca final: os membros que aceitaram a banca do projeto vêm sugeridos.
+				docentesPreSelecionados={convitesBanca.filter((c) => c.fase === 1 && c.aceito === true).map((c) => c.codigo_docente)}
+			/>
+		</>
 	);
 }

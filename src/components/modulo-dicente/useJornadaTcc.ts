@@ -85,6 +85,8 @@ export interface ContextoTcc {
 	totalEtapas: number;
 	aprovado: boolean;
 	convitePendente: boolean;
+	/** "concluido": TCC aprovado em período anterior; "anterior": TCC antigo aguardando escolha (continuar/importar). */
+	situacao: "jornada" | "concluido" | "anterior";
 }
 
 
@@ -159,9 +161,10 @@ export function useJornadaTcc({ etapaInicial = 0, onEtapaChange, onContexto }: P
 			totalEtapas: getEtapasValidas().length,
 			aprovado: Boolean(fase === 2 ? trabalhoConclusao?.aprovado_tcc : trabalhoConclusao?.aprovado_projeto),
 			convitePendente: Boolean(conviteExistente && conviteExistente.data_feedback === null),
+			situacao: showCompletedMessage && tccAnterior ? "concluido" : !trabalhoConclusao && tccAnterior ? "anterior" : "jornada",
 		});
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [trabalhoConclusao, ofertaAtual, conviteExistente]);
+	}, [trabalhoConclusao, ofertaAtual, conviteExistente, showCompletedMessage, tccAnterior]);
 
 	const isEtapaFinalBloqueada = (tcc: TrabalhoLocal | null) => {
 		if (!tcc) return false;
@@ -946,6 +949,9 @@ export function useJornadaTcc({ etapaInicial = 0, onEtapaChange, onContexto }: P
 		setOpenImportModal(false);
 	};
 
+	/** Reabre a escolha (continuar/importar) depois de o diálogo ter sido fechado. */
+	const reabrirImportacao = () => setOpenImportModal(true);
+
 	const handleImportData = async (opcaoSelecionada: boolean) => {
 		setOpenImportModal(false);
 
@@ -1195,6 +1201,7 @@ export function useJornadaTcc({ etapaInicial = 0, onEtapaChange, onContexto }: P
 	return {
 		salvarTemaTituloResumo,
 		salvarRascunho,
+		reabrirImportacao,
 		theme,
 		activeStep,
 		setActiveStep,
