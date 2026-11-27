@@ -44,8 +44,6 @@ export function useConviteOrientador({
 		conviteOrientadorController.processarConviteExistente(conviteExistente);
 	const modoVisualizacao =
 		conviteOrientadorController.isModoVisualizacao(conviteExistente);
-	const tituloModal =
-		conviteOrientadorController.obterTituloModal(conviteExistente);
 
 	// Carregar orientadores quando o modal abrir
 	useEffect(() => {
@@ -147,7 +145,6 @@ export function useConviteOrientador({
 		// Dados processados
 		conviteProcessado,
 		modoVisualizacao,
-		tituloModal,
 
 		// Handlers
 		handleEnviarConvite,

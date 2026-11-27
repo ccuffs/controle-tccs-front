@@ -1,8 +1,6 @@
 import { useState, useEffect, useContext } from "react";
-import { useTheme } from "@mui/material/styles";
 import axiosInstance from "../../auth/axios";
 import { AuthContext } from "../../contexts/AuthContext";
-import { formatarDataDefesaUTC } from "../../controllers/disponibilidade-banca-controller";
 import type { Convite } from "../../types/convite";
 
 
@@ -98,7 +96,6 @@ interface ParametrosJornada {
 }
 
 export function useJornadaTcc({ etapaInicial = 0, onEtapaChange, onContexto }: ParametrosJornada) {
-	const theme = useTheme();
 	const { usuario } = useContext(AuthContext) ?? {};
 	const [activeStep, setActiveStep] = useState(etapaInicial);
 	const [loading, setLoading] = useState(true);
@@ -420,22 +417,6 @@ export function useJornadaTcc({ etapaInicial = 0, onEtapaChange, onContexto }: P
 		return (
 			defesas && defesas.length > 0 && defesas.some((d) => d.data_defesa)
 		);
-	};
-
-	// Função para obter dados da defesa agendada (data, hora) para uma fase específica
-	const obterDadosDefesaAgendada = (fase: number) => {
-		const defesas = fase === 1 ? defesasFase1 : defesasFase2;
-		if (!defesas || defesas.length === 0) return null;
-
-		const defesaAgendada = defesas.find((d) => d.data_defesa) || defesas[0];
-		if (!defesaAgendada || !defesaAgendada.data_defesa) return null;
-
-		const { dataStr, horaStr } = formatarDataDefesaUTC(defesaAgendada.data_defesa);
-		return {
-			dataStr,
-			horaStr,
-			defesa: defesaAgendada,
-		};
 	};
 
 	const criarNovoTrabalhoConclusao = async (matricula: string) => {
@@ -1202,7 +1183,6 @@ export function useJornadaTcc({ etapaInicial = 0, onEtapaChange, onContexto }: P
 		salvarTemaTituloResumo,
 		salvarRascunho,
 		reabrirImportacao,
-		theme,
 		activeStep,
 		setActiveStep,
 		loading,
@@ -1229,7 +1209,6 @@ export function useJornadaTcc({ etapaInicial = 0, onEtapaChange, onContexto }: P
 		defesasFase1,
 		defesasFase2,
 		temDefesaAgendada,
-		obterDadosDefesaAgendada,
 		getEtapasValidas,
 		validarEtapaAtual,
 		handleNext,

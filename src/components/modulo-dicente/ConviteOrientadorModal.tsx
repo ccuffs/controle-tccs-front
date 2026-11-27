@@ -1,22 +1,8 @@
-import {
-	Dialog,
-	DialogTitle,
-	DialogContent,
-	DialogActions,
-	Button,
-	FormControl,
-	InputLabel,
-	Select,
-	MenuItem,
-	TextField,
-	Typography,
-	Box,
-	Alert,
-	CircularProgress,
-} from "@mui/material";
+import { useMemo, useState } from "react";
 
 import { useConviteOrientador } from "../../hooks/useConviteOrientador";
 import type { Convite } from "../../types/convite";
+import { Avatar, Button, Icon, Input, ModalDialog, StatusChip, Textarea } from "../ui";
 
 interface ConviteOrientadorModalProps {
 	open: boolean;
@@ -29,6 +15,15 @@ interface ConviteOrientadorModalProps {
 	orientadorInicial?: string;
 }
 
+/** convite.mensagem_envio é varchar(255) na API. */
+const LIMITE_MENSAGEM = 255;
+const semAcento = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+/**
+ * Diálogo de convite de orientação no padrão do design. Sem convite: escolha de um docente
+ * (já marcado quando vem do catálogo de temas) e mensagem opcional. Com convite pendente ou
+ * aceito: só a consulta do convite enviado. As regras continuam no hook useConviteOrientador.
+ */
 export default function ConviteOrientadorModal({
 	open,
 	onClose,
@@ -40,24 +35,16 @@ export default function ConviteOrientadorModal({
 	orientadorInicial,
 }: ConviteOrientadorModalProps) {
 	const {
-		// Estados de dados
 		orientadores,
 		orientadorSelecionado,
 		setOrientadorSelecionado,
 		mensagem,
 		setMensagem,
-
-		// Estados de UI
 		loading,
 		loadingOrientadores,
 		error,
-
-		// Dados processados
 		conviteProcessado,
 		modoVisualizacao,
-		tituloModal,
-
-		// Handlers
 		handleEnviarConvite,
 		handleClose,
 	} = useConviteOrientador({
@@ -71,107 +58,138 @@ export default function ConviteOrientadorModal({
 		orientadorInicial,
 	});
 
-	return (
-		<Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-			<DialogTitle>{tituloModal}</DialogTitle>
-			<DialogContent>
-				<Box sx={{ mt: 2 }}>
-					{!idCurso && (
-						<Alert severity="warning" sx={{ mb: 2 }}>
-							Não foi possível identificar o curso. Entre em
-							contato com o suporte.
-						</Alert>
-					)}
+	const [busca, setBusca] = useState("");
 
-					{error && (
-						<Alert severity="error" sx={{ mb: 2 }}>
-							{error}
-						</Alert>
-					)}
+	const docentes = useMemo(() => {
+		const termo = semAcento(busca.trim());
+		return (Array.isArray(orientadores) ? orientadores : [])
+			.filter((d) => !termo || semAcento(`${d.nome ?? ""} ${d.codigo}`).includes(termo))
+			// o docente escolhido no catálogo aparece primeiro
+			.sort(
+				(a, b) =>
+					Number(b.codigo === orientadorSelecionado) - Number(a.codigo === orientadorSelecionado) ||
+					(a.nome ?? a.codigo).localeCompare(b.nome ?? b.codigo, "pt-BR"),
+			);
+	}, [orientadores, busca, orientadorSelecionado]);
 
-					<FormControl fullWidth sx={{ mb: 2 }}>
-						<InputLabel>Selecione o Orientador</InputLabel>
-						<Select
-							value={orientadorSelecionado}
-							onChange={(e) =>
-								setOrientadorSelecionado(e.target.value)
-							}
-							disabled={
-								loadingOrientadores ||
-								modoVisualizacao ||
-								!idCurso
-							}
-						>
-							{loadingOrientadores ? (
-								<MenuItem disabled>
-									<CircularProgress
-										size={20}
-										sx={{ mr: 1 }}
-									/>
-									Carregando orientadores...
-								</MenuItem>
-							) : (
-								(Array.isArray(orientadores)
-									? orientadores
-									: []
-								).map((orientador) => (
-									<MenuItem
-										key={orientador.codigo}
-										value={orientador.codigo}
-									>
-										{orientador.nome} - {orientador.codigo}
-									</MenuItem>
-								))
-							)}
-						</Select>
-					</FormControl>
+	const fechar = () => {
+		setBusca("");
+		handleClose();
+	};
 
-					<TextField
-						fullWidth
-						multiline
-						rows={4}
-						label="Mensagem do Convite"
-						value={mensagem}
-						onChange={(e) => setMensagem(e.target.value)}
-						placeholder="Escreva uma mensagem personalizada para o orientador..."
-						disabled={modoVisualizacao}
-						sx={{ mb: 2 }}
-					/>
-
-					{conviteProcessado && (
-						<Alert severity="info" sx={{ mb: 2 }}>
-							<Typography variant="body2">
-								<strong>Status:</strong>{" "}
-								{conviteProcessado.status}
-							</Typography>
-							{conviteProcessado.dataEnvio && (
-								<Typography variant="body2">
-									<strong>Enviado em:</strong>{" "}
-									{conviteProcessado.dataEnvio}
-								</Typography>
-							)}
-						</Alert>
-					)}
-				</Box>
-			</DialogContent>
-			<DialogActions>
-				<Button onClick={handleClose} disabled={loading}>
-					Cancelar
-				</Button>
-				{!modoVisualizacao && (
-					<Button
-						onClick={handleEnviarConvite}
-						variant="contained"
-						disabled={loading || !orientadorSelecionado}
-					>
-						{loading ? (
-							<CircularProgress size={20} />
-						) : (
-							"Enviar Convite"
-						)}
+	if (modoVisualizacao && conviteExistente) {
+		const docente =
+			conviteExistente.docente ?? (Array.isArray(orientadores) ? orientadores : []).find((d) => d.codigo === conviteExistente.codigo_docente);
+		const nome = docente?.nome ?? conviteExistente.codigo_docente;
+		const aceito = conviteProcessado?.status === "Aceito";
+		return (
+			<ModalDialog
+				open={open}
+				onClose={fechar}
+				icon="person_search"
+				title="Convite de orientação"
+				description={aceito ? "O docente aceitou orientar o seu TCC." : "O convite aguarda a resposta do docente."}
+				actions={
+					<Button variant="secondary" onClick={fechar}>
+						Fechar
 					</Button>
-				)}
-			</DialogActions>
-		</Dialog>
+				}
+			>
+				<div className="dialog-form">
+					<div className="defense-person">
+						<Avatar nome={nome} size="small" />
+						<div>
+							<strong>{nome}</strong>
+							<span>{conviteProcessado?.dataEnvio ? `Enviado em ${conviteProcessado.dataEnvio}` : "Orientador convidado"}</span>
+						</div>
+						<StatusChip type={aceito ? "success" : "warning"}>{aceito ? "Aceito" : "Pendente"}</StatusChip>
+					</div>
+					{conviteExistente.mensagem_envio && (
+						<div className="orientation-content-preview">
+							<div>
+								<span>MENSAGEM</span>
+								<p>{conviteExistente.mensagem_envio}</p>
+							</div>
+						</div>
+					)}
+				</div>
+			</ModalDialog>
+		);
+	}
+
+	return (
+		<ModalDialog
+			open={open}
+			onClose={fechar}
+			icon="person_add"
+			title="Convidar orientador"
+			description="Escolha o docente que você quer como orientador. Ele recebe o convite e responde pelo sistema."
+			actions={
+				<>
+					<Button variant="secondary" onClick={fechar} disabled={loading}>
+						Cancelar
+					</Button>
+					<Button icon="send" onClick={() => void handleEnviarConvite()} disabled={loading || !orientadorSelecionado}>
+						{loading ? "Enviando…" : "Enviar convite"}
+					</Button>
+				</>
+			}
+		>
+			{!idCurso && (
+				<div className="readonly-box warning-box">
+					<Icon name="warning" />
+					<span>Não foi possível identificar o curso. Entre em contato com a coordenação.</span>
+				</div>
+			)}
+			{error && (
+				<div className="readonly-box warning-box">
+					<Icon name="error" />
+					<span>{error}</span>
+				</div>
+			)}
+
+			<div className="dialog-form">
+				<div className="search">
+					<Icon name="search" />
+					<Input placeholder="Buscar docente" value={busca} onChange={(e) => setBusca(e.target.value)} aria-label="Buscar docente" />
+				</div>
+				<div className="docente-lista" role="radiogroup" aria-label="Docentes">
+					{loadingOrientadores && <p className="docente-lista-vazia">Carregando docentes…</p>}
+					{!loadingOrientadores && docentes.length === 0 && <p className="docente-lista-vazia">Nenhum docente encontrado.</p>}
+					{!loadingOrientadores &&
+						docentes.map((d) => {
+							const marcado = orientadorSelecionado === d.codigo;
+							return (
+								<label key={d.codigo} className={`docente-opcao ${marcado ? "selected" : ""} ${!idCurso ? "disabled" : ""}`}>
+									<input
+										type="radio"
+										name="orientador"
+										checked={marcado}
+										disabled={!idCurso}
+										onChange={() => setOrientadorSelecionado(d.codigo)}
+									/>
+									<Avatar nome={d.nome ?? d.codigo} size="small" />
+									<span>
+										<strong>{d.nome ?? d.codigo}</strong>
+										<small>{d.codigo}</small>
+									</span>
+								</label>
+							);
+						})}
+				</div>
+				<label className="textarea-label">
+					<span>Mensagem (opcional)</span>
+					<Textarea
+						rows={3}
+						value={mensagem}
+						placeholder="Apresente-se e conte a ideia do seu trabalho…"
+						onChange={(e) => setMensagem(e.target.value.slice(0, LIMITE_MENSAGEM))}
+					/>
+					<small>
+						{mensagem.length} / {LIMITE_MENSAGEM}
+					</small>
+				</label>
+			</div>
+		</ModalDialog>
 	);
 }

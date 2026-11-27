@@ -106,27 +106,6 @@ export function toDateKey(iso: string): { data: string; hora: string } {
 }
 
 /**
- * Formata ISO date armazenado como UTC-wall-clock para exibição em pt-BR.
- * Usa getters UTC para evitar conversão de fuso horário no navegador.
- */
-export function formatarDataDefesaUTC(
-	iso: string | null | undefined,
-): { dataStr: string; horaStr: string } {
-	if (!iso) return { dataStr: "N/A", horaStr: "N/A" };
-	const toTwo = (n: number) => String(n).padStart(2, "0");
-	const dt = new Date(iso);
-	const dia = toTwo(dt.getUTCDate());
-	const mes = toTwo(dt.getUTCMonth() + 1);
-	const ano = dt.getUTCFullYear();
-	const hh = toTwo(dt.getUTCHours());
-	const mm = toTwo(dt.getUTCMinutes());
-	return {
-		dataStr: `${dia}/${mes}/${ano}`,
-		horaStr: `${hh}:${mm}`,
-	};
-}
-
-/**
  * Adiciona minutos a um horário
  */
 export function addMinutesToTime(timeStr: string, minutesToAdd: number): string {

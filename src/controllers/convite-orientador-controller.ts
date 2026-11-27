@@ -66,17 +66,6 @@ export function isModoVisualizacao(
 	return !!conviteExistente;
 }
 
-/**
- * Obtém o título do modal baseado no modo
- */
-export function obterTituloModal(
-	conviteExistente: Convite | null | undefined,
-): string {
-	return conviteExistente
-		? "Convite de Orientador"
-		: "Enviar Convite para Orientador";
-}
-
 interface ConviteExistenteProcessado {
 	codigoDocente: string;
 	mensagem: string;
@@ -107,7 +96,6 @@ const conviteOrientadorController = {
 	formatarData,
 	obterStatusConvite,
 	isModoVisualizacao,
-	obterTituloModal,
 	processarConviteExistente,
 };
 
