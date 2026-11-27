@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Tab, Tabs } from "@mui/material";
 import { useDocenteAtual } from "../../hooks/useDocenteAtual";
+import { usePerfilAtual } from "../../hooks/usePerfilAtual";
 import convitesService from "../../services/convites-service";
 import type { Convite } from "../../types/convite";
 import { getErrorMessage } from "../../utils/apiError";
@@ -50,9 +51,10 @@ function Resposta({ convite }: { convite: Convite }) {
 	return convite.aceito ? <StatusChip type="success">Aceito</StatusChip> : <StatusChip type="danger">Recusado</StatusChip>;
 }
 
-/** Convites recebidos pelo docente (imagem convites_orientador.png). */
+/** Convites recebidos pelo docente (imagem convites_orientador.png). Também usada no perfil Banca. */
 export default function Convites() {
 	const notificar = useNotice();
+	const perfil = usePerfilAtual();
 	const { codigo } = useDocenteAtual();
 	const [convites, setConvites] = useState<Convite[]>([]);
 	const [carregando, setCarregando] = useState(true);
@@ -116,7 +118,14 @@ export default function Convites() {
 
 	return (
 		<>
-			<PageHeader title="Convites recebidos" description="Responda aos convites de orientação e participação em bancas." />
+			<PageHeader
+				title="Convites recebidos"
+				description={
+					perfil === "banca"
+						? "Responda aos convites para participar de bancas."
+						: "Responda aos convites de orientação e participação em bancas."
+				}
+			/>
 			<Tabs className="segments" value={aba} onChange={(_, v: Aba) => setAba(v)}>
 				<Tab value="pendentes" label={`Pendentes · ${contagem.pendentes}`} />
 				<Tab value="respondidos" label={`Respondidos · ${contagem.respondidos}`} />

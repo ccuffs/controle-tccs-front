@@ -1,13 +1,19 @@
 import { useEffect, useState } from "react";
+import { usePerfilAtual } from "../../hooks/usePerfilAtual";
+import disponibilidadeBancaService from "../../services/disponibilidade-banca-service";
 import { getMeuPerfil, atualizarDocente } from "../../services/perfil-orientador-service";
 import temasTccService from "../../services/temas-tcc-service";
 import type { Docente } from "../../types/docente";
 import { getErrorMessage } from "../../utils/apiError";
 import { Avatar, Button, Card, Input, PageHeader, useNotice } from "../ui";
 
-/** Perfil do docente (imagem meu_perfil_orientador.png). O docente altera apenas SIAPE e sala. */
+/**
+ * Perfil do docente (imagem meu_perfil_orientador.png). O docente altera apenas SIAPE e sala.
+ * No perfil Banca, os cursos listados são os de banca_curso; no Orientador, os de orientadores_curso.
+ */
 export default function Perfil() {
 	const notificar = useNotice();
+	const ehBanca = usePerfilAtual() === "banca";
 	const [docente, setDocente] = useState<Docente | null>(null);
 	const [cursos, setCursos] = useState<string[]>([]);
 	const [siape, setSiape] = useState("");
@@ -20,11 +26,11 @@ export default function Perfil() {
 				setDocente(d);
 				setSiape(d.siape ? String(d.siape) : "");
 				setSala(d.sala ? String(d.sala) : "");
-				return temasTccService.getCursosOrientador(d.codigo);
+				return ehBanca ? disponibilidadeBancaService.getCursosBanca(d.codigo) : temasTccService.getCursosOrientador(d.codigo);
 			})
 			.then((lista) => setCursos(lista.map((c) => c.curso?.nome).filter((n): n is string => Boolean(n))))
 			.catch((e) => notificar(getErrorMessage(e, "Erro ao carregar o perfil"), "error"));
-	}, [notificar]);
+	}, [notificar, ehBanca]);
 
 	const salvar = async () => {
 		if (!docente) return;

@@ -34,6 +34,7 @@ import PerfilDocente from "./orientador/Perfil";
 import DeclaracoesDocente from "./orientador/Declaracoes";
 import MembrosExternosDocente from "./orientador/MembrosExternos";
 import AvaliacoesDocente from "./orientador/Avaliacoes";
+import InicioBanca from "./banca/Inicio";
 
 /** Página de um item do menu: só abre se o item for permitido ao usuário. */
 function pagina(perfil: Perfil, id: string, elemento: ReactNode) {
@@ -87,6 +88,16 @@ function App() {
 							<Route path="externos" element={pagina("orientador", "externos", <MembrosExternosDocente />)} />
 							<Route path="declaracoes" element={pagina("orientador", "declaracoes", <DeclaracoesDocente />)} />
 							<Route path="perfil" element={pagina("orientador", "perfil", <PerfilDocente />)} />
+						</Route>
+
+						<Route path="banca" element={<ExigirPerfil perfil="banca" />}>
+							<Route index element={<RedirecionarInicioPerfil perfil="banca" />} />
+							<Route path="inicio" element={pagina("banca", "inicio", <InicioBanca />)} />
+							<Route path="convites" element={pagina("banca", "convites", <ConvitesOrientador />)} />
+							<Route path="disponibilidade" element={pagina("banca", "disponibilidade", <Disponibilidade />)} />
+							<Route path="avaliacoes" element={pagina("banca", "avaliacoes", <AvaliacoesDocente />)} />
+							<Route path="declaracoes" element={pagina("banca", "declaracoes", <DeclaracoesDocente />)} />
+							<Route path="perfil" element={pagina("banca", "perfil", <PerfilDocente />)} />
 						</Route>
 
 						<Route path="discente" element={<ExigirPerfil perfil="discente" />}>

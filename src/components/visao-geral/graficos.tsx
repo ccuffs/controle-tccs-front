@@ -34,16 +34,18 @@ export function GraficoEtapas({ itens, comFase }: { itens: EtapaFaseItem[]; comF
 	);
 }
 
-/** Linhas "Convites no período" (Orientação × Banca, por mês). */
-export function GraficoConvites({ pontos }: { pontos: ConvitesMesPonto[] }) {
+/** Linhas "Convites no período" (Orientação × Banca, por mês). `somenteBanca` mostra só a linha de banca (perfil Banca). */
+export function GraficoConvites({ pontos, somenteBanca = false }: { pontos: ConvitesMesPonto[]; somenteBanca?: boolean }) {
 	const dados = pontos.map((p) => ({ month: mesCurto(p.mes), orientacao: p.orientacao, banca: p.banca }));
 	return (
 		<>
 			<div className="legend">
-				<span>
-					<i className="dot teal-dot" />
-					Orientação
-				</span>
+				{!somenteBanca && (
+					<span>
+						<i className="dot teal-dot" />
+						Orientação
+					</span>
+				)}
 				<span>
 					<i className="dot orange-dot" />
 					Banca
@@ -56,15 +58,17 @@ export function GraficoConvites({ pontos }: { pontos: ConvitesMesPonto[] }) {
 						<XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "var(--subtle)", fontSize: 10 }} />
 						<YAxis axisLine={false} tickLine={false} allowDecimals={false} tick={{ fill: "var(--subtle)", fontSize: 9 }} />
 						<Tooltip content={<ChartTooltip />} />
-						<Line
-							type="monotone"
-							dataKey="orientacao"
-							name="Orientação"
-							stroke="var(--teal-500)"
-							strokeWidth={3}
-							dot={{ r: 3, fill: "var(--surface)", strokeWidth: 2 }}
-							activeDot={{ r: 5 }}
-						/>
+						{!somenteBanca && (
+							<Line
+								type="monotone"
+								dataKey="orientacao"
+								name="Orientação"
+								stroke="var(--teal-500)"
+								strokeWidth={3}
+								dot={{ r: 3, fill: "var(--surface)", strokeWidth: 2 }}
+								activeDot={{ r: 5 }}
+							/>
+						)}
 						<Line
 							type="monotone"
 							dataKey="banca"

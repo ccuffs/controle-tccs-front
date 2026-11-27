@@ -1,7 +1,7 @@
 import { Permissoes } from "../../enums/permissoes";
 import type { Grupo } from "../../types/usuario";
 
-export type Perfil = "coordenacao" | "orientador" | "discente" | "administracao";
+export type Perfil = "coordenacao" | "orientador" | "banca" | "discente" | "administracao";
 
 export interface ItemNavegacao {
 	id: string;
@@ -13,15 +13,15 @@ export interface ItemNavegacao {
 	grupoMenu?: string;
 	/** Se informado, o usuário precisa pertencer a um destes grupos. */
 	grupos?: number[];
-	/** Itens indisponíveis para quem só participa de bancas (grupo BANCA sem ORIENTADOR/PROFESSOR). */
-	ocultarParaBanca?: boolean;
 }
 
 const { ADMIN, PROFESSOR_CCR, ORIENTADOR, PROFESSOR, BANCA, ESTUDANTE } = Permissoes.GRUPOS;
 
-export const PERFIS: Record<Perfil, { rotulo: string; grupos: number[] }> = {
+export const PERFIS: Record<Perfil, { rotulo: string; grupos: number[]; exceto?: number[] }> = {
 	coordenacao: { rotulo: "Coordenador", grupos: [ADMIN, PROFESSOR_CCR] },
-	orientador: { rotulo: "Orientador", grupos: [ORIENTADOR, PROFESSOR, BANCA] },
+	orientador: { rotulo: "Orientador", grupos: [ORIENTADOR, PROFESSOR] },
+	/** Só participa de bancas: quem também orienta usa o perfil Orientador. */
+	banca: { rotulo: "Banca", grupos: [BANCA], exceto: [ORIENTADOR, PROFESSOR] },
 	discente: { rotulo: "Discente", grupos: [ESTUDANTE] },
 	administracao: { rotulo: "Administrador", grupos: [ADMIN] },
 };
@@ -30,7 +30,7 @@ export const PERFIS: Record<Perfil, { rotulo: string; grupos: number[] }> = {
  * Ordem de prioridade para a página inicial (mesma regra do roteamento anterior).
  * Administração por último: o ADMIN continua entrando pela coordenação.
  */
-const ORDEM_PERFIS: Perfil[] = ["coordenacao", "orientador", "discente", "administracao"];
+const ORDEM_PERFIS: Perfil[] = ["coordenacao", "orientador", "banca", "discente", "administracao"];
 
 export const NAVEGACAO: Record<Perfil, ItemNavegacao[]> = {
 	coordenacao: [
@@ -43,15 +43,23 @@ export const NAVEGACAO: Record<Perfil, ItemNavegacao[]> = {
 		{ id: "importar", rotulo: "Importar lista", icone: "upload_file", caminho: "importar", grupoMenu: "FERRAMENTAS" },
 	],
 	orientador: [
-		{ id: "inicio", rotulo: "Início", icone: "home", caminho: "inicio", grupoMenu: "VISÃO GERAL", ocultarParaBanca: true },
-		{ id: "orientandos", rotulo: "Meus orientandos", icone: "school", caminho: "orientandos", grupoMenu: "ORIENTAÇÃO", ocultarParaBanca: true },
-		{ id: "temas", rotulo: "Meus temas", icone: "menu_book", caminho: "temas", grupoMenu: "ORIENTAÇÃO", ocultarParaBanca: true },
+		{ id: "inicio", rotulo: "Início", icone: "home", caminho: "inicio", grupoMenu: "VISÃO GERAL" },
+		{ id: "orientandos", rotulo: "Meus orientandos", icone: "school", caminho: "orientandos", grupoMenu: "ORIENTAÇÃO" },
+		{ id: "temas", rotulo: "Meus temas", icone: "menu_book", caminho: "temas", grupoMenu: "ORIENTAÇÃO" },
 		{ id: "convites", rotulo: "Convites", icone: "mail", caminho: "convites", grupoMenu: "ORIENTAÇÃO" },
 		{ id: "disponibilidade", rotulo: "Disponibilidade", icone: "calendar_month", caminho: "disponibilidade", grupoMenu: "BANCAS" },
 		{ id: "avaliacoes", rotulo: "Avaliações", icone: "fact_check", caminho: "avaliacoes", grupoMenu: "BANCAS" },
-		{ id: "externos", rotulo: "Membros externos", icone: "domain", caminho: "externos", grupoMenu: "BANCAS", ocultarParaBanca: true },
+		{ id: "externos", rotulo: "Membros externos", icone: "domain", caminho: "externos", grupoMenu: "BANCAS" },
 		{ id: "declaracoes", rotulo: "Declarações", icone: "description", caminho: "declaracoes", grupoMenu: "DOCUMENTOS" },
-		{ id: "perfil", rotulo: "Perfil", icone: "person", caminho: "perfil", grupoMenu: "CONTA", ocultarParaBanca: true },
+		{ id: "perfil", rotulo: "Perfil", icone: "person", caminho: "perfil", grupoMenu: "CONTA" },
+	],
+	banca: [
+		{ id: "inicio", rotulo: "Início", icone: "home", caminho: "inicio", grupoMenu: "VISÃO GERAL" },
+		{ id: "convites", rotulo: "Convites", icone: "mail", caminho: "convites", grupoMenu: "BANCAS" },
+		{ id: "disponibilidade", rotulo: "Disponibilidade", icone: "calendar_month", caminho: "disponibilidade", grupoMenu: "BANCAS" },
+		{ id: "avaliacoes", rotulo: "Avaliações", icone: "fact_check", caminho: "avaliacoes", grupoMenu: "BANCAS" },
+		{ id: "declaracoes", rotulo: "Declarações", icone: "description", caminho: "declaracoes", grupoMenu: "DOCUMENTOS" },
+		{ id: "perfil", rotulo: "Perfil", icone: "person", caminho: "perfil", grupoMenu: "CONTA" },
 	],
 	discente: [
 		{ id: "meu-tcc", rotulo: "Meu TCC", icone: "route", caminho: "meu-tcc" },
@@ -73,13 +81,14 @@ export function ehApenasBanca(grupos: Grupo[]): boolean {
 }
 
 export function perfisDoUsuario(grupos: Grupo[]): Perfil[] {
-	return ORDEM_PERFIS.filter((perfil) => pertence(grupos, PERFIS[perfil].grupos));
+	return ORDEM_PERFIS.filter((perfil) => {
+		const { grupos: exigidos, exceto } = PERFIS[perfil];
+		return pertence(grupos, exigidos) && !(exceto && pertence(grupos, exceto));
+	});
 }
 
 export function itemPermitido(item: ItemNavegacao, grupos: Grupo[]): boolean {
-	if (item.grupos && !pertence(grupos, item.grupos)) return false;
-	if (item.ocultarParaBanca && ehApenasBanca(grupos)) return false;
-	return true;
+	return !item.grupos || pertence(grupos, item.grupos);
 }
 
 export function itensVisiveis(perfil: Perfil, grupos: Grupo[]): ItemNavegacao[] {
@@ -105,7 +114,7 @@ export function inicioDoUsuario(grupos: Grupo[]): string | null {
 	return null;
 }
 
-/** Perfil ativo a partir da URL (/coordenacao/..., /orientador/..., /discente/..., /administracao/...). */
+/** Perfil ativo a partir da URL (/coordenacao/..., /orientador/..., /banca/..., /discente/..., /administracao/...). */
 export function perfilDaUrl(pathname: string): Perfil | null {
 	const segmento = pathname.split("/")[1];
 	return segmento && Object.hasOwn(PERFIS, segmento) ? (segmento as Perfil) : null;

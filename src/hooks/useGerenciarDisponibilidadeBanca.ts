@@ -7,7 +7,7 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import disponibilidadeBancaService from "../services/disponibilidade-banca-service";
 import disponibilidadeBancaController from "../controllers/disponibilidade-banca-controller";
-import { Permissoes } from "../enums/permissoes";
+import { ehApenasBanca } from "../components/layout/navegacao";
 import type { GradeDisponibilidade } from "../types/defesa";
 import type { BancaCurso, OrientadorCurso } from "../types/curso";
 
@@ -25,9 +25,8 @@ export function useGerenciarDisponibilidadeBanca(
 ) {
 	const { usuario, gruposUsuario } = useAuth();
 
-	const isBanca =
-		gruposUsuario?.some((g) => g.id === Permissoes.GRUPOS.BANCA) &&
-		!gruposUsuario?.some((g) => g.id === Permissoes.GRUPOS.ORIENTADOR);
+	/** Mesma regra do perfil Banca: os cursos vêm de banca_curso, não de orientadores_curso. */
+	const isBanca = ehApenasBanca(gruposUsuario ?? []);
 
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
