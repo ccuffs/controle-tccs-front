@@ -15,7 +15,12 @@ export function useDocenteAtual() {
 	useEffect(() => {
 		if (!usuario?.id) return;
 		if (!cache || cache.usuario !== usuario.id) {
-			cache = { usuario: usuario.id, promessa: getMeuPerfil().catch(() => null) };
+			const promessa: Promise<Docente | null> = getMeuPerfil().catch(() => {
+				// Não guarda a falha: a próxima tela que usar o hook tenta de novo.
+				if (cache?.promessa === promessa) cache = null;
+				return null;
+			});
+			cache = { usuario: usuario.id, promessa };
 		}
 		let ativo = true;
 		cache.promessa.then((d) => {
