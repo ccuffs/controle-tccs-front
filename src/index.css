@@ -216,3 +216,6 @@
 .resultado-defesa{margin-top:14px}.resultado-defesa span{font-size:10px;color:var(--muted)}.resultado-defesa strong{font-size:22px}
 .resultado-defesa .success-text strong{color:var(--success)}.resultado-defesa .danger-text strong{color:var(--danger)}
 @media(max-width:520px){.resultado-defesa strong{font-size:16px}.resultado-defesa span{font-size:9px}}
+
+/* Tema escuro: controles nativos (ícones de data/hora, seletor de data, barras de rolagem) no esquema escuro. */
+html.dark{color-scheme:dark}
