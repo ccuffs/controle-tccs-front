@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Button } from "./Button";
 import { ModalDialog } from "./ModalDialog";
 
@@ -10,6 +11,8 @@ interface ConfirmDialogProps {
 	busy?: boolean;
 	onConfirm: () => void;
 	onClose: () => void;
+	/** Conteúdo extra entre a descrição e as ações (ex.: opções, aviso de erro). */
+	children?: ReactNode;
 }
 
 /** Confirmação no padrão do design (ex.: remover cadastro). */
@@ -22,6 +25,7 @@ export function ConfirmDialog({
 	busy = false,
 	onConfirm,
 	onClose,
+	children,
 }: ConfirmDialogProps) {
 	return (
 		<ModalDialog
@@ -30,6 +34,7 @@ export function ConfirmDialog({
 			icon={danger ? "delete" : "help"}
 			title={title}
 			description={description}
+			children={children}
 			actions={
 				<>
 					<Button variant="secondary" onClick={onClose} disabled={busy}>

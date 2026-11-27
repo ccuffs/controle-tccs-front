@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert } from "@mui/material";
+import { Alert, Checkbox } from "@mui/material";
 import { nomeCurso, useCursosCoordenacao } from "../../hooks/useCursosCoordenacao";
 import { contemBusca, useListaLocal } from "../../hooks/useListaLocal";
 import docentesService from "../../services/docentes-service";
@@ -7,24 +7,23 @@ import orientadoresService from "../../services/orientadores-service";
 import type { Docente } from "../../types/docente";
 import { getErrorMessage } from "../../utils/apiError";
 import {
-	AdvancedFilters,
 	Avatar,
 	Button,
 	ConfirmDialog,
 	DataTable,
-	FilterField,
 	Input,
 	PageHeader,
 	RowActions,
 	Select,
 	SideDrawer,
-	StatusChip,
 	TableToolbar,
 	useNotice,
 	type DataTableColumn,
 } from "../ui";
 
 const TODOS = "__todos__";
+/** Docente fictício usado como marcador provisório ("Aguardando professor"); não pode ser vinculado. */
+const DOCENTE_PROVISORIO = "sem.professor";
 
 type Modo = "vincular" | "novo" | "editar";
 
@@ -42,15 +41,13 @@ const FORM_VAZIO: Formulario = { codigo: "", siape: "", nome: "", email: "", sal
 
 const numeroOuNulo = (valor: string) => (valor.trim() === "" ? null : Number(valor));
 
-/** Docentes e orientadores do curso. */
+/** Orientadores do curso (orientador_curso); o vínculo é feito com docentes do curso (docente_curso). */
 export default function Docentes() {
 	const notificar = useNotice();
 	const { cursos, padrao } = useCursosCoordenacao();
 
 	const [curso, setCurso] = useState<string | null>(null);
 	const [busca, setBusca] = useState("");
-	const [filtrosAbertos, setFiltrosAbertos] = useState(false);
-	const [status, setStatus] = useState<"todos" | "ativos" | "inativos">("todos");
 
 	const [docentes, setDocentes] = useState<Docente[]>([]);
 	const [vinculos, setVinculos] = useState<Map<string, Set<number>>>(new Map());
@@ -60,6 +57,14 @@ export default function Docentes() {
 	const [drawer, setDrawer] = useState<{ modo: Modo; dados: Formulario } | null>(null);
 	const [salvando, setSalvando] = useState(false);
 	const [desvincular, setDesvincular] = useState<Docente | null>(null);
+	const [removerGrupo, setRemoverGrupo] = useState(false);
+	const [erroDesvinculo, setErroDesvinculo] = useState<string | null>(null);
+
+	const abrirDesvinculo = (docente: Docente | null) => {
+		setDesvincular(docente);
+		setRemoverGrupo(false);
+		setErroDesvinculo(null);
+	};
 
 	const cursoEfetivo = curso ?? padrao;
 
@@ -97,20 +102,31 @@ export default function Docentes() {
 		[vinculos, cursoEfetivo],
 	);
 
+	const orientadores = useMemo(() => docentes.filter(ehOrientador), [docentes, ehOrientador]);
+
 	const { filtrados, visiveis, pagina, setPagina, porPagina } = useListaLocal(
-		docentes,
-		(d) =>
-			contemBusca(busca, d.nome, d.codigo, d.siape, d.email) &&
-			(status === "todos" || (status === "ativos" ? ehOrientador(d) : !ehOrientador(d))),
-		[busca, status, docentes, vinculos, cursoEfetivo],
+		orientadores,
+		(d) => contemBusca(busca, d.nome, d.codigo, d.siape, d.email),
+		[busca, orientadores],
 	);
 
-	const totalOrientadores = useMemo(() => docentes.filter(ehOrientador).length, [docentes, ehOrientador]);
-	const naoVinculados = docentes.filter((d) => !ehOrientador(d));
+	/** Docentes do curso escolhido no drawer (docente_curso) que ainda não orientam nele. */
+	const cursoVinculo = drawer?.dados.curso ?? "";
+	const vinculaveis = useMemo(
+		() =>
+			cursoVinculo
+				? docentes.filter(
+						(d) =>
+							d.codigo !== DOCENTE_PROVISORIO &&
+							(d.cursos ?? []).some((c) => String(c.id) === cursoVinculo) &&
+							!vinculos.get(d.codigo)?.has(Number(cursoVinculo)),
+					)
+				: [],
+		[docentes, vinculos, cursoVinculo],
+	);
 
 	const limparFiltros = () => {
 		setBusca("");
-		setStatus("todos");
 		setCurso(null);
 	};
 
@@ -130,8 +146,16 @@ export default function Docentes() {
 				: { ...FORM_VAZIO, curso: cursoEfetivo || (cursos[0] ? String(cursos[0].id) : "") },
 		});
 
+	// Trocar o curso limpa o docente escolhido, pois a lista de docentes depende do curso.
 	const alterar = (campo: keyof Formulario) => (valor: string) =>
-		setDrawer((atual) => (atual ? { ...atual, dados: { ...atual.dados, [campo]: valor } } : atual));
+		setDrawer((atual) =>
+			atual
+				? {
+						...atual,
+						dados: { ...atual.dados, [campo]: valor, ...(campo === "curso" ? { docenteVincular: "" } : {}) },
+					}
+				: atual,
+		);
 
 	const salvar = async () => {
 		if (!drawer) return;
@@ -186,13 +210,15 @@ export default function Docentes() {
 	const confirmarDesvinculo = async () => {
 		if (!desvincular || !cursoEfetivo) return;
 		setSalvando(true);
+		setErroDesvinculo(null);
 		try {
-			await orientadoresService.deleteOrientacao(cursoEfetivo, desvincular.codigo);
-			notificar("Vínculo de orientador removido.");
-			setDesvincular(null);
+			await orientadoresService.deleteOrientacao(cursoEfetivo, desvincular.codigo, removerGrupo);
+			notificar(removerGrupo ? "Vínculo e grupo de orientador removidos." : "Vínculo de orientador removido.");
+			abrirDesvinculo(null);
 			setRecarregar((x) => x + 1);
 		} catch (e) {
-			notificar(getErrorMessage(e, "Não foi possível remover o vínculo."), "error");
+			// Mantém o diálogo aberto com o motivo (ex.: orientações ativas).
+			setErroDesvinculo(getErrorMessage(e, "Não foi possível remover o vínculo."));
 		} finally {
 			setSalvando(false);
 		}
@@ -213,12 +239,6 @@ export default function Docentes() {
 		{ key: "siape", header: "SIAPE", className: "mono", render: (d) => d.siape ?? "—" },
 		{ key: "email", header: "E-mail", render: (d) => d.email },
 		{
-			key: "vinculo",
-			header: "Vínculo",
-			render: (d) =>
-				ehOrientador(d) ? <StatusChip type="success">Orientador ativo</StatusChip> : <StatusChip type="neutral">Inativo</StatusChip>,
-		},
-		{
 			key: "acoes",
 			header: "Ações",
 			srOnlyHeader: true,
@@ -226,7 +246,7 @@ export default function Docentes() {
 				<RowActions
 					label={`Ações de ${d.nome ?? d.codigo}`}
 					onEdit={() => abrir("editar", d)}
-					onRemove={cursoEfetivo && ehOrientador(d) ? () => setDesvincular(d) : undefined}
+					onRemove={cursoEfetivo ? () => abrirDesvinculo(d) : undefined}
 					removeLabel="Remover vínculo"
 				/>
 			),
@@ -260,7 +280,7 @@ export default function Docentes() {
 				description={
 					carregando
 						? "Carregando…"
-						: `${totalOrientadores} orientadores ${cursoSelecionado ? `em ${nomeCurso(cursoSelecionado)}` : "nos cursos"} · ${docentes.length} docentes cadastrados.`
+						: `${orientadores.length} ${orientadores.length === 1 ? "orientador vinculado" : "orientadores vinculados"} ${cursoSelecionado ? `a ${nomeCurso(cursoSelecionado)}` : "aos cursos"}.`
 				}
 				action={
 					<Button icon="add" onClick={() => abrir("vincular")}>
@@ -272,9 +292,6 @@ export default function Docentes() {
 				search={busca}
 				onSearchChange={setBusca}
 				searchPlaceholder="Buscar por nome, SIAPE ou código"
-				filterCount={status === "todos" ? 0 : 1}
-				filtersOpen={filtrosAbertos}
-				onToggleFilters={() => setFiltrosAbertos((x) => !x)}
 			>
 				<Select
 					value={cursoEfetivo || TODOS}
@@ -289,17 +306,6 @@ export default function Docentes() {
 					))}
 				</Select>
 			</TableToolbar>
-			{filtrosAbertos && (
-				<AdvancedFilters resultCount={filtrados.length} onClear={limparFiltros}>
-					<FilterField label="Status">
-						<Select value={status} onChange={(e) => setStatus(e.target.value as typeof status)}>
-							<option value="todos">Todos</option>
-							<option value="ativos">Ativos</option>
-							<option value="inativos">Inativos</option>
-						</Select>
-					</FilterField>
-				</AdvancedFilters>
-			)}
 			<DataTable
 				columns={colunas}
 				rows={visiveis}
@@ -340,8 +346,10 @@ export default function Docentes() {
 							<label>
 								<span>Docente</span>
 								<Select value={drawer.dados.docenteVincular} onChange={(e) => alterar("docenteVincular")(e.target.value)} displayEmpty>
-									<option value="">Selecione…</option>
-									{naoVinculados.map((d) => (
+									<option value="">
+										{vinculaveis.length === 0 ? "Nenhum docente do curso disponível" : "Selecione…"}
+									</option>
+									{vinculaveis.map((d) => (
 										<option key={d.codigo} value={d.codigo}>
 											{`${d.nome ?? d.codigo}${d.siape ? ` · SIAPE ${d.siape}` : ""}`}
 										</option>
@@ -429,8 +437,28 @@ export default function Docentes() {
 				confirmLabel="Remover vínculo"
 				busy={salvando}
 				onConfirm={confirmarDesvinculo}
-				onClose={() => setDesvincular(null)}
-			/>
+				onClose={() => abrirDesvinculo(null)}
+			>
+				<label className="confirm-option">
+					<Checkbox
+						checked={removerGrupo}
+						onChange={(_, marcado) => {
+							setRemoverGrupo(marcado);
+							setErroDesvinculo(null);
+						}}
+						disabled={salvando}
+						size="small"
+					/>
+					<span>
+						<strong>Remover também o grupo de orientador</strong>
+						<small>
+							O docente perde as permissões de orientador no sistema. Só é possível sem orientações ativas e sem vínculo
+							em outro curso.
+						</small>
+					</span>
+				</label>
+				{erroDesvinculo && <Alert severity="error">{erroDesvinculo}</Alert>}
+			</ConfirmDialog>
 		</>
 	);
 

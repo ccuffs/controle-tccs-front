@@ -39,13 +39,16 @@ export async function createOrientacao(
 }
 
 // DELETE - Remover orientação
+/** `removerGrupo`: tira também o grupo de orientador do usuário (a API recusa se houver orientação ativa). */
 export async function deleteOrientacao(
 	idCurso: number | string,
 	codigoDocente: string,
+	removerGrupo = false,
 ): Promise<unknown> {
 	try {
 		const response = await axiosInstance.delete<{ data: unknown }>(
-			`/orientadores/${idCurso}/${codigoDocente}`,
+			`/orientadores/${idCurso}/${encodeURIComponent(codigoDocente)}`,
+			{ params: removerGrupo ? { removerGrupo: true } : undefined },
 		);
 		return response.data;
 	} catch (error) {

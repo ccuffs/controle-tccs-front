@@ -230,3 +230,10 @@ html.dark{color-scheme:dark}
 .stepper strong{font-size:14px;font-weight:400}
 .stepper .active,.stepper .done{color:var(--text)}.stepper .active strong,.stepper .done strong{font-weight:500}
 .stepper .done>span{background:var(--teal-600);color:#fff}
+
+/* Opção extra no diálogo de confirmação (ex.: remover também o grupo de orientador). */
+.modal .confirm-option{display:flex;align-items:flex-start;gap:6px;margin-top:18px;padding:10px 12px 10px 4px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);cursor:pointer}
+.modal .confirm-option .MuiCheckbox-root{padding:4px}
+.modal .confirm-option>span{display:flex;flex-direction:column;gap:3px;padding-top:5px}
+.modal .confirm-option strong{font-size:13px;font-weight:600}.modal .confirm-option small{font-size:11px;font-weight:400;color:var(--muted)}
+.modal .MuiAlert-root{margin-top:12px}
