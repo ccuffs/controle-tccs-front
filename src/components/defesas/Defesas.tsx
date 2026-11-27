@@ -95,13 +95,18 @@ export default function Defesas() {
 	const abrirNovo = async () => {
 		if (!selecionado) return;
 		try {
-			const r = await acompanhamentoService.listarAcompanhamento({
-				ano: String(selecionado.ano),
-				semestre: String(selecionado.semestre),
-				id_curso: padrao,
-				limite: 100,
-			});
-			setTrabalhos(r.itens.filter((i) => i.orientador));
+			const [acomp, ds] = await Promise.all([
+				acompanhamentoService.listarAcompanhamento({
+					ano: String(selecionado.ano),
+					semestre: String(selecionado.semestre),
+					id_curso: padrao,
+					limite: 100,
+				}),
+				// Busca todas as defesas agendadas do período (sem filtro de status) para excluir quem já tem banca
+				visaoGeralService.defesas({ ano: selecionado.ano, semestre: selecionado.semestre, id_curso: padrao }),
+			]);
+			const agendados = new Set(ds.itens.map((d) => `${d.id_tcc}|${d.fase}`));
+			setTrabalhos(acomp.itens.filter((i) => i.orientador && !agendados.has(`${i.id_tcc}|${i.fase}`)));
 			setDialogo({ defesa: null });
 		} catch (e) {
 			notificar(getErrorMessage(e, "Erro ao carregar os trabalhos"), "error");

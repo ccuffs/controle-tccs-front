@@ -83,6 +83,12 @@ export default function Inicio() {
 	const emTccII = orientandos.filter((o) => o.fase === 2).length;
 	const proxima = proximas[0];
 
+	/** Orientandos sem defesa já agendada — lista usada no diálogo de novo agendamento. */
+	const orientandosSemDefesa = useMemo(
+		() => orientandos.filter((o) => !defesas.some((d) => d.id_tcc === o.id_tcc && d.fase === o.fase)),
+		[orientandos, defesas],
+	);
+
 	const etapas: EtapaFaseItem[] = useMemo(() => {
 		const mapa = new Map<string, EtapaFaseItem>();
 		for (const o of orientandos) {
@@ -271,7 +277,7 @@ export default function Inicio() {
 			<AgendamentoDialog
 				open={Boolean(agendar)}
 				defesa={agendar?.defesa ?? null}
-				trabalhos={orientandos}
+				trabalhos={orientandosSemDefesa}
 				orientadorFixo={codigo ? { codigo, nome: docente?.nome ?? undefined } : undefined}
 				onClose={() => setAgendar(null)}
 				onSalvo={() => {

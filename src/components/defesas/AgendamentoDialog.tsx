@@ -85,6 +85,8 @@ export default function AgendamentoDialog({ open, defesa, trabalhos, onClose, on
 	const [form, setForm] = useState<Form>({ tcc: "", orientador: "", data: "", hora: "", local: "", avaliador1: "", avaliador2: "" });
 	const [docentes, setDocentes] = useState<Docente[]>([]);
 	const [orientadoresCurso, setOrientadoresCurso] = useState<OrientadorCurso[]>([]);
+	/** Docentes da banca com convite aceito — usados para pré-preencher avaliadores (somente ao criar). */
+	const [docentesBancaAceitos, setDocentesBancaAceitos] = useState<{ codigo: string; nome: string }[]>([]);
 	const [salvando, setSalvando] = useState(false);
 
 	// Estado da interseção de disponibilidades
@@ -152,6 +154,36 @@ export default function AgendamentoDialog({ open, defesa, trabalhos, onClose, on
 		};
 	}, [open, idCurso]);
 
+	// Pré-preencher avaliadores com convites de banca aceitos (somente ao criar nova defesa)
+	useEffect(() => {
+		if (!open || defesa) {
+			setDocentesBancaAceitos([]);
+			return;
+		}
+		const t = trabalhos.find((x) => String(x.id_tcc) === form.tcc);
+		if (!t) return;
+		let ativo = true;
+		orientacaoService
+			.getConvites({ id_tcc: t.id_tcc })
+			.then((convites) => {
+				if (!ativo) return;
+				const aceitos = convites.filter((c) => !c.orientacao && c.aceito && Number(c.fase) === t.fase);
+				const lista = aceitos.map((c) => ({ codigo: c.codigo_docente, nome: c.docente?.nome ?? c.codigo_docente }));
+				setDocentesBancaAceitos(lista);
+				// Pré-preenche avaliadores apenas se ainda estiverem vazios
+				setForm((f) => ({
+					...f,
+					avaliador1: aceitos[0] ? (f.avaliador1 || aceitos[0].codigo_docente) : f.avaliador1,
+					avaliador2: aceitos[1] ? (f.avaliador2 || aceitos[1].codigo_docente) : f.avaliador2,
+				}));
+			})
+			.catch(() => ativo && setDocentesBancaAceitos([]));
+		return () => {
+			ativo = false;
+		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [open, form.tcc, defesa]);
+
 	// Carregar orientadores do curso — somente na visão de coordenador (sem orientadorFixo)
 	useEffect(() => {
 		if (!open || !idCurso || orientadorFixo) return;
@@ -165,14 +197,15 @@ export default function AgendamentoDialog({ open, defesa, trabalhos, onClose, on
 		};
 	}, [open, idCurso, orientadorFixo]);
 
-	// Opções de avaliador: docentes de banca do curso + membros atuais (ex.: externos), excluindo o orientador.
+	// Opções de avaliador: docentes de banca do curso + membros atuais + convites aceitos (ex.: externos), excluindo o orientador.
 	const opcoes = useMemo(() => {
 		const mapa = new Map<string, string>();
 		docentes.forEach((d) => mapa.set(d.codigo, d.nome ?? d.codigo));
 		defesa?.membros.filter((m) => m.papel === "banca").forEach((m) => mapa.set(m.codigo, `${m.nome}${m.externo ? " · Externo" : ""}`));
+		docentesBancaAceitos.forEach((d) => mapa.set(d.codigo, d.nome)); // convites aceitos (podem ser externos)
 		if (form.orientador) mapa.delete(form.orientador);
 		return [...mapa.entries()].sort((a, b) => a[1].localeCompare(b[1], "pt"));
-	}, [docentes, defesa, form.orientador]);
+	}, [docentes, defesa, form.orientador, docentesBancaAceitos]);
 
 	// Opções de orientador (apenas coordenador + TCC sem orientador definido)
 	const opcoesOrientador = useMemo(() => {
