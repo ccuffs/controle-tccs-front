@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { usePeriodo, rotuloPeriodo } from "../../contexts/PeriodoContext";
 import dicentesController from "../../controllers/dicentes-controller";
 import { nomeCurso, useCursosCoordenacao } from "../../hooks/useCursosCoordenacao";
+import { usePerfilAtual } from "../../hooks/usePerfilAtual";
 import { contemBusca, useListaLocal } from "../../hooks/useListaLocal";
 import dicentesService, { type DicenteComTccs } from "../../services/dicentes-service";
 import { getErrorMessage } from "../../utils/apiError";
@@ -39,6 +40,8 @@ const faseAtual = (d: DicenteComTccs): number | null => {
 /** Cadastro de discentes (imagem discentes_coordenador.png). */
 export default function Discentes() {
 	const notificar = useNotice();
+	// Perfil Administrador: mostra também o nome de usuário (login) de cada discente.
+	const ehAdministracao = usePerfilAtual() === "administracao";
 	const { filtro, escolha, todos } = usePeriodo();
 	const { cursos, padrao } = useCursosCoordenacao();
 
@@ -82,8 +85,10 @@ export default function Discentes() {
 	const filtrosAtivos = (fase ? 1 : 0) + (porPeriodo ? 0 : 1);
 	const { filtrados, visiveis, pagina, setPagina, porPagina } = useListaLocal(
 		discentes,
-		(d) => contemBusca(busca, d.nome, d.matricula, d.email) && (!fase || String(faseAtual(d)) === fase),
-		[busca, fase, discentes],
+		(d) =>
+			contemBusca(busca, d.nome, d.matricula, d.email, ehAdministracao ? d.id_usuario : null) &&
+			(!fase || String(faseAtual(d)) === fase),
+		[busca, fase, discentes, ehAdministracao],
 	);
 
 	const limparFiltros = () => {
@@ -144,9 +149,16 @@ export default function Discentes() {
 			key: "nome",
 			header: "Nome",
 			render: (d) => (
-				<strong>
-					<Realce texto={d.nome} busca={busca} />
-				</strong>
+				<>
+					<strong>
+						<Realce texto={d.nome} busca={busca} />
+					</strong>
+					{ehAdministracao && (
+						<small className="cell-subtitle mono">
+							{d.id_usuario ? <Realce texto={d.id_usuario} busca={busca} /> : "sem usuário"}
+						</small>
+					)}
+				</>
 			),
 		},
 		{ key: "email", header: "E-mail", render: (d) => <Realce texto={d.email || "—"} busca={busca} /> },
@@ -195,7 +207,7 @@ export default function Discentes() {
 			<TableToolbar
 				search={busca}
 				onSearchChange={setBusca}
-				searchPlaceholder="Buscar por nome ou matrícula"
+				searchPlaceholder={ehAdministracao ? "Buscar por nome, matrícula ou usuário" : "Buscar por nome ou matrícula"}
 				filterCount={filtrosAtivos}
 				filtersOpen={filtrosAbertos}
 				onToggleFilters={() => setFiltrosAbertos((x) => !x)}

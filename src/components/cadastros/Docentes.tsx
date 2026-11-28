@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, Checkbox } from "@mui/material";
 import { nomeCurso, useCursosCoordenacao } from "../../hooks/useCursosCoordenacao";
+import { usePerfilAtual } from "../../hooks/usePerfilAtual";
 import { contemBusca, useListaLocal } from "../../hooks/useListaLocal";
 import docentesService from "../../services/docentes-service";
 import orientadoresService from "../../services/orientadores-service";
@@ -45,6 +46,8 @@ const numeroOuNulo = (valor: string) => (valor.trim() === "" ? null : Number(val
 /** Orientadores do curso (orientador_curso); o vínculo é feito com docentes do curso (docente_curso). */
 export default function Docentes() {
 	const notificar = useNotice();
+	// Código do docente: só no perfil Administrador, abaixo do nome (no Coordenador não aparece).
+	const ehAdministracao = usePerfilAtual() === "administracao";
 	const { cursos, padrao } = useCursosCoordenacao();
 
 	const [curso, setCurso] = useState<string | null>(null);
@@ -107,8 +110,8 @@ export default function Docentes() {
 
 	const { filtrados, visiveis, pagina, setPagina, porPagina } = useListaLocal(
 		orientadores,
-		(d) => contemBusca(busca, d.nome, d.codigo, d.siape, d.email),
-		[busca, orientadores],
+		(d) => contemBusca(busca, d.nome, ehAdministracao ? d.codigo : null, d.siape, d.email),
+		[busca, orientadores, ehAdministracao],
 	);
 
 	/** Docentes do curso escolhido no drawer (docente_curso) que ainda não orientam nele. */
@@ -226,16 +229,22 @@ export default function Docentes() {
 	};
 
 	const colunas: DataTableColumn<Docente>[] = [
-		{ key: "codigo", header: "Código", className: "mono", render: (d) => <Realce texto={d.codigo} busca={busca} /> },
 		{
 			key: "nome",
 			header: "Nome",
 			render: (d) => (
 				<div className="table-person">
 					<Avatar nome={d.nome ?? d.codigo} size="small" />
-					<strong>
-						<Realce texto={d.nome ?? d.codigo} busca={busca} />
-					</strong>
+					<div>
+						<strong>
+							<Realce texto={d.nome ?? d.codigo} busca={busca} />
+						</strong>
+						{ehAdministracao && (
+							<small className="cell-subtitle mono">
+								<Realce texto={d.codigo} busca={busca} />
+							</small>
+						)}
+					</div>
 				</div>
 			),
 		},
@@ -294,7 +303,7 @@ export default function Docentes() {
 			<TableToolbar
 				search={busca}
 				onSearchChange={setBusca}
-				searchPlaceholder="Buscar por nome, SIAPE ou código"
+				searchPlaceholder={ehAdministracao ? "Buscar por nome, SIAPE ou código" : "Buscar por nome ou SIAPE"}
 			>
 				<Select
 					value={cursoEfetivo || TODOS}
@@ -310,6 +319,7 @@ export default function Docentes() {
 				</Select>
 			</TableToolbar>
 			<DataTable
+				tableClassName="primeira-coluna-livre"
 				columns={colunas}
 				rows={visiveis}
 				getRowKey={(d) => d.codigo}

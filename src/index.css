@@ -110,6 +110,8 @@
 }
 
 .table-person{display:flex;align-items:center;gap:9px}
+/* Tabelas que começam por uma coluna de conteúdo (não pelo nº/código estreito). */
+.primeira-coluna-livre th:first-child,.primeira-coluna-livre td:first-child{width:auto}
 .description-cell{max-width:310px;color:var(--muted);line-height:1.4}
 .cell-subtitle{display:block;color:var(--subtle);font-size:9px;margin-top:3px}
 .grade-cell{font-weight:700;font-size:13px;font-variant-numeric:tabular-nums}
