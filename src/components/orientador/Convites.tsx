@@ -6,6 +6,7 @@ import { usePeriodo } from "../../contexts/PeriodoContext";
 import convitesService from "../../services/convites-service";
 import type { Convite } from "../../types/convite";
 import { getErrorMessage } from "../../utils/apiError";
+import { dataBr } from "../../utils/formatos";
 import {
 	Avatar,
 	Button,
@@ -247,11 +248,15 @@ export default function Convites() {
 						<div className="invite-detail-message" style={{ marginTop: 14 }}>
 							<span>MENSAGEM DO DISCENTE</span>
 							<p>“{detalhe.mensagem_envio || "Sem mensagem."}”</p>
+							<small className="invite-detail-date">Convite enviado em {dataBr(detalhe.data_envio)}</small>
 						</div>
-						{!pendente(detalhe) && detalhe.mensagem_feedback && (
+						{!pendente(detalhe) && (
 							<div className="invite-detail-message" style={{ marginTop: 10 }}>
 								<span>SUA RESPOSTA</span>
-								<p>{detalhe.mensagem_feedback}</p>
+								{detalhe.mensagem_feedback && <p>{detalhe.mensagem_feedback}</p>}
+								<small className="invite-detail-date">
+									{detalhe.aceito ? "Aceito" : "Recusado"} em {dataBr(detalhe.data_feedback)}
+								</small>
 							</div>
 						)}
 					</>

@@ -68,10 +68,9 @@ export default function EtapaConviteBanca({ fase, convites, bancaProjeto = [], o
 					{ordenados.map((c) => {
 						const s = situacao(c);
 						const [tom, rotulo] = CHIP[s];
+						const enviado = `Convite enviado em ${dataBr(c.data_envio)}`;
 						const quando =
-							s === "pendente"
-								? `Convite enviado em ${dataBr(c.data_envio)}`
-								: `${s === "aceito" ? "Aceitou" : "Recusou"} em ${dataBr(c.data_feedback)}`;
+							s === "pendente" ? enviado : `${enviado} · ${s === "aceito" ? "Aceito" : "Recusado"} em ${dataBr(c.data_feedback)}`;
 						return (
 							<div className="defense-person" key={`${c.codigo_docente}-${c.data_envio}`}>
 								<Avatar nome={nomeDe(c)} size="small" />

@@ -28,7 +28,8 @@ export default function EtapaEscolherOrientador({ convite, idCurso, onConvidar, 
 			<div className="readonly-box success-box">
 				<Icon name="check_circle" />
 				<span>
-					{nome} aceitou sua orientação{convite?.data_feedback ? ` em ${dataBr(convite.data_feedback)}` : ""}. Continue para
+					{nome} aceitou sua orientação{convite?.data_feedback ? ` em ${dataBr(convite.data_feedback)}` : ""}
+					{convite ? ` (convite enviado em ${dataBr(convite.data_envio)})` : ""}. Continue para
 					preencher tema, título e resumo.
 				</span>
 			</div>

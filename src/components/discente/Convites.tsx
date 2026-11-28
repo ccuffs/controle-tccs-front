@@ -5,6 +5,7 @@ import { useTccDiscente } from "../../hooks/useTccDiscente";
 import orientacaoService from "../../services/orientacao-service";
 import type { Convite } from "../../types/convite";
 import { getErrorMessage } from "../../utils/apiError";
+import { dataBr } from "../../utils/formatos";
 import { Avatar, Card, EmptyState, Icon, PageHeader, PhaseChip, StatusChip, Surface, useNotice } from "../ui";
 
 type Aba = "pendentes" | "respondidos" | "todos";
@@ -57,7 +58,7 @@ export default function ConvitesDiscente() {
 										<h2>{nome}</h2>
 										<span>{c.docente?.email ?? ""}</span>
 									</div>
-									<span className="invite-date">Enviado em {new Date(c.data_envio).toLocaleDateString("pt-BR")}</span>
+									<span className="invite-date">Enviado em {dataBr(c.data_envio)}</span>
 								</div>
 								<div className="chips">
 									<StatusChip type="neutral">
@@ -72,7 +73,9 @@ export default function ConvitesDiscente() {
 								{c.mensagem_envio && <blockquote>“{c.mensagem_envio}”</blockquote>}
 								<div className="status-line">
 									<span className={`status-dot ${!pendente(c) && c.aceito ? "success-dot" : ""}`} />
-									{pendente(c) ? "Aguardando resposta do docente" : c.aceito ? "Aceito pelo docente" : "Recusado pelo docente"}
+									{pendente(c)
+										? "Aguardando resposta do docente"
+										: `${c.aceito ? "Aceito" : "Recusado"} pelo docente em ${dataBr(c.data_feedback)}`}
 									{!pendente(c) && c.mensagem_feedback ? ` · ${c.mensagem_feedback}` : ""}
 								</div>
 							</div>
