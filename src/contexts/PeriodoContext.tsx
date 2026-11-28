@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useLocation } from "react-router";
 import { perfilDaUrl } from "../components/layout/navegacao";
 import dashboardService from "../services/dashboard-service";
@@ -182,6 +182,16 @@ export function PeriodoProvider({ children }: { children: ReactNode }) {
 		setEscolha(nova);
 		salvarPreferencia(nova);
 	}, []);
+
+	// Ao trocar de perfil (ex.: Coordenador → Orientador), o seletor volta ao período atual.
+	// Navegar dentro do mesmo perfil ou recarregar a página mantém a escolha.
+	const perfilAnterior = useRef(perfil);
+	useEffect(() => {
+		if (!perfil) return;
+		const anterior = perfilAnterior.current;
+		perfilAnterior.current = perfil;
+		if (anterior && anterior !== perfil && atual) selecionar(atual);
+	}, [perfil, atual, selecionar]);
 
 	const todos = escolhaValida === "todos";
 	const especifico = escolhaValida && escolhaValida !== "todos" ? escolhaValida : null;
