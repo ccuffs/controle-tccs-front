@@ -3,13 +3,17 @@ import { getErrorMessage } from "../utils/apiError";
 import type { Convite } from "../types/convite";
 import type { OrientadorCurso } from "../types/curso";
 
-// GET - Buscar convites do docente
+// GET - Buscar convites do docente (opcionalmente só os de TCCs do período informado)
 export async function getConvitesDocente(
 	codigoDocente: string,
+	periodo: { ano?: number; semestre?: number; desde_ano?: number; desde_semestre?: number } = {},
 ): Promise<Convite[]> {
+	const params = new URLSearchParams();
+	for (const [chave, valor] of Object.entries(periodo)) if (valor) params.set(chave, String(valor));
+	const query = params.toString();
 	try {
 		const response = await axiosInstance.get<{ convites: Convite[] }>(
-			`/convites/docente/${codigoDocente}`,
+			`/convites/docente/${codigoDocente}${query ? `?${query}` : ""}`,
 		);
 		return response.convites || [];
 	} catch (error) {

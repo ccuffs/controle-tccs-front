@@ -1,18 +1,21 @@
 import { useEffect, useState } from "react";
 import { nomeCurso, useCursosCoordenacao } from "../../hooks/useCursosCoordenacao";
 import { contemBusca, useListaLocal } from "../../hooks/useListaLocal";
+import { rotuloPeriodo, usePeriodo } from "../../contexts/PeriodoContext";
 import temasTccService from "../../services/temas-tcc-service";
 import type { OrientadorCurso } from "../../types/curso";
 import type { AreaTcc, TemaTcc } from "../../types/tema-tcc";
 import { getErrorMessage } from "../../utils/apiError";
 import {
 	AdvancedFilters,
+	AvisoPeriodoUnico,
 	Button,
 	ConfirmDialog,
 	DataTable,
 	FilterField,
 	Input,
 	PageHeader,
+	Realce,
 	RowActions,
 	Select,
 	SideDrawer,
@@ -21,7 +24,6 @@ import {
 	Textarea,
 	useNotice,
 	type DataTableColumn,
-	Realce,
 } from "../ui";
 
 const NOVA_AREA = "__nova__";
@@ -41,6 +43,7 @@ interface Formulario {
 export default function Temas() {
 	const notificar = useNotice();
 	const { cursos, padrao } = useCursosCoordenacao();
+	const { periodoEfetivo } = usePeriodo();
 
 	const [curso, setCurso] = useState<string | null>(null);
 	const [busca, setBusca] = useState("");
@@ -65,7 +68,7 @@ export default function Temas() {
 		let ativo = true;
 		setCarregando(true);
 		Promise.all([
-			temasTccService.getTemasPorCurso(Number(cursoEfetivo)),
+			temasTccService.getTemasPorCurso(Number(cursoEfetivo), periodoEfetivo),
 			temasTccService.getDocentesOrientadoresPorCurso(Number(cursoEfetivo)),
 		])
 			.then(([listaTemas, listaOrientadores]) => {
@@ -78,7 +81,7 @@ export default function Temas() {
 		return () => {
 			ativo = false;
 		};
-	}, [cursoEfetivo, recarregar, notificar]);
+	}, [cursoEfetivo, periodoEfetivo?.ano, periodoEfetivo?.semestre, recarregar, notificar]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	// Áreas pertencem ao docente escolhido no formulário.
 	const docenteForm = form?.docente ?? "";
@@ -161,7 +164,7 @@ export default function Temas() {
 			if (form.id) await temasTccService.editarTemaCompleto(form.id, dados);
 			else await temasTccService.criarTemaCompleto(dados);
 			if (vagas !== form.vagasOriginais) {
-				await temasTccService.atualizarVagasOferta(form.docente, Number(cursoEfetivo), vagas);
+				await temasTccService.atualizarVagasOferta(form.docente, Number(cursoEfetivo), vagas, periodoEfetivo);
 			}
 			notificar(form.id ? "Tema atualizado." : "Tema criado.");
 			setForm(null);
@@ -238,6 +241,7 @@ export default function Temas() {
 					</Button>
 				}
 			/>
+			<AvisoPeriodoUnico />
 			<TableToolbar
 				search={busca}
 				onSearchChange={setBusca}
@@ -347,7 +351,7 @@ export default function Temas() {
 								</Select>
 							</label>
 							<label>
-								<span>Vagas da oferta</span>
+								<span>Vagas da oferta em {rotuloPeriodo(periodoEfetivo)}</span>
 								<Input type="number" min={0} value={form.vagas} onChange={(e) => alterar("vagas", e.target.value)} />
 								<small>Vagas do docente neste curso, compartilhadas entre todos os temas ativos dele.</small>
 							</label>

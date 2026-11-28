@@ -14,7 +14,7 @@ import type { DefesaAgenda, EtapaFaseItem } from "../../types/dashboard";
 import { getErrorMessage } from "../../utils/apiError";
 import AgendamentoDialog from "../defesas/AgendamentoDialog";
 import DefenseList from "../defesas/DefenseList";
-import { Button, Card, Icon, KpiCard, PageHeader, PhaseChip, PlainButton, useNotice } from "../ui";
+import { AvisoPeriodoUnico, Button, Card, Icon, KpiCard, PageHeader, PhaseChip, PlainButton, useNotice } from "../ui";
 import { GraficoConvites, GraficoEtapas } from "../visao-geral/graficos";
 
 const DIA = 24 * 60 * 60 * 1000;
@@ -29,7 +29,7 @@ export default function Inicio() {
 	const navigate = useNavigate();
 	const notificar = useNotice();
 	const { usuario } = useAuth();
-	const { selecionado } = usePeriodo();
+	const { periodoEfetivo: selecionado } = usePeriodo();
 	const { docente, codigo } = useDocenteAtual();
 
 	const [orientandos, setOrientandos] = useState<ItemAcompanhamento[]>([]);
@@ -54,7 +54,7 @@ export default function Inicio() {
 				codigo_docente: filtros.codigo_docente,
 				limite: 100,
 			}),
-			convitesService.getConvitesDocente(filtros.codigo_docente),
+			convitesService.getConvitesDocente(filtros.codigo_docente, { ano: filtros.ano, semestre: filtros.semestre }),
 			visaoGeralService.defesas(filtros),
 			visaoGeralService.docentesSemDisponibilidade({ ano: filtros.ano, semestre: filtros.semestre }),
 		]).then(([a, c, d, s]) => {
@@ -131,6 +131,7 @@ export default function Inicio() {
 				title="Seu trabalho hoje"
 				description="Veja o que precisa da sua atenção e acompanhe suas próximas atividades."
 			/>
+			<AvisoPeriodoUnico />
 			<div className="kpi-grid four">
 				<KpiCard icon="school" value={v(orientandos.length)} label="Orientandos" meta={`${emTccII} em TCC II`} tone="teal" />
 				<KpiCard

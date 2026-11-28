@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { usePeriodo } from "../../contexts/PeriodoContext";
 import { useCursosCoordenacao } from "../../hooks/useCursosCoordenacao";
 import acompanhamentoService from "../../services/acompanhamento-service";
@@ -56,11 +56,9 @@ function Historico({ defesa }: { defesa: DefesaAgenda }) {
 /** Agenda de defesas do curso (imagem defesas_coordenador.png). */
 export default function Defesas() {
 	const notificar = useNotice();
-	const { periodos, selecionado } = usePeriodo();
+	const { filtro, periodoEfetivo: selecionado } = usePeriodo();
 	const { padrao } = useCursosCoordenacao();
 
-	const [ano, setAno] = useState("");
-	const [semestre, setSemestre] = useState("");
 	const [status, setStatus] = useState("");
 	const [fase, setFase] = useState("");
 	const [defesas, setDefesas] = useState<DefesaAgenda[]>([]);
@@ -77,7 +75,7 @@ export default function Defesas() {
 		setCarregando(true);
 		visaoGeralService
 			.defesas(
-				{ ano: ano ? Number(ano) : undefined, semestre: semestre ? Number(semestre) : undefined, fase, id_curso: padrao },
+				{ ...filtro, fase, id_curso: padrao },
 				{ incluir_historico: true, status: status || undefined },
 			)
 			.then((r) => ativo && setDefesas(r.itens))
@@ -90,7 +88,7 @@ export default function Defesas() {
 		return () => {
 			ativo = false;
 		};
-	}, [ano, semestre, status, fase, padrao, recarregar, notificar]);
+	}, [filtro, status, fase, padrao, recarregar, notificar]);
 
 	const abrirNovo = async () => {
 		if (!selecionado) return;
@@ -128,10 +126,7 @@ export default function Defesas() {
 		}
 	};
 
-	const anos = useMemo(() => [...new Set(periodos.map((p) => p.ano))], [periodos]);
 	const limpar = () => {
-		setAno("");
-		setSemestre("");
 		setStatus("");
 		setFase("");
 	};
@@ -148,23 +143,6 @@ export default function Defesas() {
 				}
 			/>
 			<FilterBar onClear={limpar}>
-				<FilterField label="Ano">
-					<Select value={ano || TODOS} onChange={(e) => setAno(e.target.value === TODOS ? "" : e.target.value)}>
-						<option value={TODOS}>Todos os anos</option>
-						{anos.map((a) => (
-							<option key={a} value={String(a)}>
-								{a}
-							</option>
-						))}
-					</Select>
-				</FilterField>
-				<FilterField label="Semestre">
-					<Select value={semestre || TODOS} onChange={(e) => setSemestre(e.target.value === TODOS ? "" : e.target.value)}>
-						<option value={TODOS}>Todos os semestres</option>
-						<option value="1">1º semestre</option>
-						<option value="2">2º semestre</option>
-					</Select>
-				</FilterField>
 				<FilterField label="Status">
 					<Select value={status || TODOS} onChange={(e) => setStatus(e.target.value === TODOS ? "" : e.target.value)}>
 						<option value={TODOS}>Todas as defesas</option>

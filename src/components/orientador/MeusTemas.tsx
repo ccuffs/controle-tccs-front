@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { Switch } from "@mui/material";
 import { useDocenteAtual } from "../../hooks/useDocenteAtual";
+import { rotuloPeriodo, usePeriodo } from "../../contexts/PeriodoContext";
 import temasTccService from "../../services/temas-tcc-service";
 import type { OrientadorCurso } from "../../types/curso";
 import type { AreaTcc, TemaTcc } from "../../types/tema-tcc";
 import { getErrorMessage } from "../../utils/apiError";
 import {
+	AvisoPeriodoUnico,
 	Button,
 	Card,
 	ConfirmDialog,
@@ -39,6 +41,7 @@ const atualizadoEm = (iso?: string) =>
 export default function MeusTemas() {
 	const notificar = useNotice();
 	const { codigo } = useDocenteAtual();
+	const { periodoEfetivo } = usePeriodo();
 
 	const [cursos, setCursos] = useState<OrientadorCurso[]>([]);
 	const [curso, setCurso] = useState("");
@@ -68,7 +71,7 @@ export default function MeusTemas() {
 		let ativo = true;
 		setCarregando(true);
 		Promise.all([
-			temasTccService.getTemasPorCursoOrientador(codigo, Number(curso)),
+			temasTccService.getTemasPorCursoOrientador(codigo, Number(curso), periodoEfetivo),
 			temasTccService.getAreasTccPorDocente(codigo),
 		])
 			.then(([listaTemas, listaAreas]) => {
@@ -82,7 +85,7 @@ export default function MeusTemas() {
 		return () => {
 			ativo = false;
 		};
-	}, [codigo, curso, recarregar, notificar]);
+	}, [codigo, curso, periodoEfetivo?.ano, periodoEfetivo?.semestre, recarregar, notificar]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	const ocupadas = temas[0]?.vagasOcupadas ?? 0;
 
@@ -94,7 +97,7 @@ export default function MeusTemas() {
 		}
 		setOcupado(true);
 		try {
-			await temasTccService.atualizarVagasOferta(codigo, Number(curso), n);
+			await temasTccService.atualizarVagasOferta(codigo, Number(curso), n, periodoEfetivo);
 			notificar("Vagas atualizadas.");
 			setRecarregar((x) => x + 1);
 		} catch (e) {
@@ -164,6 +167,7 @@ export default function MeusTemas() {
 					</Button>
 				}
 			/>
+			<AvisoPeriodoUnico />
 			<div className="table-toolbar card">
 				<label>
 					<span>Curso</span>
@@ -179,7 +183,7 @@ export default function MeusTemas() {
 			<Surface className="card offer-card">
 				<div>
 					<span className="eyebrow">OFERTA DO DOCENTE</span>
-					<h2>Vagas neste curso</h2>
+					<h2>Vagas neste curso em {rotuloPeriodo(periodoEfetivo)}</h2>
 					<p>
 						As vagas são compartilhadas entre todos os seus temas ativos. {ocupadas} {ocupadas === 1 ? "vaga ocupada" : "vagas ocupadas"} no
 						período.

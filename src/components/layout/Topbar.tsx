@@ -1,6 +1,6 @@
 import { useState, type MouseEvent } from "react";
 import { Divider, ListItemIcon, Menu, MenuItem } from "@mui/material";
-import { rotuloPeriodo } from "../../contexts/PeriodoContext";
+import { mesmoPeriodo, rotuloPeriodo, type EscolhaPeriodo } from "../../contexts/PeriodoContext";
 import type { AnoSemestre } from "../../types/dashboard";
 import { Avatar, Icon, PlainButton } from "../ui";
 import { PERFIS, type Perfil } from "./navegacao";
@@ -11,10 +11,10 @@ interface TopbarProps {
 	perfil: Perfil | null;
 	perfisDisponiveis: Perfil[];
 	periodos: AnoSemestre[];
-	periodoSelecionado: AnoSemestre | null;
+	periodoSelecionado: EscolhaPeriodo | null;
 	escuro: boolean;
 	onAbrirMenu: () => void;
-	onSelecionarPeriodo: (periodo: AnoSemestre) => void;
+	onSelecionarPeriodo: (periodo: EscolhaPeriodo) => void;
 	onAlternarTema: () => void;
 	onTrocarPerfil: (perfil: Perfil) => void;
 	onSair: () => void;
@@ -64,9 +64,18 @@ export function Topbar({
 					<Icon name="expand_more" size={18} />
 				</PlainButton>
 				<Menu anchorEl={ancoraPeriodo} open={Boolean(ancoraPeriodo)} onClose={() => setAncoraPeriodo(null)}>
+					<MenuItem
+						selected={periodoSelecionado === "todos"}
+						onClick={() => {
+							onSelecionarPeriodo("todos");
+							setAncoraPeriodo(null);
+						}}
+					>
+						Todos os períodos
+					</MenuItem>
+					<Divider />
 					{periodos.map((periodo) => {
-						const selecionado =
-							periodoSelecionado?.ano === periodo.ano && periodoSelecionado?.semestre === periodo.semestre;
+						const selecionado = periodoSelecionado !== "todos" && mesmoPeriodo(periodoSelecionado, periodo);
 						return (
 							<MenuItem
 								key={rotuloPeriodo(periodo)}

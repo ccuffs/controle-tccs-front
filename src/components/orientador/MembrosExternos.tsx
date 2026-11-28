@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { usePeriodo } from "../../contexts/PeriodoContext";
+import { filtroComoTexto, usePeriodo } from "../../contexts/PeriodoContext";
 import { useDocenteAtual } from "../../hooks/useDocenteAtual";
 import acompanhamentoService from "../../services/acompanhamento-service";
 import {
@@ -50,7 +50,8 @@ const VAZIO: Formulario = { nome: "", email: "", instituicao: "", siape: "" };
 /** Membros externos das bancas dos orientandos (imagem adiciona_membro_externo.png). */
 export default function MembrosExternos() {
 	const notificar = useNotice();
-	const { selecionado } = usePeriodo();
+	const { filtro, todos } = usePeriodo();
+	const { ano, semestre, desde_ano, desde_semestre } = filtroComoTexto(filtro);
 	const { codigo } = useDocenteAtual();
 
 	const [cursos, setCursos] = useState<OrientadorCurso[]>([]);
@@ -78,13 +79,15 @@ export default function MembrosExternos() {
 	}, [codigo]);
 
 	useEffect(() => {
-		if (!codigo || !curso || !selecionado) return;
+		if (!codigo || !curso) return;
 		acompanhamentoService
 			.listarAcompanhamento({
 				codigo_docente: codigo,
 				id_curso: curso,
-				ano: String(selecionado.ano),
-				semestre: String(selecionado.semestre),
+				ano,
+				semestre,
+				desde_ano,
+				desde_semestre,
 				limite: 100,
 			})
 			.then((r) => {
@@ -93,7 +96,7 @@ export default function MembrosExternos() {
 				setTcc((atual) => (meus.some((m) => String(m.id_tcc) === atual) ? atual : meus[0] ? String(meus[0].id_tcc) : ""));
 			})
 			.catch((e) => notificar(getErrorMessage(e, "Erro ao carregar seus orientandos"), "error"));
-	}, [codigo, curso, selecionado, notificar]);
+	}, [codigo, curso, ano, semestre, desde_ano, desde_semestre, notificar]);
 
 	const trabalho = trabalhos.find((t) => String(t.id_tcc) === tcc) ?? null;
 
@@ -211,7 +214,7 @@ export default function MembrosExternos() {
 						{trabalhos.length === 0 && <option value="">Nenhum orientando no período</option>}
 						{trabalhos.map((t) => (
 							<option key={t.id_tcc} value={String(t.id_tcc)}>
-								{`${t.nome} · ${t.fase === 2 ? "TCC (TCC II)" : "Projeto (TCC I)"}`}
+								{`${t.nome} · ${t.fase === 2 ? "TCC (TCC II)" : "Projeto (TCC I)"}${todos ? ` · ${t.periodo}` : ""}`}
 							</option>
 						))}
 					</Select>

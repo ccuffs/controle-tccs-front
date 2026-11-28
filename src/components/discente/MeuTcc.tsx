@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useModuloDiscente } from "../../hooks/useModuloDiscente";
+import { useConsultaDiscente } from "../../hooks/useTccDiscente";
 import { progressoEtapa } from "../../utils/etapas";
 import TccStepper, { type ContextoTcc } from "../modulo-dicente/TccStepper";
 import { Icon, PlainButton, Surface } from "../ui";
+import TccConsulta from "./TccConsulta";
 
 interface Passo {
 	rotulo: string;
@@ -52,6 +54,10 @@ export default function MeuTcc() {
 	// TCC concluído em período anterior ou TCC antigo aguardando escolha: sem passos nem cabeçalho de etapa.
 	const semJornada = Boolean(contexto && contexto.situacao !== "jornada");
 	const progresso = contexto?.situacao === "concluido" ? 100 : progressoEtapa(fase, etapaSalva, contexto?.aprovado ?? false);
+	// Período anterior escolhido no topo: só consulta do TCC daquele período.
+	const consulta = useConsultaDiscente();
+
+	if (consulta) return <TccConsulta periodo={consulta} />;
 
 	return (
 		<>

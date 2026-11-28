@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Tab, Tabs } from "@mui/material";
+import { rotuloPeriodo, usePeriodo } from "../../contexts/PeriodoContext";
 import { useTccDiscente } from "../../hooks/useTccDiscente";
 import orientacaoService from "../../services/orientacao-service";
 import type { Convite } from "../../types/convite";
@@ -12,17 +13,26 @@ const pendente = (c: Convite) => c.data_feedback === null;
 /** Convites enviados pelo discente (protótipo: Invites com `student` em design/App.tsx). */
 export default function ConvitesDiscente() {
 	const notificar = useNotice();
-	const { tcc, carregando } = useTccDiscente();
+	const { tcc, carregando, consulta } = useTccDiscente();
+	const { todos } = usePeriodo();
 	const [convites, setConvites] = useState<Convite[]>([]);
 	const [aba, setAba] = useState<Aba>("todos");
 
 	useEffect(() => {
-		if (!tcc) return;
+		// "Todos os períodos": sem id_tcc, a API devolve os convites de todos os TCCs do discente.
+		if (!todos && !tcc) {
+			setConvites([]);
+			return;
+		}
+		let ativo = true;
 		orientacaoService
-			.getConvites({ id_tcc: tcc.id })
-			.then((lista) => setConvites([...lista].sort((a, b) => b.data_envio.localeCompare(a.data_envio))))
-			.catch((e) => notificar(getErrorMessage(e, "Erro ao carregar seus convites"), "error"));
-	}, [tcc, notificar]);
+			.getConvites(todos ? {} : { id_tcc: tcc?.id })
+			.then((lista) => ativo && setConvites([...lista].sort((a, b) => b.data_envio.localeCompare(a.data_envio))))
+			.catch((e) => ativo && notificar(getErrorMessage(e, "Erro ao carregar seus convites"), "error"));
+		return () => {
+			ativo = false;
+		};
+	}, [tcc, todos, notificar]);
 
 	const contagem = { pendentes: convites.filter(pendente).length, respondidos: convites.filter((c) => !pendente(c)).length, todos: convites.length };
 	const visiveis = convites.filter((c) => (aba === "todos" ? true : aba === "pendentes" ? pendente(c) : !pendente(c)));
@@ -55,6 +65,9 @@ export default function ConvitesDiscente() {
 										{c.orientacao ? "Orientação" : "Banca"}
 									</StatusChip>
 									<PhaseChip fase={c.fase} />
+									{todos && c.trabalhoConclusao?.ano && (
+										<StatusChip type="neutral">{`${c.trabalhoConclusao.ano}/${c.trabalhoConclusao.semestre}`}</StatusChip>
+									)}
 								</div>
 								{c.mensagem_envio && <blockquote>“{c.mensagem_envio}”</blockquote>}
 								<div className="status-line">
@@ -71,7 +84,15 @@ export default function ConvitesDiscente() {
 						<EmptyState
 							icon="inbox"
 							title="Nenhum convite"
-							text={tcc ? "Os convites de orientação e de banca que você enviar aparecem aqui." : "Você não tem TCC na oferta atual."}
+							text={
+								consulta
+									? tcc
+										? `Nenhum convite no seu TCC de ${rotuloPeriodo(consulta)}.`
+										: `Você não tinha TCC em ${rotuloPeriodo(consulta)}.`
+									: todos || tcc
+										? "Os convites de orientação e de banca que você enviar aparecem aqui."
+										: "Você não tem TCC na oferta atual."
+							}
 						/>
 					</Surface>
 				)}

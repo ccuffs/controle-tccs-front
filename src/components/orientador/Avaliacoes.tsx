@@ -39,7 +39,7 @@ const lerNota = (texto: string): number | null => {
 /** Avaliações das defesas em que o docente participa (imagens avaliacao_defesa_orientador*.png). */
 export default function Avaliacoes() {
 	const notificar = useNotice();
-	const { selecionado } = usePeriodo();
+	const { filtro, escolha } = usePeriodo();
 	const { codigo } = useDocenteAtual();
 
 	const [defesas, setDefesas] = useState<DefesaAgenda[]>([]);
@@ -49,11 +49,12 @@ export default function Avaliacoes() {
 	const [aberta, setAberta] = useState<DefesaAgenda | null>(null);
 
 	useEffect(() => {
-		if (!codigo || !selecionado) return;
+		if (!codigo || !escolha) return;
 		let ativo = true;
 		setCarregando(true);
 		visaoGeralService
-			.defesas({ ano: selecionado.ano, semestre: selecionado.semestre, codigo_docente: codigo })
+			// Histórico: o período é atribuído pela data da defesa; sem ano/semestre ("todos"), traz todas.
+			.defesas({ ...filtro, codigo_docente: codigo }, { incluir_historico: true })
 			.then((r) => {
 				if (!ativo) return;
 				setDefesas(r.itens);
@@ -64,7 +65,7 @@ export default function Avaliacoes() {
 		return () => {
 			ativo = false;
 		};
-	}, [codigo, selecionado, recarregar, notificar]);
+	}, [codigo, escolha, filtro, recarregar, notificar]);
 
 	const contagem = useMemo(
 		() => ({ pendentes: defesas.filter((d) => !completa(d)).length, concluidas: defesas.filter(completa).length, todas: defesas.length }),

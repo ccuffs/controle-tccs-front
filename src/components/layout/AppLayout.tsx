@@ -23,7 +23,7 @@ const ehTelaEstreita = () => typeof window !== "undefined" && window.matchMedia(
 /** Casca do app: menu lateral, barra superior e conteúdo da rota. */
 export default function AppLayout() {
 	const { usuario, gruposUsuario, logout } = useAuth();
-	const { periodos, selecionado, selecionar } = usePeriodo();
+	const { periodos, escolha, selecionar } = usePeriodo();
 	const { mode, toggleTheme } = useThemeContext();
 	const navigate = useNavigate();
 	const { pathname } = useLocation();
@@ -85,7 +85,7 @@ export default function AppLayout() {
 					perfil={perfil}
 					perfisDisponiveis={perfis}
 					periodos={periodos}
-					periodoSelecionado={selecionado}
+					periodoSelecionado={escolha}
 					escuro={mode === "dark"}
 					onAbrirMenu={() => (ehTelaEstreita() ? setAbertoMobile(true) : alternarRecolhido())}
 					onSelecionarPeriodo={selecionar}

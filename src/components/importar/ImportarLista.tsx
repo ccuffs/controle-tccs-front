@@ -1,10 +1,10 @@
 import { useRef, useState, type DragEvent } from "react";
 import { Alert } from "@mui/material";
-import { usePeriodo } from "../../contexts/PeriodoContext";
+import { filtroComoTexto, usePeriodo } from "../../contexts/PeriodoContext";
 import { nomeCurso, useCursosCoordenacao } from "../../hooks/useCursosCoordenacao";
 import orientacaoService, { type UploadPdfResponse } from "../../services/orientacao-service";
 import { getErrorMessage } from "../../utils/apiError";
-import { Button, Card, Icon, PageHeader, Select, StatusChip, useNotice } from "../ui";
+import { Button, Card, Icon, Input, PageHeader, Select, StatusChip, useNotice } from "../ui";
 
 const PASSOS = ["Dados da oferta", "Enviar PDF", "Revisar resultado"];
 const TAMANHO_MAXIMO = 10 * 1024 * 1024;
@@ -28,13 +28,12 @@ function rotuloStatus(status: string) {
 /** Importação de turma a partir do PDF acadêmico (imagem importar_listas_coordenador.png). */
 export default function ImportarLista() {
 	const notificar = useNotice();
-	const { periodos, selecionado } = usePeriodo();
+	const { filtro, todos } = usePeriodo();
 	const { cursos, padrao } = useCursosCoordenacao();
 	const entrada = useRef<HTMLInputElement>(null);
 
 	const [passo, setPasso] = useState(0);
 	const [curso, setCurso] = useState<string | null>(null);
-	const [periodo, setPeriodo] = useState<string | null>(null);
 	const [fase, setFase] = useState("1");
 	const [arquivo, setArquivo] = useState<File | null>(null);
 	const [arrastando, setArrastando] = useState(false);
@@ -42,8 +41,8 @@ export default function ImportarLista() {
 	const [resultado, setResultado] = useState<UploadPdfResponse | null>(null);
 
 	const cursoEfetivo = curso ?? (padrao || (cursos[0] ? String(cursos[0].id) : ""));
-	const periodoEfetivo = periodo ?? (selecionado ? `${selecionado.ano}-${selecionado.semestre}` : "");
-	const [ano, semestre] = periodoEfetivo.split("-");
+	// O destino é o período do seletor do topo; "Todos os períodos" não serve de destino.
+	const { ano, semestre } = filtroComoTexto(filtro);
 
 	const escolherArquivo = (f: File | undefined) => {
 		if (!f) return;
@@ -128,33 +127,19 @@ export default function ImportarLista() {
 								</Select>
 							</label>
 							<label>
-								<span>Ano</span>
-								<Select
-									value={ano ?? ""}
-									onChange={(e) => {
-										const existe = periodos.some((p) => String(p.ano) === e.target.value && String(p.semestre) === semestre);
-										const primeiro = periodos.find((p) => String(p.ano) === e.target.value)?.semestre ?? 1;
-										setPeriodo(`${e.target.value}-${existe ? semestre : primeiro}`);
-									}}
-								>
-									{[...new Set(periodos.map((p) => p.ano))].map((a) => (
-										<option key={a} value={String(a)}>
-											{a}
-										</option>
-									))}
-								</Select>
-							</label>
-							<label>
-								<span>Semestre</span>
-								<Select value={semestre ?? ""} onChange={(e) => setPeriodo(`${ano}-${e.target.value}`)}>
-									{periodos
-										.filter((p) => String(p.ano) === ano)
-										.map((p) => (
-											<option key={p.semestre} value={String(p.semestre)}>
-												{`${p.semestre}º semestre`}
-											</option>
-										))}
-								</Select>
+								<span>Período</span>
+								<Input
+									value={ano && semestre ? `${ano}/${semestre}` : ""}
+									placeholder="Escolha um período no topo"
+									readOnly
+									error={todos}
+									aria-describedby="periodo-destino-ajuda"
+								/>
+								<small id="periodo-destino-ajuda">
+									{todos
+										? "“Todos os períodos” não serve de destino: escolha um período no seletor do topo."
+										: "Para importar em outro período, troque-o no seletor do topo."}
+								</small>
 							</label>
 							<label>
 								<span>Fase</span>

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { contemBusca } from "../../hooks/useListaLocal";
+import { usePeriodo } from "../../contexts/PeriodoContext";
 import temasTccService from "../../services/temas-tcc-service";
 import type { TemaTcc } from "../../types/tema-tcc";
 import { getErrorMessage } from "../../utils/apiError";
@@ -20,6 +21,8 @@ interface CatalogoTemasProps {
  */
 export default function CatalogoTemas({ idCurso, bloqueado = false, onConvidar }: CatalogoTemasProps) {
 	const notificar = useNotice();
+	// Vagas do período do topo ("todos" → atual); a jornada do discente sempre está no período atual.
+	const { periodoEfetivo } = usePeriodo();
 	const [temas, setTemas] = useState<TemaTcc[]>([]);
 	const [carregando, setCarregando] = useState(true);
 	const [busca, setBusca] = useState("");
@@ -34,14 +37,14 @@ export default function CatalogoTemas({ idCurso, bloqueado = false, onConvidar }
 		let ativo = true;
 		setCarregando(true);
 		temasTccService
-			.getTemasPorCurso(idCurso)
+			.getTemasPorCurso(idCurso, periodoEfetivo)
 			.then((lista) => ativo && setTemas(lista.filter((t) => t.ativo)))
 			.catch((e) => ativo && notificar(getErrorMessage(e, "Erro ao carregar os temas"), "error"))
 			.finally(() => ativo && setCarregando(false));
 		return () => {
 			ativo = false;
 		};
-	}, [idCurso, notificar]);
+	}, [idCurso, periodoEfetivo?.ano, periodoEfetivo?.semestre, notificar]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	const areas = useMemo(() => [...new Set(temas.map((t) => t.areaTcc?.descricao).filter((a): a is string => Boolean(a)))].sort(), [temas]);
 	const docentes = useMemo(

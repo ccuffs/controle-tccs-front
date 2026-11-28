@@ -44,6 +44,9 @@ export interface FiltrosAcompanhamento {
 	id_curso?: string;
 	ano?: string;
 	semestre?: string;
+	/** "A partir de": opção "Todos os períodos" restrita. */
+	desde_ano?: string;
+	desde_semestre?: string;
 	fase?: string;
 	codigo_docente?: string;
 	pagina?: number;

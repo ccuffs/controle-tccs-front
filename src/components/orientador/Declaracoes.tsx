@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { usePeriodo } from "../../contexts/PeriodoContext";
+import { useEffect, useState } from "react";
+import { filtroComoTexto, usePeriodo } from "../../contexts/PeriodoContext";
 import { useListaLocal } from "../../hooks/useListaLocal";
 import { gerarDeclaracaoHtml, gerarDeclaracaoTabelaHtml, getDeclaracoes } from "../../services/declaracoes-service";
 import type { Declaracao } from "../../types/declaracao";
@@ -26,25 +26,24 @@ type Participacao = "orientacao" | "banca";
 /** Declarações de orientação e banca do docente (imagem declaracao_orientador.png). */
 export default function Declaracoes() {
 	const notificar = useNotice();
-	const { periodos } = usePeriodo();
-	const [periodo, setPeriodo] = useState("");
+	const { filtro } = usePeriodo();
 	const [participacao, setParticipacao] = useState<"" | Participacao>("");
 	const [declaracoes, setDeclaracoes] = useState<Declaracao[]>([]);
 	const [carregando, setCarregando] = useState(true);
 
-	const [ano, semestre] = periodo ? periodo.split("/") : ["", ""];
+	const { ano, semestre, desde_ano, desde_semestre } = filtroComoTexto(filtro);
 
 	useEffect(() => {
 		let ativo = true;
 		setCarregando(true);
-		getDeclaracoes({ ano, semestre })
+		getDeclaracoes({ ano, semestre, desde_ano, desde_semestre })
 			.then((r) => ativo && setDeclaracoes(r.declaracoes))
 			.catch((e) => ativo && notificar(getErrorMessage(e, "Erro ao carregar declarações"), "error"))
 			.finally(() => ativo && setCarregando(false));
 		return () => {
 			ativo = false;
 		};
-	}, [ano, semestre, notificar]);
+	}, [ano, semestre, desde_ano, desde_semestre, notificar]);
 
 	const { filtrados, visiveis, pagina, setPagina, porPagina } = useListaLocal(
 		declaracoes,
@@ -54,8 +53,6 @@ export default function Declaracoes() {
 
 	const abrir = (gerar: () => Promise<string>) =>
 		abrirHtmlEmNovaAba(gerar).catch((e) => notificar(getErrorMessage(e, "Não foi possível gerar a declaração."), "error"));
-
-	const opcoesPeriodo = useMemo(() => periodos.map((p) => `${p.ano}/${p.semestre}`), [periodos]);
 
 	const colunas: DataTableColumn<Declaracao>[] = [
 		{ key: "discente", header: "Discente", render: (d) => <strong>{d.nome_dicente ?? d.matricula ?? "—"}</strong> },
@@ -87,7 +84,7 @@ export default function Declaracoes() {
 				<h2>{titulo}</h2>
 				<p>{texto}</p>
 			</div>
-			<Button variant="secondary" icon="download" onClick={() => abrir(() => gerarDeclaracaoTabelaHtml(tipo, { ano, semestre }))}>
+			<Button variant="secondary" icon="download" onClick={() => abrir(() => gerarDeclaracaoTabelaHtml(tipo, { ano, semestre, desde_ano, desde_semestre }))}>
 				Baixar PDF
 			</Button>
 		</Card>
@@ -97,16 +94,6 @@ export default function Declaracoes() {
 		<>
 			<PageHeader title="Declarações" description="Emita comprovantes das suas orientações e participações em bancas." />
 			<FilterBar>
-				<FilterField label="Período">
-					<Select value={periodo || TODOS} onChange={(e) => setPeriodo(e.target.value === TODOS ? "" : e.target.value)}>
-						<option value={TODOS}>Todos os períodos</option>
-						{opcoesPeriodo.map((p) => (
-							<option key={p} value={p}>
-								{p}
-							</option>
-						))}
-					</Select>
-				</FilterField>
 				<FilterField label="Participação">
 					<Select value={participacao || TODOS} onChange={(e) => setParticipacao(e.target.value === TODOS ? "" : (e.target.value as Participacao))}>
 						<option value={TODOS}>Todas</option>

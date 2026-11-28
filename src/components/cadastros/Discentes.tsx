@@ -39,7 +39,7 @@ const faseAtual = (d: DicenteComTccs): number | null => {
 /** Cadastro de discentes (imagem discentes_coordenador.png). */
 export default function Discentes() {
 	const notificar = useNotice();
-	const { selecionado } = usePeriodo();
+	const { filtro, escolha, todos } = usePeriodo();
 	const { cursos, padrao } = useCursosCoordenacao();
 
 	const [curso, setCurso] = useState<string | null>(null);
@@ -60,12 +60,12 @@ export default function Discentes() {
 	const porPeriodo = escopo === "periodo";
 
 	useEffect(() => {
-		if (porPeriodo && !selecionado) return;
+		if (porPeriodo && !escolha) return;
 		let ativo = true;
 		setCarregando(true);
 		dicentesService
 			.getDicentesFiltrados(
-				porPeriodo ? { ano: selecionado?.ano, semestre: selecionado?.semestre, id_curso: cursoEfetivo } : {},
+				porPeriodo ? { ...filtro, id_curso: cursoEfetivo } : {},
 			)
 			.then((lista) => ativo && setDiscentes(lista))
 			.catch((e) => {
@@ -77,7 +77,7 @@ export default function Discentes() {
 		return () => {
 			ativo = false;
 		};
-	}, [porPeriodo, selecionado, cursoEfetivo, recarregar, notificar]);
+	}, [porPeriodo, escolha, filtro, cursoEfetivo, recarregar, notificar]);
 
 	const filtrosAtivos = (fase ? 1 : 0) + (porPeriodo ? 0 : 1);
 	const { filtrados, visiveis, pagina, setPagina, porPagina } = useListaLocal(
@@ -173,7 +173,9 @@ export default function Discentes() {
 	];
 
 	const descricao = porPeriodo
-		? `${discentes.length} discentes em ${rotuloPeriodo(selecionado)}`
+		? todos
+			? `${discentes.length} discentes com TCC`
+			: `${discentes.length} discentes em ${rotuloPeriodo(escolha)}`
 		: `${discentes.length} discentes cadastrados`;
 
 	const alterarCampo = (campo: keyof Formulario) => (valor: string) =>
@@ -223,7 +225,7 @@ export default function Discentes() {
 					</FilterField>
 					<FilterField label="Discentes">
 						<Select value={escopo} onChange={(e) => setEscopo(e.target.value as "periodo" | "todos")}>
-							<option value="periodo">Com TCC no período</option>
+							<option value="periodo">{todos ? "Com TCC (qualquer período)" : "Com TCC no período"}</option>
 							<option value="todos">Todos os cadastrados</option>
 						</Select>
 					</FilterField>

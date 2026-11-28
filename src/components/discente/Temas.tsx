@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { rotuloPeriodo } from "../../contexts/PeriodoContext";
 import { useTccDiscente } from "../../hooks/useTccDiscente";
 import orientacaoService from "../../services/orientacao-service";
 import type { Convite } from "../../types/convite";
@@ -10,7 +11,7 @@ import CatalogoTemas from "./CatalogoTemas";
 /** Catálogo de temas do curso do discente (protótipo: Catalog em design/App.tsx). */
 export default function TemasDisponiveis() {
 	const notificar = useNotice();
-	const { tcc, recarregar } = useTccDiscente();
+	const { tcc, recarregar, consulta } = useTccDiscente();
 	const [convites, setConvites] = useState<Convite[]>([]);
 	const [convidar, setConvidar] = useState<string | null>(null);
 
@@ -37,6 +38,15 @@ export default function TemasDisponiveis() {
 				title="Escolha um tema"
 				description="Encontre uma área de interesse e convide o docente para sua orientação."
 			/>
+			{consulta && (
+				<div className="inline-banner" role="status" style={{ margin: "0 0 16px", alignItems: "center" }}>
+					<Icon name="visibility" size={18} />
+					<span>
+						Você está consultando {rotuloPeriodo(consulta)}: as vagas mostradas são desse período e os convites só podem ser enviados no
+						período atual.
+					</span>
+				</div>
+			)}
 			{conviteOrientacao && (
 				<Surface className="card" style={{ padding: 14, marginBottom: 14 }}>
 					<span className="meta-line" style={{ marginTop: 0 }}>
@@ -47,7 +57,7 @@ export default function TemasDisponiveis() {
 					</span>
 				</Surface>
 			)}
-			<CatalogoTemas idCurso={tcc?.id_curso ?? null} bloqueado={Boolean(conviteOrientacao) || !tcc} onConvidar={setConvidar} />
+			<CatalogoTemas idCurso={tcc?.id_curso ?? null} bloqueado={Boolean(conviteOrientacao) || !tcc || Boolean(consulta)} onConvidar={setConvidar} />
 			{tcc && (
 				<ConviteOrientadorModal
 					open={Boolean(convidar)}

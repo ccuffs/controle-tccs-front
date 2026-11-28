@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router";
 import { usePeriodo } from "../../contexts/PeriodoContext";
 import { nomeCurso, useCursosCoordenacao } from "../../hooks/useCursosCoordenacao";
@@ -9,6 +9,7 @@ import { comSinal, nomeCurto, percentual } from "../../utils/formatos";
 import DefenseList from "../defesas/DefenseList";
 import {
 	ActionIconButton,
+	AvisoPeriodoUnico,
 	Button,
 	Card,
 	FilterBar,
@@ -36,7 +37,7 @@ function ranking(itens: PorDocenteItem[], crescente: boolean) {
 export default function VisaoGeral() {
 	const navigate = useNavigate();
 	const notificar = useNotice();
-	const { periodos, atual, selecionado, selecionar } = usePeriodo();
+	const { periodoEfetivo: selecionado } = usePeriodo();
 	const { cursos, padrao } = useCursosCoordenacao();
 
 	const [curso, setCurso] = useState<string | null>(null);
@@ -53,21 +54,9 @@ export default function VisaoGeral() {
 	const { dados, carregando } = useVisaoGeral(filtros, (m) => notificar(m, "error"));
 	const pontosConvites = useConvitesPorMes(filtros, meses);
 
-	const anos = useMemo(() => [...new Set(periodos.map((p) => p.ano))], [periodos]);
-	const semestresDoAno = periodos.filter((p) => p.ano === selecionado?.ano).map((p) => p.semestre);
-
-	const trocarAno = (valor: string) => {
-		const ano = Number(valor);
-		const semestre = periodos.some((p) => p.ano === ano && p.semestre === selecionado?.semestre)
-			? (selecionado?.semestre ?? 1)
-			: (periodos.find((p) => p.ano === ano)?.semestre ?? 1);
-		selecionar({ ano, semestre });
-	};
-
 	const limpar = () => {
 		setCurso(null);
 		setFase("");
-		if (atual) selecionar(atual);
 	};
 
 	const o = dados.orientadores;
@@ -92,6 +81,7 @@ export default function VisaoGeral() {
 					</span>
 				}
 			/>
+			<AvisoPeriodoUnico />
 
 			<FilterBar onClear={limpar}>
 				<FilterField label="Curso">
@@ -100,27 +90,6 @@ export default function VisaoGeral() {
 						{cursos.map((c) => (
 							<option key={c.id} value={String(c.id)}>
 								{nomeCurso(c)}
-							</option>
-						))}
-					</Select>
-				</FilterField>
-				<FilterField label="Ano">
-					<Select value={selecionado ? String(selecionado.ano) : ""} onChange={(e) => trocarAno(e.target.value)}>
-						{anos.map((ano) => (
-							<option key={ano} value={String(ano)}>
-								{ano}
-							</option>
-						))}
-					</Select>
-				</FilterField>
-				<FilterField label="Semestre">
-					<Select
-						value={selecionado ? String(selecionado.semestre) : ""}
-						onChange={(e) => selecionado && selecionar({ ano: selecionado.ano, semestre: Number(e.target.value) })}
-					>
-						{semestresDoAno.map((s) => (
-							<option key={s} value={String(s)}>
-								{`${s}º semestre`}
 							</option>
 						))}
 					</Select>

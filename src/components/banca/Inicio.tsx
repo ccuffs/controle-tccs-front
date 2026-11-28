@@ -10,7 +10,7 @@ import type { Convite } from "../../types/convite";
 import type { DefesaAgenda } from "../../types/dashboard";
 import { getErrorMessage } from "../../utils/apiError";
 import DefenseList from "../defesas/DefenseList";
-import { Button, Card, Icon, KpiCard, PageHeader, PhaseChip, PlainButton, useNotice } from "../ui";
+import { AvisoPeriodoUnico, Button, Card, Icon, KpiCard, PageHeader, PhaseChip, PlainButton, useNotice } from "../ui";
 import { GraficoConvites } from "../visao-geral/graficos";
 
 const DIA = 24 * 60 * 60 * 1000;
@@ -29,7 +29,7 @@ export default function Inicio() {
 	const navigate = useNavigate();
 	const notificar = useNotice();
 	const { usuario } = useAuth();
-	const { selecionado } = usePeriodo();
+	const { periodoEfetivo: selecionado } = usePeriodo();
 	const { codigo } = useDocenteAtual();
 
 	const [convites, setConvites] = useState<Convite[]>([]);
@@ -45,7 +45,7 @@ export default function Inicio() {
 		let ativo = true;
 		setCarregando(true);
 		Promise.allSettled([
-			convitesService.getConvitesDocente(filtros.codigo_docente),
+			convitesService.getConvitesDocente(filtros.codigo_docente, { ano: filtros.ano, semestre: filtros.semestre }),
 			visaoGeralService.defesas(filtros),
 			visaoGeralService.docentesSemDisponibilidade({ ano: filtros.ano, semestre: filtros.semestre }),
 		]).then(([c, d, s]) => {
@@ -96,6 +96,7 @@ export default function Inicio() {
 				title="Suas bancas"
 				description="Responda aos convites, informe seus horários e acompanhe as defesas de que você participa."
 			/>
+			<AvisoPeriodoUnico />
 			<div className="kpi-grid four">
 				<KpiCard
 					icon="mail"

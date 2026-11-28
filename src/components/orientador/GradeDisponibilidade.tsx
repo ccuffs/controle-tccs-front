@@ -4,6 +4,7 @@ import { usePeriodo } from "../../contexts/PeriodoContext";
 import { useGerenciarDisponibilidadeBanca, type GerenciarDisponibilidadeHandle } from "../../hooks/useGerenciarDisponibilidadeBanca";
 import {
 	AdvancedFilters,
+	AvisoPeriodoUnico,
 	Button,
 	Card,
 	EmptyState,
@@ -51,7 +52,7 @@ function rotuloSemana(datas: string[]): string {
  */
 const GradeDisponibilidade = forwardRef<GerenciarDisponibilidadeHandle>(function GradeDisponibilidade(_, ref) {
 	const notificar = useNotice();
-	const { selecionado } = usePeriodo();
+	const { periodoEfetivo: selecionado } = usePeriodo();
 	const h = useGerenciarDisponibilidadeBanca(ref);
 	const [semana, setSemana] = useState(0);
 	const [filtrosAbertos, setFiltrosAbertos] = useState(false);
@@ -123,6 +124,7 @@ const GradeDisponibilidade = forwardRef<GerenciarDisponibilidadeHandle>(function
 					)
 				}
 			/>
+			<AvisoPeriodoUnico />
 			<TableToolbar filterCount={0} filtersOpen={filtrosAbertos} onToggleFilters={() => setFiltrosAbertos((x) => !x)}>
 				<Select value={String(h.cursoSelecionado ?? "")} onChange={(e) => h.setCursoSelecionado(e.target.value)} aria-label="Curso" displayEmpty>
 					{cursos.length === 0 && <option value="">Nenhum curso</option>}

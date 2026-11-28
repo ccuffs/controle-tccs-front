@@ -24,4 +24,7 @@ export interface DeclaracoesFiltros {
 	ano?: number | string;
 	semestre?: number | string;
 	fase?: number | string;
+	/** "A partir de": opção "Todos os períodos" restrita. */
+	desde_ano?: number | string;
+	desde_semestre?: number | string;
 }

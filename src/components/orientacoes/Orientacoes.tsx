@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
-import { rotuloPeriodo, usePeriodo } from "../../contexts/PeriodoContext";
+import { filtroComoTexto, rotuloPeriodo, usePeriodo } from "../../contexts/PeriodoContext";
 import { nomeCurso, useCursosCoordenacao } from "../../hooks/useCursosCoordenacao";
 import acompanhamentoService from "../../services/acompanhamento-service";
 import orientacaoService from "../../services/orientacao-service";
@@ -34,7 +34,8 @@ const formatarNota = (n: number | null) =>
 export default function Orientacoes() {
 	const notificar = useNotice();
 	const [params] = useSearchParams();
-	const { periodos, selecionado } = usePeriodo();
+	const { filtro, periodoEfetivo: selecionado } = usePeriodo();
+	const { ano, semestre, desde_ano, desde_semestre } = filtroComoTexto(filtro);
 	const { cursos, padrao } = useCursosCoordenacao();
 
 	const [busca, setBusca] = useState(params.get("q") ?? "");
@@ -42,8 +43,6 @@ export default function Orientacoes() {
 	const [curso, setCurso] = useState<string | null>(null);
 	const [filtrosAbertos, setFiltrosAbertos] = useState(false);
 	const [fase, setFase] = useState("");
-	const [ano, setAno] = useState("");
-	const [semestre, setSemestre] = useState("");
 	const [pagina, setPagina] = useState(1);
 
 	const [resposta, setResposta] = useState<{ total: number; itens: ItemAcompanhamento[] }>({ total: 0, itens: [] });
@@ -68,7 +67,7 @@ export default function Orientacoes() {
 		let ativo = true;
 		setCarregando(true);
 		acompanhamentoService
-			.listarAcompanhamento({ q: buscaAplicada, id_curso: cursoEfetivo, fase, ano, semestre, pagina, limite: POR_PAGINA })
+			.listarAcompanhamento({ q: buscaAplicada, id_curso: cursoEfetivo, fase, ano, semestre, desde_ano, desde_semestre, pagina, limite: POR_PAGINA })
 			.then((r) => ativo && setResposta({ total: r.total, itens: r.itens }))
 			.catch((e) => {
 				if (!ativo) return;
@@ -79,7 +78,7 @@ export default function Orientacoes() {
 		return () => {
 			ativo = false;
 		};
-	}, [buscaAplicada, cursoEfetivo, fase, ano, semestre, pagina, recarregar, notificar]);
+	}, [buscaAplicada, cursoEfetivo, fase, ano, semestre, desde_ano, desde_semestre, pagina, recarregar, notificar]);
 
 	const carregarOrientadores = async (idCurso: number) => {
 		if (orientadoresPorCurso[idCurso]) return orientadoresPorCurso[idCurso];
@@ -93,13 +92,10 @@ export default function Orientacoes() {
 		setEditando(item);
 	};
 
-	const anos = useMemo(() => [...new Set(periodos.map((p) => p.ano))], [periodos]);
-	const filtrosAtivos = [fase, ano, semestre].filter(Boolean).length;
+	const filtrosAtivos = fase ? 1 : 0;
 	const limparFiltros = () => {
 		setBusca("");
 		setFase("");
-		setAno("");
-		setSemestre("");
 		setCurso(null);
 	};
 
@@ -189,23 +185,6 @@ export default function Orientacoes() {
 							<option value={TODOS}>Todos</option>
 							<option value="1">Projeto (TCC I)</option>
 							<option value="2">TCC (TCC II)</option>
-						</Select>
-					</FilterField>
-					<FilterField label="Ano">
-						<Select value={ano || TODOS} onChange={(e) => setAno(e.target.value === TODOS ? "" : e.target.value)}>
-							<option value={TODOS}>Todos os anos</option>
-							{anos.map((a) => (
-								<option key={a} value={String(a)}>
-									{a}
-								</option>
-							))}
-						</Select>
-					</FilterField>
-					<FilterField label="Semestre">
-						<Select value={semestre || TODOS} onChange={(e) => setSemestre(e.target.value === TODOS ? "" : e.target.value)}>
-							<option value={TODOS}>Todos os semestres</option>
-							<option value="1">1º semestre</option>
-							<option value="2">2º semestre</option>
 						</Select>
 					</FilterField>
 				</AdvancedFilters>

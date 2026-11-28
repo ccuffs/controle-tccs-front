@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { usePeriodo } from "../../contexts/PeriodoContext";
+import { useEffect, useState } from "react";
+import { filtroComoTexto, usePeriodo } from "../../contexts/PeriodoContext";
 import { useDocenteAtual } from "../../hooks/useDocenteAtual";
 import acompanhamentoService from "../../services/acompanhamento-service";
 import orientacaoService from "../../services/orientacao-service";
@@ -22,7 +22,6 @@ import {
 	Realce,
 } from "../ui";
 
-const TODOS = "__todos__";
 const POR_PAGINA = 10;
 const LIMITE_RESUMO = 1500;
 
@@ -36,12 +35,12 @@ interface Edicao {
 /** Orientandos do docente (imagens Meus_orientandos_orientador.png e meus_orientandos_editar.png). */
 export default function MeusOrientandos() {
 	const notificar = useNotice();
-	const { periodos, selecionado } = usePeriodo();
+	const { filtro } = usePeriodo();
+	const { ano, semestre, desde_ano, desde_semestre } = filtroComoTexto(filtro);
 	const { codigo } = useDocenteAtual();
 
 	const [busca, setBusca] = useState("");
 	const [buscaAplicada, setBuscaAplicada] = useState("");
-	const [periodo, setPeriodo] = useState<string | null>(null);
 	const [pagina, setPagina] = useState(1);
 	const [resposta, setResposta] = useState<{ total: number; itens: ItemAcompanhamento[] }>({ total: 0, itens: [] });
 	const [carregando, setCarregando] = useState(true);
@@ -51,29 +50,25 @@ export default function MeusOrientandos() {
 	const [edicao, setEdicao] = useState<Edicao | null>(null);
 	const [salvando, setSalvando] = useState(false);
 
-	// Padrão: período do topo; "Todos os períodos" é uma escolha explícita.
-	const periodoEfetivo = periodo ?? (selecionado ? `${selecionado.ano}/${selecionado.semestre}` : TODOS);
-	const [ano, semestre] = periodoEfetivo === TODOS ? ["", ""] : periodoEfetivo.split("/");
-
 	useEffect(() => {
 		const t = setTimeout(() => setBuscaAplicada(busca), 350);
 		return () => clearTimeout(t);
 	}, [busca]);
-	useEffect(() => setPagina(1), [buscaAplicada, periodoEfetivo]);
+	useEffect(() => setPagina(1), [buscaAplicada, ano, semestre]);
 
 	useEffect(() => {
 		if (!codigo) return;
 		let ativo = true;
 		setCarregando(true);
 		acompanhamentoService
-			.listarAcompanhamento({ q: buscaAplicada, ano, semestre, codigo_docente: codigo, pagina, limite: POR_PAGINA })
+			.listarAcompanhamento({ q: buscaAplicada, ano, semestre, desde_ano, desde_semestre, codigo_docente: codigo, pagina, limite: POR_PAGINA })
 			.then((r) => ativo && setResposta({ total: r.total, itens: r.itens }))
 			.catch((e) => ativo && notificar(getErrorMessage(e, "Erro ao carregar orientandos"), "error"))
 			.finally(() => ativo && setCarregando(false));
 		return () => {
 			ativo = false;
 		};
-	}, [codigo, buscaAplicada, ano, semestre, pagina, recarregar, notificar]);
+	}, [codigo, buscaAplicada, ano, semestre, desde_ano, desde_semestre, pagina, recarregar, notificar]);
 
 	const abrir = (item: ItemAcompanhamento) => {
 		setAberto(item);
@@ -99,8 +94,6 @@ export default function MeusOrientandos() {
 			setSalvando(false);
 		}
 	};
-
-	const opcoesPeriodo = useMemo(() => periodos.map((p) => `${p.ano}/${p.semestre}`), [periodos]);
 
 	const colunas: DataTableColumn<ItemAcompanhamento>[] = [
 		{
@@ -154,17 +147,8 @@ export default function MeusOrientandos() {
 
 	return (
 		<>
-			<PageHeader title="Meus orientandos" description="Acompanhe os trabalhos sob sua orientação no período atual." />
-			<TableToolbar search={busca} onSearchChange={setBusca} searchPlaceholder="Buscar por nome ou matrícula">
-				<Select value={periodoEfetivo} onChange={(e) => setPeriodo(e.target.value)} aria-label="Filtrar por período">
-					<option value={TODOS}>Todos os períodos</option>
-					{opcoesPeriodo.map((p) => (
-						<option key={p} value={p}>
-							{p}
-						</option>
-					))}
-				</Select>
-			</TableToolbar>
+			<PageHeader title="Meus orientandos" description="Acompanhe os trabalhos sob sua orientação no período selecionado." />
+			<TableToolbar search={busca} onSearchChange={setBusca} searchPlaceholder="Buscar por nome ou matrícula" />
 			<DataTable
 				columns={colunas}
 				rows={resposta.itens}
@@ -174,10 +158,7 @@ export default function MeusOrientandos() {
 				pageSize={POR_PAGINA}
 				onPageChange={setPagina}
 				loading={carregando}
-				onClearFilters={() => {
-					setBusca("");
-					setPeriodo(TODOS);
-				}}
+				onClearFilters={() => setBusca("")}
 			/>
 
 			<ModalDialog

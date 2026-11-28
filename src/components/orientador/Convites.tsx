@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Tab, Tabs } from "@mui/material";
 import { useDocenteAtual } from "../../hooks/useDocenteAtual";
 import { usePerfilAtual } from "../../hooks/usePerfilAtual";
+import { usePeriodo } from "../../contexts/PeriodoContext";
 import convitesService from "../../services/convites-service";
 import type { Convite } from "../../types/convite";
 import { getErrorMessage } from "../../utils/apiError";
@@ -56,6 +57,7 @@ export default function Convites() {
 	const notificar = useNotice();
 	const perfil = usePerfilAtual();
 	const { codigo } = useDocenteAtual();
+	const { filtro, escolha } = usePeriodo();
 	const [convites, setConvites] = useState<Convite[]>([]);
 	const [carregando, setCarregando] = useState(true);
 	const [recarregar, setRecarregar] = useState(0);
@@ -66,18 +68,18 @@ export default function Convites() {
 	const [ocupado, setOcupado] = useState(false);
 
 	useEffect(() => {
-		if (!codigo) return;
+		if (!codigo || !escolha) return;
 		let ativo = true;
 		setCarregando(true);
 		convitesService
-			.getConvitesDocente(codigo)
+			.getConvitesDocente(codigo, filtro)
 			.then((lista) => ativo && setConvites([...lista].sort((a, b) => b.data_envio.localeCompare(a.data_envio))))
 			.catch((e) => ativo && notificar(getErrorMessage(e, "Erro ao carregar convites"), "error"))
 			.finally(() => ativo && setCarregando(false));
 		return () => {
 			ativo = false;
 		};
-	}, [codigo, recarregar, notificar]);
+	}, [codigo, escolha, filtro, recarregar, notificar]);
 
 	useEffect(() => setLimite(POR_PAGINA), [aba]);
 
@@ -114,7 +116,9 @@ export default function Convites() {
 
 	const nome = (c: Convite) => c.trabalhoConclusao?.dicente?.nome ?? c.trabalhoConclusao?.matricula ?? "Discente";
 	const identificacao = (c: Convite) =>
-		`${c.trabalhoConclusao?.matricula ?? ""}${c.trabalhoConclusao?.curso?.nome ? ` · ${c.trabalhoConclusao.curso.nome}` : ""}`;
+		`${c.trabalhoConclusao?.matricula ?? ""}${c.trabalhoConclusao?.curso?.nome ? ` · ${c.trabalhoConclusao.curso.nome}` : ""}${
+			c.trabalhoConclusao?.ano ? ` · ${c.trabalhoConclusao.ano}/${c.trabalhoConclusao.semestre}` : ""
+		}`;
 
 	return (
 		<>

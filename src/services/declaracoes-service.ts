@@ -31,6 +31,8 @@ export async function getDeclaracoes(
 		if (params.semestre)
 			queryString.append("semestre", String(params.semestre));
 		if (params.fase) queryString.append("fase", String(params.fase));
+		if (params.desde_ano) queryString.append("desde_ano", String(params.desde_ano));
+		if (params.desde_semestre) queryString.append("desde_semestre", String(params.desde_semestre));
 
 		const response = await axiosInstance.get<Partial<DeclaracoesResponse>>(
 			`/declaracoes/?${queryString.toString()}`,
@@ -74,6 +76,8 @@ export async function getDeclaracoesExternas(
 		if (params.semestre)
 			queryString.append("semestre", String(params.semestre));
 		if (params.fase) queryString.append("fase", String(params.fase));
+		if (params.desde_ano) queryString.append("desde_ano", String(params.desde_ano));
+		if (params.desde_semestre) queryString.append("desde_semestre", String(params.desde_semestre));
 
 		const response = await axiosInstance.get<{ declaracoes: Declaracao[] }>(
 			`/declaracoes/externas?${queryString.toString()}`,
@@ -116,6 +120,8 @@ export async function gerarDeclaracaoTabelaHtml(
 		if (params.semestre)
 			queryString.append("semestre", String(params.semestre));
 		if (params.fase) queryString.append("fase", String(params.fase));
+		if (params.desde_ano) queryString.append("desde_ano", String(params.desde_ano));
+		if (params.desde_semestre) queryString.append("desde_semestre", String(params.desde_semestre));
 
 		const qs = queryString.toString();
 		const response = await axiosInstance.get<string>(

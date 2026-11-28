@@ -47,10 +47,41 @@ export async function getTrabalhoConclusaoByDiscenteOfertaAtual(
 	}
 }
 
+// GET - TCCs do próprio discente num período (a API restringe à matrícula de quem pede),
+// com orientações e defesas (banca, datas e notas).
+export async function getMeusTrabalhosNoPeriodo(periodo: {
+	ano: number;
+	semestre: number;
+}): Promise<TrabalhoConclusao[]> {
+	try {
+		const response = await axiosInstance.get<{ trabalhos?: TrabalhoConclusao[] }>(
+			`/trabalho-conclusao?ano=${periodo.ano}&semestre=${periodo.semestre}`,
+		);
+		return response.trabalhos || [];
+	} catch (error) {
+		console.error("Erro ao buscar trabalhos de conclusão do período:", error);
+		throw new Error(
+			getErrorMessage(error, "Erro ao buscar o TCC do período"),
+		);
+	}
+}
+
+// GET - Todos os TCCs do próprio discente (a API restringe à matrícula de quem pede)
+export async function getMeusTrabalhos(): Promise<TrabalhoConclusao[]> {
+	try {
+		const response = await axiosInstance.get<{ trabalhos?: TrabalhoConclusao[] }>("/trabalho-conclusao");
+		return response.trabalhos || [];
+	} catch (error) {
+		throw new Error(getErrorMessage(error, "Erro ao buscar seus TCCs"));
+	}
+}
+
 // Exportação padrão
 const trabalhoConclusaoService = {
 	getTrabalhoConclusaoByDiscente,
 	getTrabalhoConclusaoByDiscenteOfertaAtual,
+	getMeusTrabalhosNoPeriodo,
+	getMeusTrabalhos,
 };
 
 export default trabalhoConclusaoService;

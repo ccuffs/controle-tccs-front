@@ -16,6 +16,9 @@ import type {
 export interface FiltrosPainel {
 	ano?: number;
 	semestre?: number;
+	/** "A partir de" (só com incluir_historico): opção "Todos os períodos" restrita. */
+	desde_ano?: number;
+	desde_semestre?: number;
 	id_curso?: string;
 	fase?: string;
 	codigo_docente?: string;

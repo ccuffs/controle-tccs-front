@@ -74,11 +74,20 @@ export async function getAreasTccPorDocente(
 	}
 }
 
-// GET - Buscar temas por curso
-export async function getTemasPorCurso(idCurso: number): Promise<TemaTcc[]> {
+/** Período das vagas (docente_oferta). Sem ele, a API usa o período atual. */
+export interface PeriodoVagas {
+	ano: number;
+	semestre: number;
+}
+
+const queryPeriodo = (periodo?: PeriodoVagas | null) =>
+	periodo ? `?ano=${periodo.ano}&semestre=${periodo.semestre}` : "";
+
+// GET - Buscar temas por curso (vagas do período informado)
+export async function getTemasPorCurso(idCurso: number, periodo?: PeriodoVagas | null): Promise<TemaTcc[]> {
 	try {
 		const response = await axiosInstance.get<TemaTcc[]>(
-			`/temas-tcc/curso/${idCurso}`,
+			`/temas-tcc/curso/${idCurso}${queryPeriodo(periodo)}`,
 		);
 		return response || [];
 	} catch (error) {
@@ -91,10 +100,11 @@ export async function getTemasPorCurso(idCurso: number): Promise<TemaTcc[]> {
 export async function getTemasPorCursoOrientador(
 	codigoDocente: string,
 	idCurso: number,
+	periodo?: PeriodoVagas | null,
 ): Promise<TemaTcc[]> {
 	try {
 		const response = await axiosInstance.get<TemaTcc[]>(
-			`/temas-tcc/docente/${codigoDocente}/curso/${idCurso}`,
+			`/temas-tcc/docente/${codigoDocente}/curso/${idCurso}${queryPeriodo(periodo)}`,
 		);
 		return response || [];
 	} catch (error) {
@@ -155,11 +165,12 @@ export async function atualizarVagasOferta(
 	codigoDocente: string,
 	idCurso: number,
 	vagas: number,
+	periodo?: PeriodoVagas | null,
 ): Promise<unknown> {
 	try {
 		const response = await axiosInstance.patch<{ data: unknown }>(
 			`/temas-tcc/docente/${codigoDocente}/curso/${idCurso}/vagas`,
-			{ vagas },
+			periodo ? { vagas, ano: periodo.ano, semestre: periodo.semestre } : { vagas },
 		);
 		return response.data;
 	} catch (error) {

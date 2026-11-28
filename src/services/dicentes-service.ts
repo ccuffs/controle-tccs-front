@@ -46,9 +46,13 @@ export interface DicenteComTccs extends Dicente {
 export async function getDicentesFiltrados(filtros: {
 	ano?: number;
 	semestre?: number;
+	desde_ano?: number;
+	desde_semestre?: number;
 	id_curso?: string;
 }): Promise<DicenteComTccs[]> {
 	const params = new URLSearchParams();
+	if (filtros.desde_ano) params.set("desde_ano", String(filtros.desde_ano));
+	if (filtros.desde_semestre) params.set("desde_semestre", String(filtros.desde_semestre));
 	if (filtros.ano) params.set("ano", String(filtros.ano));
 	if (filtros.semestre) params.set("semestre", String(filtros.semestre));
 	if (filtros.id_curso) params.set("id_curso", filtros.id_curso);
