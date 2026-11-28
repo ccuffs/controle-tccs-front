@@ -31,7 +31,7 @@ export function Sidebar({
 			<div className="sidebar-brand">
 				<img className="sidebar-logo" src="/cc-logo-icon-bg-transparent.svg" alt="Ciência da Computação" />
 				<div>
-					<strong>Gestão de TCCs</strong>
+					<strong>Sistema de Controles de TCCs</strong>
 					<small>Ciência da Computação</small>
 				</div>
 				<PlainButton className="icon-button close-mobile" onClick={onFecharMobile} aria-label="Fechar menu">
