@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import { usePerfilAtual } from "../../hooks/usePerfilAtual";
 import acompanhamentoService from "../../services/acompanhamento-service";
 import orientacaoService from "../../services/orientacao-service";
 import type { ItemAcompanhamento } from "../../types/acompanhamento";
@@ -39,6 +40,8 @@ const statusConvite = (c: Convite) =>
 export default function OrientacaoDrawer({ item, orientadores, onClose, onSalvo }: OrientacaoDrawerProps) {
 	const notificar = useNotice();
 	const navigate = useNavigate();
+	// Coordenador ou Administrador (mesmas telas): os atalhos ficam no perfil em que se está.
+	const perfil = usePerfilAtual() ?? "coordenacao";
 	const [conteudo, setConteudo] = useState<Conteudo | null>(null);
 	const [original, setOriginal] = useState<Conteudo | null>(null);
 	const [orientador, setOrientador] = useState("");
@@ -254,7 +257,7 @@ export default function OrientacaoDrawer({ item, orientadores, onClose, onSalvo 
 							</>
 						)}
 						<div className="inline-actions">
-							<Button variant="tertiary" icon="co_present" onClick={() => navigate("/coordenacao/defesas")}>
+							<Button variant="tertiary" icon="co_present" onClick={() => navigate(`/${perfil}/defesas`)}>
 								Gerenciar em Defesas
 							</Button>
 						</div>

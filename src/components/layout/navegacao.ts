@@ -67,8 +67,16 @@ export const NAVEGACAO: Record<Perfil, ItemNavegacao[]> = {
 		{ id: "convites", rotulo: "Convites", icone: "mail", caminho: "convites" },
 		{ id: "perfil", rotulo: "Perfil", icone: "person", caminho: "perfil" },
 	],
+	/** Mesmas telas da coordenação, mas com todos os períodos (desde 2020/1), mais Cursos e Design System. */
 	administracao: [
+		{ id: "visao-geral", rotulo: "Visão geral", icone: "space_dashboard", caminho: "visao-geral", grupoMenu: "GESTÃO" },
+		{ id: "orientacoes", rotulo: "Orientações", icone: "route", caminho: "orientacoes", grupoMenu: "ACOMPANHAMENTO" },
+		{ id: "defesas", rotulo: "Defesas", icone: "co_present", caminho: "defesas", grupoMenu: "ACOMPANHAMENTO" },
+		{ id: "discentes", rotulo: "Discentes", icone: "school", caminho: "discentes", grupoMenu: "CADASTROS" },
+		{ id: "docentes", rotulo: "Docentes", icone: "group", caminho: "docentes", grupoMenu: "CADASTROS" },
+		{ id: "temas", rotulo: "Temas", icone: "menu_book", caminho: "temas", grupoMenu: "CADASTROS" },
 		{ id: "cursos", rotulo: "Cursos", icone: "account_balance", caminho: "cursos", grupoMenu: "CADASTROS" },
+		{ id: "importar", rotulo: "Importar lista", icone: "upload_file", caminho: "importar", grupoMenu: "FERRAMENTAS" },
 		{ id: "design-system", rotulo: "Design System", icone: "palette", caminho: "design-system", grupoMenu: "FERRAMENTAS" },
 	],
 };

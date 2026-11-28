@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { usePerfilAtual } from "../../hooks/usePerfilAtual";
 import { usePeriodo } from "../../contexts/PeriodoContext";
 import { nomeCurso, useCursosCoordenacao } from "../../hooks/useCursosCoordenacao";
 import { useConvitesPorMes, useVisaoGeral } from "../../hooks/useVisaoGeral";
@@ -36,6 +37,8 @@ function ranking(itens: PorDocenteItem[], crescente: boolean) {
 /** Visão geral do coordenador (imagem visao_geral_coordenador.png). */
 export default function VisaoGeral() {
 	const navigate = useNavigate();
+	// Coordenador ou Administrador (mesmas telas): os atalhos ficam no perfil em que se está.
+	const perfil = usePerfilAtual() ?? "coordenacao";
 	const notificar = useNotice();
 	const { periodoEfetivo: selecionado } = usePeriodo();
 	const { cursos, padrao } = useCursosCoordenacao();
@@ -217,7 +220,7 @@ export default function VisaoGeral() {
 				limite={5}
 				carregando={carregando}
 				acao={
-					<Button variant="tertiary" onClick={() => navigate("/coordenacao/defesas")}>
+					<Button variant="tertiary" onClick={() => navigate(`/${perfil}/defesas`)}>
 						Ver agenda
 					</Button>
 				}

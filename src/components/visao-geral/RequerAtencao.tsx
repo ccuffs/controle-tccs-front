@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Alert } from "@mui/material";
 import { useNavigate } from "react-router";
+import { usePerfilAtual } from "../../hooks/usePerfilAtual";
 import type { DocenteSemDisponibilidade, EstudantePendenteBanca } from "../../types/dashboard";
 import { diaMes } from "../../utils/formatos";
 import { ActionIconButton, Avatar, Button, Icon, PlainButton, SideDrawer, Surface } from "../ui";
@@ -15,6 +16,8 @@ interface RequerAtencaoProps {
 /** Bloco "Requer atenção" da Visão geral e o painel lateral com as listas. */
 export default function RequerAtencao({ estudantes, docentes }: RequerAtencaoProps) {
 	const navigate = useNavigate();
+	// Coordenador ou Administrador (mesmas telas): os atalhos ficam no perfil em que se está.
+	const perfil = usePerfilAtual() ?? "coordenacao";
 	const [aberto, setAberto] = useState<"estudantes" | "docentes" | null>(null);
 	const prazoMaisProximo = estudantes
 		.map((e) => e.prazo)
@@ -34,7 +37,7 @@ export default function RequerAtencao({ estudantes, docentes }: RequerAtencaoPro
 							<p>Pendências que podem impactar o andamento do período.</p>
 						</div>
 					</div>
-					<PlainButton onClick={() => navigate("/coordenacao/orientacoes")}>
+					<PlainButton onClick={() => navigate(`/${perfil}/orientacoes`)}>
 						Ver todas <Icon name="arrow_forward" size={17} />
 					</PlainButton>
 				</div>
@@ -110,7 +113,7 @@ export default function RequerAtencao({ estudantes, docentes }: RequerAtencaoPro
 								</div>
 								<Button
 									variant="tertiary"
-									onClick={() => navigate(`/coordenacao/orientacoes?q=${encodeURIComponent(e.matricula)}`)}
+									onClick={() => navigate(`/${perfil}/orientacoes?q=${encodeURIComponent(e.matricula)}`)}
 								>
 									Ver orientação
 								</Button>

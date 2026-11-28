@@ -1,14 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useLocation } from "react-router";
 import { perfilDaUrl } from "../components/layout/navegacao";
-import { Permissoes } from "../enums/permissoes";
 import dashboardService from "../services/dashboard-service";
 import trabalhoConclusaoService from "../services/trabalho-conclusao-service";
 import type { AnoSemestre } from "../types/dashboard";
 import { useAuth } from "./AuthContext";
 
 /**
- * Primeiro período visível para docentes, coordenação e banca (sem grupo ADMIN): os anteriores
+ * Primeiro período visível nos perfis Coordenador, Orientador e Banca: os anteriores
  * não aparecem no seletor e "Todos os períodos" significa "a partir deste".
  */
 export const PRIMEIRO_PERIODO_EQUIPE: AnoSemestre = { ano: 2026, semestre: 1 };
@@ -17,7 +16,7 @@ export const PRIMEIRO_PERIODO_EQUIPE: AnoSemestre = { ano: 2026, semestre: 1 };
 export type EscolhaPeriodo = AnoSemestre | "todos";
 
 /**
- * Filtro de período para listagens. Com "Todos os períodos" fica vazio (admin e discente) ou
+ * Filtro de período para listagens. Com "Todos os períodos" fica vazio (Administrador e discente) ou
  * traz só o limite inferior desde_ano/desde_semestre (docentes, coordenação e banca).
  */
 export interface FiltroPeriodo {
@@ -95,19 +94,19 @@ const naoAnterior = (p: AnoSemestre, limite: AnoSemestre) =>
 const decrescente = (a: AnoSemestre, b: AnoSemestre) => b.ano - a.ano || b.semestre - a.semestre;
 
 /**
- * Quem vê quais períodos:
- * - "livre": grupo ADMIN, todos os períodos;
+ * Quem vê quais períodos (pelo perfil da URL, não pelos grupos: um admin no perfil Coordenador
+ * ou Orientador vê o mesmo que os demais):
+ * - "livre": perfil Administrador, todos os períodos;
  * - "discente": só os períodos em que o aluno tem TCC, mais o atual (onde a jornada acontece);
  * - "equipe": docentes, coordenação e banca, de PRIMEIRO_PERIODO_EQUIPE em diante.
  */
 type Restricao = "livre" | "discente" | "equipe";
 
 export function PeriodoProvider({ children }: { children: ReactNode }) {
-	const { isAuthenticated, gruposUsuario } = useAuth();
+	const { isAuthenticated } = useAuth();
 	const { pathname } = useLocation();
 	const perfil = perfilDaUrl(pathname);
-	const ehAdmin = gruposUsuario.some((g) => g.id === Permissoes.GRUPOS.ADMIN);
-	const restricao: Restricao = ehAdmin ? "livre" : perfil === "discente" ? "discente" : "equipe";
+	const restricao: Restricao = perfil === "administracao" ? "livre" : perfil === "discente" ? "discente" : "equipe";
 
 	const [todosPeriodos, setTodosPeriodos] = useState<AnoSemestre[]>([]);
 	const [periodosDoAluno, setPeriodosDoAluno] = useState<AnoSemestre[]>([]);

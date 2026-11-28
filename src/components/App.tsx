@@ -110,7 +110,14 @@ function App() {
 
 						<Route path="administracao" element={<ExigirPerfil perfil="administracao" />}>
 							<Route index element={<RedirecionarInicioPerfil perfil="administracao" />} />
+							<Route path="visao-geral" element={pagina("administracao", "visao-geral", <VisaoGeral />)} />
+							<Route path="orientacoes" element={pagina("administracao", "orientacoes", <Orientacoes />)} />
+							<Route path="defesas" element={pagina("administracao", "defesas", <Defesas />)} />
+							<Route path="discentes" element={pagina("administracao", "discentes", <Discentes />)} />
+							<Route path="docentes" element={pagina("administracao", "docentes", <Docentes />)} />
+							<Route path="temas" element={pagina("administracao", "temas", <Temas />)} />
 							<Route path="cursos" element={pagina("administracao", "cursos", <CursosPagina />)} />
+							<Route path="importar" element={pagina("administracao", "importar", <ImportarLista />)} />
 							<Route path="design-system" element={pagina("administracao", "design-system", <DesignSystem />)} />
 						</Route>
 
